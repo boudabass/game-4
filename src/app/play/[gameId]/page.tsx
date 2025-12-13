@@ -1,9 +1,9 @@
 import { getGame } from "@/app/actions/get-game";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { GamePlayer } from "@/components/game-player";
 
 interface PlayPageProps {
   params: Promise<{ gameId: string }>;
@@ -18,7 +18,6 @@ export default async function PlayPage(props: PlayPageProps) {
   }
 
   // Le chemin stocké dans la DB est relatif à /public/games
-  // Ex: "tetris/v1" -> URL "/games/tetris/v1/index.html"
   const gameUrl = `/games/${game.path}/index.html`;
 
   return (
@@ -47,20 +46,8 @@ export default async function PlayPage(props: PlayPageProps) {
 
       {/* Zone de jeu */}
       <main className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-[1200px] aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-4 border-slate-700 relative">
-          
-          {/* Message de chargement (sera caché par l'iframe une fois chargée) */}
-          <div className="absolute inset-0 flex items-center justify-center text-white">
-            <p className="text-xl animate-pulse">Chargement du jeu...</p>
-          </div>
-
-          <iframe
-            src={gameUrl}
-            className="w-full h-full border-0"
-            allow="autoplay; fullscreen; gamepad"
-            title={`Jeu ${game.name}`}
-          />
-        </div>
+        
+        <GamePlayer gameUrl={gameUrl} gameName={game.name} />
         
         <p className="text-slate-400 mt-4 text-center max-w-lg">
           {game.description}
