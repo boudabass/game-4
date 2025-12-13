@@ -2,7 +2,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { readdir } from 'fs/promises';
+import { readdir, stat } from 'fs/promises';
 import { getDb } from '@/lib/database';
 
 const GAMES_DIR = path.join(process.cwd(), 'public', 'games');
@@ -26,28 +26,44 @@ export async function listGamesFromDb() {
 export interface GameFolder {
   name: string;
   versions: string[];
+  lastModified: number;
 }
 
 export async function listGamesFolders(): Promise<GameFolder[]> {
   await ensureGamesDir();
   const entries = await readdir(GAMES_DIR, { withFileTypes: true });
-  const gameFolders: GameFolder[] = [];
-
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
+  
+  // On construit la liste avec les dates de modif
+  const gameFoldersPromises = entries
+    .filter(entry => entry.isDirectory())
+    .map(async (entry) => {
       const gamePath = path.join(GAMES_DIR, entry.name);
-      const versionEntries = await readdir(gamePath, { withFileTypes: true });
-      const versions = versionEntries
-        .filter(v => v.isDirectory())
-        .map(v => v.name);
       
-      gameFolders.push({
+      // Récupérer la date de modif du dossier
+      const stats = await stat(gamePath);
+      
+      let versions: string[] = [];
+      try {
+        const versionEntries = await readdir(gamePath, { withFileTypes: true });
+        versions = versionEntries
+          .filter(v => v.isDirectory())
+          .map(v => v.name)
+          .sort().reverse();
+      } catch (e) {
+        // Ignorer si vide
+      }
+
+      return {
         name: entry.name,
-        versions: versions.sort().reverse()
-      });
-    }
-  }
-  return gameFolders;
+        versions,
+        lastModified: stats.mtimeMs
+      };
+    });
+
+  const gameFolders = await Promise.all(gameFoldersPromises);
+
+  // TRI : Plus récent en haut
+  return gameFolders.sort((a, b) => b.lastModified - a.lastModified);
 }
 
 export async function createGameFolder(gameName: string) {

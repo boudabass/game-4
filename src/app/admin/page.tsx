@@ -92,10 +92,10 @@ export default function AdminPage() {
     <div className="container mx-auto p-8 max-w-2xl">
       <h1 className="text-3xl font-bold mb-8">Administration Game Center</h1>
 
-      {/* Étape 1 : Création Dossier */}
+      {/* Étape 1 : Création Dossier / Import */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>1. Structure du Jeu</CardTitle>
+          <CardTitle>1. Gestion des Jeux</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4 mb-4">
@@ -103,7 +103,7 @@ export default function AdminPage() {
               variant={mode === "new-game" ? "default" : "outline"}
               onClick={() => { setMode("new-game"); setActivePath(null); }}
             >
-              Nouveau Jeu
+              Importer / Nouveau
             </Button>
             <Button 
               variant={mode === "new-version" ? "default" : "outline"}
@@ -114,13 +114,34 @@ export default function AdminPage() {
           </div>
 
           {mode === "new-game" ? (
-            <div className="flex gap-2">
-              <Input 
-                placeholder="Nom du jeu (ex: Tetris)" 
-                value={newGameName}
-                onChange={(e) => setNewGameName(e.target.value)}
-              />
-              <Button onClick={handleCreateGame}>Créer / Importer (V1)</Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Importer un dossier existant (Récents en haut)</Label>
+                <Select onValueChange={(val) => setNewGameName(val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un dossier détecté..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {games.map(g => (
+                      <SelectItem key={g.name} value={g.name}>
+                        {g.name} (Modifié le {new Date(g.lastModified).toLocaleDateString()})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Ou taper un nouveau nom..." 
+                  value={newGameName}
+                  onChange={(e) => setNewGameName(e.target.value)}
+                />
+                <Button onClick={handleCreateGame}>Valider (V1)</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Si le dossier existe déjà physiquement, il sera importé et le index.html sera généré.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -140,7 +161,7 @@ export default function AdminPage() {
                   value={newVersionName}
                   onChange={(e) => setNewVersionName(e.target.value)}
                 />
-                <Button onClick={handleCreateVersion}>Créer / Importer Version</Button>
+                <Button onClick={handleCreateVersion}>Créer Version</Button>
               </div>
             </div>
           )}
@@ -152,22 +173,20 @@ export default function AdminPage() {
         <Card className="border-primary border-2">
           <CardHeader>
             <CardTitle>
-              2. Upload pour : <span className="text-primary">{activePath.name} / {activePath.version}</span>
+              2. Fichiers pour : <span className="text-primary">{activePath.name} / {activePath.version}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="p-4 bg-muted rounded-lg">
-              <h3 className="font-semibold mb-2">Fichiers requis (un par un) :</h3>
-              <ul className="list-disc ml-5 text-sm text-muted-foreground">
-                <li>sketch.js (Logique)</li>
-                <li>data.js (Données)</li>
-                <li>hud.js (Interface)</li>
-                <li>assets (Images/Sons si besoin)</li>
-              </ul>
+              <h3 className="font-semibold mb-2">État du dossier :</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Si vous avez copié les fichiers manuellement, cliquez simplement sur "Générer index.html" ci-dessous pour finaliser l'import.
+                Sinon, uploadez les fichiers manquants ici.
+              </p>
             </div>
 
             <div className="flex flex-col gap-4">
-              <Label>Uploader un fichier</Label>
+              <Label>Ajouter un fichier manquant</Label>
               <Input 
                 type="file" 
                 onChange={handleFileUpload} 
@@ -177,12 +196,9 @@ export default function AdminPage() {
             </div>
 
             <div className="pt-4 border-t">
-              <Button onClick={handleGenerateIndex} className="w-full" variant="secondary">
-                🪄 Générer & Injecter index.html (Finaliser)
+              <Button onClick={handleGenerateIndex} className="w-full h-12 text-lg" variant="default">
+                🚀 Générer index.html & Finaliser
               </Button>
-              <p className="text-xs text-center mt-2 text-muted-foreground">
-                Crée le fichier index.html avec la configuration injectée pour ce jeu.
-              </p>
             </div>
           </CardContent>
         </Card>
