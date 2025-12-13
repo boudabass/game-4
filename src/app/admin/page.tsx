@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,16 +22,7 @@ import {
   updateGameMetadata,
   GameFolder 
 } from "@/app/actions/game-manager";
-import { FileIcon, FileCode, ImageIcon, FileText, Upload, Trash2, Edit, Save, FolderOpen, FolderPlus, Layers } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { FileCode, ImageIcon, FileText, Trash2, Edit, Save, FolderOpen, FolderPlus, Layers } from "lucide-react";
 
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
@@ -40,6 +31,9 @@ export default function AdminPage() {
   
   // États Creation / Import
   const [newGameName, setNewGameName] = useState("");
+  const [gameWidth, setGameWidth] = useState(800);
+  const [gameHeight, setGameHeight] = useState(600);
+
   const [selectedGame, setSelectedGame] = useState("");
   const [newVersionName, setNewVersionName] = useState("");
   
@@ -50,7 +44,7 @@ export default function AdminPage() {
 
   // État Edition
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", description: "" });
+  const [editForm, setEditForm] = useState({ name: "", description: "", width: 800, height: 600 });
 
   useEffect(() => {
     refreshGames();
@@ -94,11 +88,11 @@ export default function AdminPage() {
 
   const handleCreateGame = async () => {
     if (!newGameName) return toast.error("Nom du jeu requis");
-    const res = await createGameFolder(newGameName);
+    const res = await createGameFolder(newGameName, gameWidth, gameHeight);
     if (res.success) {
       toast.success(res.message);
       setActivePath({ name: res.gameName!, version: res.version! });
-      setMode("manage"); // Switch to manage after creation to show files if needed or just refresh
+      setMode("manage"); 
       refreshGames();
     }
   };
@@ -176,17 +170,17 @@ export default function AdminPage() {
   };
 
   const startEditing = (game: GameFolder, version: string) => {
-    // Note: Pour simplifier, on édite les infos basées sur la DB du jeu (qui sont liées à la dernière version importée généralement)
-    // Idéalement il faudrait récupérer les infos spécifiques de la version
     setEditingId(`${game.name}-${version}`);
     setEditForm({ 
         name: game.prettyName || game.name, 
-        description: game.description || "" 
+        description: game.description || "",
+        width: game.width || 800,
+        height: game.height || 600
     });
   };
 
   const saveEditing = async (gameName: string, version: string) => {
-    await updateGameMetadata(gameName, version, editForm.name, editForm.description);
+    await updateGameMetadata(gameName, version, editForm.name, editForm.description, editForm.width, editForm.height);
     toast.success("Métadonnées mises à jour");
     setEditingId(null);
     refreshGames();
@@ -258,6 +252,7 @@ export default function AdminPage() {
                                         <span className="text-xs font-normal text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">{game.name}</span>
                                     </h3>
                                     {game.description && <p className="text-sm text-slate-500 mt-1 line-clamp-1">{game.description}</p>}
+                                    <p className="text-xs text-slate-400 mt-1">Résolution : {game.width || 800}x{game.height || 600}</p>
                                 </div>
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteGame(game.name)}>
                                     <Trash2 className="w-4 h-4" />
@@ -300,6 +295,16 @@ export default function AdminPage() {
                                                         <Label>Titre (Affichage)</Label>
                                                         <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
                                                     </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <Label>Largeur</Label>
+                                                            <Input type="number" value={editForm.width} onChange={e => setEditForm({...editForm, width: Number(e.target.value)})} />
+                                                        </div>
+                                                        <div>
+                                                            <Label>Hauteur</Label>
+                                                            <Input type="number" value={editForm.height} onChange={e => setEditForm({...editForm, height: Number(e.target.value)})} />
+                                                        </div>
+                                                    </div>
                                                     <div className="grid gap-2">
                                                         <Label>Description</Label>
                                                         <Textarea value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} />
@@ -339,12 +344,26 @@ export default function AdminPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex gap-2">
-                        <Input placeholder="Nouveau nom (ex: snake)" value={newGameName} onChange={(e) => setNewGameName(e.target.value)} />
-                        <Button onClick={handleCreateGame} variant={isGameUpdate ? "secondary" : "default"}>
-                            {isGameUpdate ? "MàJ v1" : "Créer"}
-                        </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Nom (Identifiant dossier)</Label>
+                            <Input placeholder="ex: snake" value={newGameName} onChange={(e) => setNewGameName(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                             <div className="space-y-2">
+                                <Label>Largeur</Label>
+                                <Input type="number" value={gameWidth} onChange={(e) => setGameWidth(Number(e.target.value))} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Hauteur</Label>
+                                <Input type="number" value={gameHeight} onChange={(e) => setGameHeight(Number(e.target.value))} />
+                            </div>
+                        </div>
                     </div>
+                    
+                    <Button onClick={handleCreateGame} variant={isGameUpdate ? "secondary" : "default"} className="w-full">
+                        {isGameUpdate ? "Mettre à jour v1" : "Créer le jeu"}
+                    </Button>
                 </CardContent>
             </Card>
           )}

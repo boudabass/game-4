@@ -60,6 +60,8 @@ export interface GameFolder {
   isImported: boolean;
   description?: string; // Depuis la DB
   prettyName?: string; // Depuis la DB
+  width?: number; // Depuis la DB
+  height?: number; // Depuis la DB
 }
 
 export async function listGamesFolders(): Promise<GameFolder[]> {
@@ -120,7 +122,9 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
         lastModified: stats.mtimeMs,
         isImported: hasImportedVersion,
         description: dbGameInfo?.description,
-        prettyName: dbGameInfo?.name
+        prettyName: dbGameInfo?.name,
+        width: dbGameInfo?.width || 800,
+        height: dbGameInfo?.height || 600
       };
     });
 
@@ -144,7 +148,7 @@ export async function listGameFiles(gameName: string, versionName: string): Prom
 }
 
 // --- CRÉATION / MISE À JOUR JEU ---
-export async function createGameFolder(gameName: string) {
+export async function createGameFolder(gameName: string, width = 800, height = 600) {
   const safeName = gameName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const dirPath = path.join(GAMES_DIR, safeName, 'v1');
   
@@ -161,6 +165,8 @@ export async function createGameFolder(gameName: string) {
       const g = games[existingIndex];
       if (meta.description) g.description = meta.description;
       if (meta.thumbnail) g.thumbnail = meta.thumbnail;
+      g.width = width;
+      g.height = height;
     });
   } else {
     await db.update(({ games }) => games.push({
@@ -170,7 +176,9 @@ export async function createGameFolder(gameName: string) {
       path: `${safeName}/v1`,
       version: 'v1',
       thumbnail: meta.thumbnail,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      width,
+      height
     }));
   }
 
@@ -198,6 +206,11 @@ export async function createGameVersion(gameName: string, versionName: string) {
   const db = await getDb();
   const gameId = `${gameName}-${safeVersion}`;
   
+  // Récupérer les dimensions du jeu parent s'il existe pour pré-remplir
+  const parentGame = db.data.games.find(g => g.name === gameName);
+  const defaultWidth = parentGame?.width || 800;
+  const defaultHeight = parentGame?.height || 600;
+
   const existingIndex = db.data.games.findIndex(g => g.id === gameId);
 
   if (existingIndex >= 0) {
@@ -214,7 +227,9 @@ export async function createGameVersion(gameName: string, versionName: string) {
       path: `${gameName}/${safeVersion}`,
       version: safeVersion,
       thumbnail: meta.thumbnail,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      width: defaultWidth,
+      height: defaultHeight
     }));
   }
 
@@ -368,9 +383,6 @@ export async function deleteGame(gameFolderName: string) {
     // Supprimer les scores associés
     const scoresToKeep = scores.filter(s => !s.gameId.startsWith(`${safeName}-`));
     
-    // Mutation directe car lowdb v7+ utilise Immer si configuré, ou réassignation
-    // Ici on réassigne pour être sûr avec l'adaptateur JSONFilePreset par défaut
-    // Note: JSONFilePreset utilise l'objet data directement.
     return { games: gamesToKeep, scores: scoresToKeep };
   });
 
@@ -400,7 +412,7 @@ export async function deleteVersion(gameFolderName: string, versionName: string)
   return { success: true };
 }
 
-export async function updateGameMetadata(gameFolderName: string, version: string, newName: string, newDescription: string) {
+export async function updateGameMetadata(gameFolderName: string, version: string, newName: string, newDescription: string, width: number, height: number) {
   const safeName = gameFolderName.replace(/[^a-z0-9-]/g, '-');
   const safeVersion = version.replace(/[^a-z0-9-]/g, '-');
   const gameId = `${safeName}-${safeVersion}`;
@@ -412,6 +424,8 @@ export async function updateGameMetadata(gameFolderName: string, version: string
     if (game) {
       game.name = newName;
       game.description = newDescription;
+      game.width = width;
+      game.height = height;
     }
   });
 

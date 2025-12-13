@@ -47,7 +47,12 @@ export default async function PlayPage(props: PlayPageProps) {
       {/* Zone de jeu */}
       <main className="flex-1 flex flex-col items-center justify-center p-4">
         
-        <GamePlayer gameUrl={gameUrl} gameName={game.name} />
+        <GamePlayer 
+            gameUrl={gameUrl} 
+            gameName={game.name} 
+            width={game.width} 
+            height={game.height}
+        />
         
         <p className="text-slate-400 mt-4 text-center max-w-lg">
           {game.description}

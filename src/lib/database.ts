@@ -15,6 +15,9 @@ export interface GameMetadata {
   version: string;
   thumbnail?: string;
   createdAt: string;
+  // Nouvelles propriétés pour la résolution
+  width?: number;
+  height?: number;
 }
 
 export interface Data {

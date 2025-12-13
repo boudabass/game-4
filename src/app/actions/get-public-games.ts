@@ -7,8 +7,10 @@ export interface PublicGame {
   name: string;
   description: string;
   version: string;
-  path: string; // Ajouté
+  path: string;
   thumbnail?: string;
+  width: number;
+  height: number;
   bestScore: {
     playerName: string;
     value: number;
@@ -34,8 +36,10 @@ export async function getPublicGames(): Promise<PublicGame[]> {
       name: game.name,
       description: game.description,
       version: game.version,
-      path: game.path, // Mapping du path
+      path: game.path,
       thumbnail: game.thumbnail,
+      width: game.width || 800,
+      height: game.height || 600,
       bestScore: bestScoreEntry ? {
         playerName: bestScoreEntry.playerName,
         value: bestScoreEntry.score
