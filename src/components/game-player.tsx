@@ -38,13 +38,6 @@ export function GamePlayer({ gameUrl, gameName }: GamePlayerProps) {
         </div>
       )}
 
-      {/* Indication visuelle au survol */}
-      {!isLoading && (
-        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none select-none">
-          Cliquez sur le jeu pour activer les contrôles
-        </div>
-      )}
-
       {/* Iframe */}
       <iframe
         ref={iframeRef}
