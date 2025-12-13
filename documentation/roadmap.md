@@ -1,8 +1,8 @@
 # Roadmap & État du Projet : Game Center Seniors
 
-## 🏁 État Actuel (v1.0 - Stable)
+## 🏁 État Actuel (v1.1 - Frontend Public)
 
-L'architecture est **hybride et robuste**, conçue pour fonctionner sur un serveur auto-hébergé avec Docker.
+L'architecture est **hybride et robuste**. La plateforme est désormais jouable avec une interface dédiée aux seniors.
 
 ### 🏗️ Architecture Validée
 
@@ -13,60 +13,42 @@ L'architecture est **hybride et robuste**, conçue pour fonctionner sur un serve
 
 2.  **Fichiers de Jeux (Statique) :**
     *   **Stockage :** Dossier physique `/public/games/{jeu}/{version}/`.
-    *   **Accès :** Servis statiquement par Next.js (ou Nginx en front).
-    *   **Structure :** Chaque version est isolée pour éviter les conflits de cache.
+    *   **Accès :** Servis statiquement par Next.js.
 
 3.  **Le "Pont" (GameAPI) :**
-    *   **Problème résolu :** Comment un jeu statique (iframe) parle à la base de données serveur ?
-    *   **Solution :** Le fichier `index.html` est **généré dynamiquement** par l'Admin.
-    *   **Injection :** Il contient un script invisible `window.GameAPI` qui expose `saveScore()` et `getHighScores()`.
-    *   **Fonctionnement :** Ce script fait des appels `fetch` vers l'API Next.js `/api/scores`. Le développeur du jeu n'a pas à gérer le réseau, juste appeler la fonction JS.
+    *   **Injection :** `index.html` généré par l'admin contient `window.GameAPI`.
+    *   **Fonctionnement :** Appels `fetch` vers l'API Next.js `/api/scores`.
 
 ### ✅ Fonctionnalités Implémentées
 
-#### 1. Authentification
-*   [x] Page de Login (`/login`) via Supabase Auth.
-*   [x] Protection de la route `/admin` via Middleware.
+#### 1. Authentification & Admin
+*   [x] Page de Login (`/login`) & Protection `/admin`.
+*   [x] Détection, Création, Versioning et Upload de jeux.
+*   [x] Génération du fichier `index.html` (injection du pont API).
 
-#### 2. Administration & Import
-*   [x] **Détection Automatique :** Scanne le disque pour trouver les dossiers copiés manuellement.
-*   [x] **Feedback Visuel :** Distingue les jeux déjà en base (✅) des nouveaux dossiers détectés (🆕).
-*   [x] **Import Idempotent :** "Créer un jeu" sur un dossier existant ne l'écrase pas, mais l'enregistre en DB.
-*   [x] **Gestion des Versions :** Supporte `v1`, `v2`, etc. Trié par date de modification.
+#### 2. API & Scores
+*   [x] **POST /api/scores** : Sauvegarde dans Lowdb.
+*   [x] **GET /api/scores** : Récupération du Top 10.
 
-#### 3. Génération & Upload
-*   [x] **Upload Fichier par Fichier :** Permet de compléter un dossier manquant via l'interface web.
-*   [x] **Générateur Intelligent :** Le bouton "Générer index.html" :
-    1.  Scanne tous les `.js` du dossier.
-    2.  Les trie (data -> libs -> hud -> sketch).
-    3.  Injecte la configuration (`gameId`) et le pont `GameAPI`.
-    4.  Crée le fichier `index.html` final.
-
-#### 4. API & Scores
-*   [x] **POST /api/scores :** Reçoit `{gameId, score, playerName}` et écrit dans Lowdb.
-*   [x] **GET /api/scores :** Renvoie le Top 10 pour un jeu donné.
+#### 3. Frontend Public ("Senior First")
+*   [x] **Accueil (`/`)** : Grille de jeux lisible, affichage des meilleurs scores.
+*   [x] **Zone de Jeu (`/play/[id]`)** : Mode plein écran immersif (iframe) avec bouton de sortie sécurisé.
 
 ### 🐳 Infrastructure Docker
 
-*   **Volumes :**
-    *   `/mnt/share1/apps/gamesenior/data` -> `/app/data` (Base de données).
-    *   `/mnt/share1/apps/gamesenior/games` -> `/app/public/games` (Fichiers statiques).
-*   **Persistance :** Les données survivent au redémarrage et à la reconstruction du conteneur.
+*   **Volumes :** `data` (JSON) et `games` (Fichiers) sont persistants.
 
 ---
 
 ## 📅 Prochaines Étapes (Backlog)
 
-1.  **Frontend Public (`/`) :**
-    *   Créer la grille des jeux pour les seniors (Grosses cartes, images).
-    *   Lire `db.json` pour afficher la liste.
-    *   Afficher le "Meilleur Score" sur la carte du jeu.
+1.  **Gestion des Images (Prioritaire) :**
+    *   Ajouter une zone d'upload spécifique pour le Thumbnail (`thumbnail.png`) dans l'Admin.
+    *   Redimensionner ou optimiser les images si nécessaire.
 
-2.  **Page de Jeu (`/play/[gameId]`) :**
-    *   Afficher l'iframe en plein écran.
-    *   Gérer le bouton "Retour" (Gros bouton rouge).
+2.  **Améliorations Admin :**
+    *   Pouvoir supprimer un jeu ou une version.
+    *   Éditer le "Joli Nom" et la description d'un jeu sans recréer une version.
 
-3.  **Améliorations Admin :**
-    *   Pouvoir supprimer un jeu (Physique + DB).
-    *   Éditer le "Joli Nom" et la description d'un jeu.
-    *   Uploader une image miniature pour le menu.
+3.  **Mode Hors-ligne (PWA) :**
+    *   Rendre l'application installable sur tablette.

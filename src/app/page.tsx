@@ -7,19 +7,6 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 
 export const dynamic = 'force-dynamic';
 
-export interface PublicGame {
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  path?: string; // Ajout du path
-  thumbnail?: string;
-  bestScore: {
-    playerName: string;
-    value: number;
-  } | null;
-}
-
 export default async function Home() {
   const games = await getPublicGames();
 
