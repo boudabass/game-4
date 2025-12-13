@@ -16,7 +16,6 @@ export function GamePlayer({ gameUrl, gameName, width = 800, height = 600 }: Gam
 
   const handleLoad = () => {
     setIsLoading(false);
-    // Tente de donner le focus au jeu immédiatement
     focusGame();
   };
 
@@ -26,14 +25,20 @@ export function GamePlayer({ gameUrl, gameName, width = 800, height = 600 }: Gam
     }
   };
 
-  // Calcul du ratio pour l'aspect CSS
   const aspectRatio = width / height;
 
   return (
-    <div className="flex justify-center w-full">
+    <div className="flex justify-center items-center w-full h-full p-4">
+        {/* Conteneur de ratio dynamique */}
         <div 
-          className="w-full max-w-[1200px] bg-black rounded-xl overflow-hidden shadow-2xl border-4 border-slate-700 relative group"
-          style={{ aspectRatio: `${aspectRatio}` }}
+          className="relative bg-black rounded-xl overflow-hidden shadow-2xl border-4 border-slate-700"
+          style={{ 
+            aspectRatio: `${aspectRatio}`,
+            width: '100%',
+            height: 'auto',
+            maxHeight: '80vh', // Limite la hauteur à 80% de la fenêtre
+            maxWidth: `calc(80vh * ${aspectRatio})` // Empêche d'être trop large si on est limité par la hauteur
+          }}
           onClick={focusGame} 
         >
           
@@ -50,8 +55,7 @@ export function GamePlayer({ gameUrl, gameName, width = 800, height = 600 }: Gam
             ref={iframeRef}
             src={gameUrl}
             onLoad={handleLoad}
-            className="w-full h-full border-0 relative z-0 block"
-            // Permissions étendues
+            className="w-full h-full border-0 block"
             allow="autoplay; fullscreen; gamepad; accelerometer; gyroscope; microphone; camera; midi"
             title={`Jeu ${gameName}`}
           />

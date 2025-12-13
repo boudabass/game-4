@@ -20,7 +20,8 @@ import {
   deleteGame,
   deleteVersion,
   updateGameMetadata,
-  GameFolder 
+  GameFolder,
+  GameVersionInfo
 } from "@/app/actions/game-manager";
 import { FileCode, ImageIcon, FileText, Trash2, Edit, Save, FolderOpen, FolderPlus, Layers } from "lucide-react";
 
@@ -169,13 +170,13 @@ export default function AdminPage() {
     if (activePath?.name === gameName && activePath?.version === version) setActivePath(null);
   };
 
-  const startEditing = (game: GameFolder, version: string) => {
-    setEditingId(`${game.name}-${version}`);
+  const startEditing = (game: GameFolder, version: GameVersionInfo) => {
+    setEditingId(`${game.name}-${version.name}`);
     setEditForm({ 
         name: game.prettyName || game.name, 
-        description: game.description || "",
-        width: game.width || 800,
-        height: game.height || 600
+        description: version.description || game.description || "",
+        width: version.width || game.width || 800,
+        height: version.height || game.height || 600
     });
   };
 
@@ -252,7 +253,6 @@ export default function AdminPage() {
                                         <span className="text-xs font-normal text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">{game.name}</span>
                                     </h3>
                                     {game.description && <p className="text-sm text-slate-500 mt-1 line-clamp-1">{game.description}</p>}
-                                    <p className="text-xs text-slate-400 mt-1">Résolution : {game.width || 800}x{game.height || 600}</p>
                                 </div>
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteGame(game.name)}>
                                     <Trash2 className="w-4 h-4" />
@@ -270,7 +270,7 @@ export default function AdminPage() {
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-mono text-sm font-bold text-blue-600">{v.name}</span>
                                                     {v.isImported ? 
-                                                        <span className="text-xs bg-green-100 text-green-700 px-2 rounded-full">Actif</span> : 
+                                                        <span className="text-xs bg-green-100 text-green-700 px-2 rounded-full">Actif {v.width}x{v.height}</span> : 
                                                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 rounded-full">Non importé</span>
                                                     }
                                                 </div>
@@ -279,7 +279,7 @@ export default function AdminPage() {
                                                         Fichiers
                                                     </Button>
                                                     {v.isImported && !isEditing && (
-                                                        <Button variant="ghost" size="sm" onClick={() => startEditing(game, v.name)}>
+                                                        <Button variant="ghost" size="sm" onClick={() => startEditing(game, v)}>
                                                             <Edit className="w-4 h-4" />
                                                         </Button>
                                                     )}
@@ -361,7 +361,7 @@ export default function AdminPage() {
                         </div>
                     </div>
                     
-                    <Button onClick={handleCreateGame} variant={isGameUpdate ? "secondary" : "default"} className="w-full">
+                    <Button onClick={handleCreateGame} variant={isGameUpdate ? "secondary" : "default" className="w-full">
                         {isGameUpdate ? "Mettre à jour v1" : "Créer le jeu"}
                     </Button>
                 </CardContent>

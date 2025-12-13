@@ -21,20 +21,14 @@ async function readLocalMetadata(dirPath: string) {
   let description = undefined;
   let thumbnail = undefined;
 
-  // 1. Lire description.md
   try {
     description = await fs.readFile(path.join(dirPath, 'description.md'), 'utf-8');
-  } catch (e) {
-    // Pas de description
-  }
+  } catch (e) {}
 
-  // 2. Vérifier thumbnail.png
   try {
     await fs.access(path.join(dirPath, 'thumbnail.png'));
     thumbnail = 'thumbnail.png';
-  } catch (e) {
-    // Pas d'image
-  }
+  } catch (e) {}
 
   return { description, thumbnail };
 }
@@ -50,7 +44,11 @@ export interface GameVersionInfo {
   name: string;
   lastModified: number;
   isImported: boolean;
-  dbId?: string; // ID dans la DB si importé
+  dbId?: string;
+  // Dimensions spécifiques à la version
+  width?: number;
+  height?: number;
+  description?: string;
 }
 
 export interface GameFolder {
@@ -58,10 +56,11 @@ export interface GameFolder {
   versions: GameVersionInfo[];
   lastModified: number;
   isImported: boolean;
-  description?: string; // Depuis la DB
-  prettyName?: string; // Depuis la DB
-  width?: number; // Depuis la DB
-  height?: number; // Depuis la DB
+  // Infos globales (pour l'affichage générique)
+  description?: string;
+  prettyName?: string;
+  width?: number;
+  height?: number;
 }
 
 export async function listGamesFolders(): Promise<GameFolder[]> {
@@ -81,7 +80,7 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
       
       let versions: GameVersionInfo[] = [];
       let hasImportedVersion = false;
-      let dbGameInfo = null;
+      let lastImportedGame = null;
 
       try {
         const versionEntries = await readdir(gamePath, { withFileTypes: true });
@@ -100,14 +99,18 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
               const foundGame = dbGames.find(g => g.id === expectedId);
               if (foundGame) {
                 hasImportedVersion = true;
-                dbGameInfo = foundGame; // On prend le dernier trouvé pour les infos globales
+                lastImportedGame = foundGame;
               }
 
               return { 
                 name: v.name, 
                 lastModified: vStats.mtimeMs,
                 isImported: !!foundGame,
-                dbId: foundGame?.id
+                dbId: foundGame?.id,
+                // On passe les infos spécifiques de CETTE version
+                width: foundGame?.width || 800,
+                height: foundGame?.height || 600,
+                description: foundGame?.description
               };
             })
         );
@@ -121,10 +124,10 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
         versions,
         lastModified: stats.mtimeMs,
         isImported: hasImportedVersion,
-        description: dbGameInfo?.description,
-        prettyName: dbGameInfo?.name,
-        width: dbGameInfo?.width || 800,
-        height: dbGameInfo?.height || 600
+        description: lastImportedGame?.description,
+        prettyName: lastImportedGame?.name,
+        width: lastImportedGame?.width || 800,
+        height: lastImportedGame?.height || 600
       };
     });
 
@@ -140,7 +143,6 @@ export async function listGameFiles(gameName: string, versionName: string): Prom
 
   try {
     const files = await readdir(dirPath);
-    // On cache les fichiers système cachés
     return files.filter(f => !f.startsWith('.')).sort();
   } catch (e) {
     return [];
@@ -187,7 +189,7 @@ export async function createGameFolder(gameName: string, width = 800, height = 6
     success: true, 
     gameName: safeName, 
     version: 'v1', 
-    message: existingIndex >= 0 ? "Jeu mis à jour (Métadonnées rechargées)" : "Nouveau jeu créé" 
+    message: existingIndex >= 0 ? "Jeu mis à jour" : "Nouveau jeu créé" 
   };
 }
 
@@ -206,7 +208,7 @@ export async function createGameVersion(gameName: string, versionName: string) {
   const db = await getDb();
   const gameId = `${gameName}-${safeVersion}`;
   
-  // Récupérer les dimensions du jeu parent s'il existe pour pré-remplir
+  // Récupérer les dimensions du jeu parent pour pré-remplir
   const parentGame = db.data.games.find(g => g.name === gameName);
   const defaultWidth = parentGame?.width || 800;
   const defaultHeight = parentGame?.height || 600;
@@ -238,7 +240,7 @@ export async function createGameVersion(gameName: string, versionName: string) {
     success: true, 
     gameName, 
     version: safeVersion, 
-    message: existingIndex >= 0 ? "Version mise à jour (Métadonnées rechargées)" : "Nouvelle version créée" 
+    message: existingIndex >= 0 ? "Version mise à jour" : "Nouvelle version créée" 
   };
 }
 
@@ -258,7 +260,7 @@ export async function uploadGameFile(gameName: string, version: string, formData
   return { success: true, fileName: file.name };
 }
 
-// Upload SPÉCIFIQUE pour le thumbnail (Update DB auto)
+// Upload SPÉCIFIQUE pour le thumbnail
 export async function uploadGameThumbnail(gameName: string, version: string, formData: FormData) {
   const file = formData.get('file') as File;
   if (!file) return { success: false, error: "Pas de fichier fourni" };
@@ -269,13 +271,11 @@ export async function uploadGameThumbnail(gameName: string, version: string, for
   const safeName = gameName.replace(/[^a-z0-9-]/g, '-');
   const safeVersion = version.replace(/[^a-z0-9-]/g, '-');
   
-  // On renomme systématiquement en thumbnail.png
   const fileName = 'thumbnail.png'; 
   const filePath = path.join(GAMES_DIR, safeName, safeVersion, fileName);
 
   await fs.writeFile(filePath, buffer);
 
-  // Mise à jour de la DB
   const gameId = `${gameName}-${safeVersion}`;
   const db = await getDb();
   await db.update(({ games }) => {
@@ -321,7 +321,7 @@ export async function generateIndexHtml(gameName: string, version: string, confi
     <title>${gameName}</title>
     <style>
         body { margin: 0; overflow: hidden; background: ${config.bgColor || '#000'}; }
-        canvas { display: block; }
+        canvas { display: block; margin: 0 auto; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
@@ -362,27 +362,20 @@ export async function generateIndexHtml(gameName: string, version: string, confi
   return { success: true };
 }
 
-// --- GESTION ET SUPPRESSION ---
-
 export async function deleteGame(gameFolderName: string) {
   const safeName = gameFolderName.replace(/[^a-z0-9-]/g, '-');
   const gamePath = path.join(GAMES_DIR, safeName);
 
-  // 1. Supprimer le dossier physique
   try {
     await fs.rm(gamePath, { recursive: true, force: true });
   } catch (e) {
     console.error("Erreur suppression dossier", e);
   }
 
-  // 2. Nettoyer la DB (Jeux + Scores)
   const db = await getDb();
   await db.update(({ games, scores }) => {
-    // Supprimer toutes les versions du jeu (ID commence par "tetris-")
     const gamesToKeep = games.filter(g => !g.id.startsWith(`${safeName}-`));
-    // Supprimer les scores associés
     const scoresToKeep = scores.filter(s => !s.gameId.startsWith(`${safeName}-`));
-    
     return { games: gamesToKeep, scores: scoresToKeep };
   });
 
@@ -395,12 +388,10 @@ export async function deleteVersion(gameFolderName: string, versionName: string)
   const versionPath = path.join(GAMES_DIR, safeName, safeVersion);
   const gameId = `${safeName}-${safeVersion}`;
 
-  // 1. Supprimer le dossier de la version
   try {
     await fs.rm(versionPath, { recursive: true, force: true });
   } catch (e) {}
 
-  // 2. Nettoyer DB pour cette version spécifique
   const db = await getDb();
   await db.update(({ games, scores }) => {
     return {
@@ -429,7 +420,6 @@ export async function updateGameMetadata(gameFolderName: string, version: string
     }
   });
 
-  // Mettre à jour description.md pour garder la synchro
   try {
     await fs.writeFile(path.join(dirPath, 'description.md'), newDescription);
   } catch(e) {}
