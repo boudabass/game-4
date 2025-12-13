@@ -16,7 +16,31 @@ async function ensureGamesDir() {
   }
 }
 
-// Récupérer les jeux depuis la DB (Métadonnées uniquement pour l'admin)
+// --- UTILITAIRE DE LECTURE DES MÉTADONNÉES LOCALES ---
+async function readLocalMetadata(dirPath: string) {
+  let description = undefined;
+  let thumbnail = undefined;
+
+  // 1. Lire description.md
+  try {
+    description = await fs.readFile(path.join(dirPath, 'description.md'), 'utf-8');
+  } catch (e) {
+    // Pas de description, on garde undefined pour ne pas écraser l'existant s'il y en a un en DB, 
+    // ou on mettra une valeur par défaut plus tard
+  }
+
+  // 2. Vérifier thumbnail.png
+  try {
+    await fs.access(path.join(dirPath, 'thumbnail.png'));
+    thumbnail = 'thumbnail.png';
+  } catch (e) {
+    // Pas d'image
+  }
+
+  return { description, thumbnail };
+}
+
+// Récupérer les jeux depuis la DB
 export async function listGamesFromDb() {
   const db = await getDb();
   await db.read();
@@ -39,23 +63,17 @@ export interface GameFolder {
 export async function listGamesFolders(): Promise<GameFolder[]> {
   await ensureGamesDir();
   
-  // 1. Lire la DB pour savoir ce qui est déjà connu
   const db = await getDb();
   await db.read();
   const dbGames = db.data.games;
 
   const entries = await readdir(GAMES_DIR, { withFileTypes: true });
   
-  // On construit la liste avec les dates de modif et le statut d'import
   const gameFoldersPromises = entries
     .filter(entry => entry.isDirectory())
     .map(async (entry) => {
       const gamePath = path.join(GAMES_DIR, entry.name);
       const stats = await stat(gamePath);
-      
-      // Est-ce que ce jeu a au moins une version en DB ?
-      // L'ID est généralement "nom-version", donc on cherche un match approximatif ou on checke les versions
-      // Simplification : si une version est importée, le jeu est considéré comme connu.
       
       let versions: GameVersionInfo[] = [];
       let hasImportedVersion = false;
@@ -70,8 +88,6 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
               const vPath = path.join(gamePath, v.name);
               const vStats = await stat(vPath);
               
-              // Vérifier si cette version spécifique est en DB
-              // On normalise les noms comme lors de la création pour comparer
               const safeGameName = entry.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
               const safeVersionName = v.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
               const expectedId = `${safeGameName}-${safeVersionName}`;
@@ -87,12 +103,9 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
             })
         );
 
-        // Trier versions par date (récent en haut)
         versions = versionsWithStats.sort((a, b) => b.lastModified - a.lastModified);
 
-      } catch (e) {
-        // Ignorer si vide
-      }
+      } catch (e) {}
 
       return {
         name: entry.name,
@@ -103,38 +116,56 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
     });
 
   const gameFolders = await Promise.all(gameFoldersPromises);
-
-  // TRI : Plus récent en haut
   return gameFolders.sort((a, b) => b.lastModified - a.lastModified);
 }
 
-// ... (Le reste des fonctions createGameFolder, createGameVersion, etc. reste identique, je ne les réécris pas pour économiser des tokens sauf si demandé, mais je dois garder le fichier complet valide donc je remets les signatures)
-
+// --- CRÉATION / MISE À JOUR JEU ---
 export async function createGameFolder(gameName: string) {
   const safeName = gameName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const dirPath = path.join(GAMES_DIR, safeName, 'v1');
   
   await fs.mkdir(dirPath, { recursive: true });
 
+  // Lire les métadonnées sur le disque (si fichiers présents)
+  const meta = await readLocalMetadata(dirPath);
+
   const db = await getDb();
   const gameId = `${safeName}-v1`;
   
-  const exists = db.data.games.find(g => g.id === gameId);
-  if (!exists) {
+  const existingIndex = db.data.games.findIndex(g => g.id === gameId);
+  
+  if (existingIndex >= 0) {
+    // MISE À JOUR (UPDATE)
+    await db.update(({ games }) => {
+      const g = games[existingIndex];
+      // On met à jour si une nouvelle valeur est trouvée, sinon on garde l'ancienne
+      if (meta.description) g.description = meta.description;
+      if (meta.thumbnail) g.thumbnail = meta.thumbnail;
+      // On force la mise à jour de la date ? Optionnel.
+    });
+  } else {
+    // CRÉATION (INSERT)
     await db.update(({ games }) => games.push({
       id: gameId,
       name: gameName,
-      description: "Description par défaut",
+      description: meta.description || "Description par défaut",
       path: `${safeName}/v1`,
       version: 'v1',
+      thumbnail: meta.thumbnail,
       createdAt: new Date().toISOString()
     }));
   }
 
   await generateIndexHtml(safeName, 'v1', { bgColor: '#000000' });
-  return { success: true, gameName: safeName, version: 'v1', message: exists ? "Jeu existant mis à jour" : "Nouveau jeu créé" };
+  return { 
+    success: true, 
+    gameName: safeName, 
+    version: 'v1', 
+    message: existingIndex >= 0 ? "Jeu mis à jour (Métadonnées rechargées)" : "Nouveau jeu créé" 
+  };
 }
 
+// --- CRÉATION / MISE À JOUR VERSION ---
 export async function createGameVersion(gameName: string, versionName: string) {
   const safeVersion = versionName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const dirPath = path.join(GAMES_DIR, gameName, safeVersion);
@@ -145,23 +176,40 @@ export async function createGameVersion(gameName: string, versionName: string) {
     await fs.mkdir(dirPath, { recursive: true });
   }
 
+  const meta = await readLocalMetadata(dirPath);
+
   const db = await getDb();
   const gameId = `${gameName}-${safeVersion}`;
   
-  const exists = db.data.games.find(g => g.id === gameId);
-  if (!exists) {
+  const existingIndex = db.data.games.findIndex(g => g.id === gameId);
+
+  if (existingIndex >= 0) {
+    // UPDATE
+    await db.update(({ games }) => {
+      const g = games[existingIndex];
+      if (meta.description) g.description = meta.description;
+      if (meta.thumbnail) g.thumbnail = meta.thumbnail;
+    });
+  } else {
+    // INSERT
     await db.update(({ games }) => games.push({
       id: gameId,
       name: gameName,
-      description: `Version ${safeVersion}`,
+      description: meta.description || `Version ${safeVersion}`,
       path: `${gameName}/${safeVersion}`,
       version: safeVersion,
+      thumbnail: meta.thumbnail,
       createdAt: new Date().toISOString()
     }));
   }
 
   await generateIndexHtml(gameName, safeVersion, { bgColor: '#000000' });
-  return { success: true, gameName, version: safeVersion, message: exists ? "Version mise à jour" : "Nouvelle version créée" };
+  return { 
+    success: true, 
+    gameName, 
+    version: safeVersion, 
+    message: existingIndex >= 0 ? "Version mise à jour (Métadonnées rechargées)" : "Nouvelle version créée" 
+  };
 }
 
 export async function uploadGameFile(gameName: string, version: string, formData: FormData) {

@@ -7,6 +7,19 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 
 export const dynamic = 'force-dynamic';
 
+export interface PublicGame {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  path?: string; // Ajout du path
+  thumbnail?: string;
+  bestScore: {
+    playerName: string;
+    value: number;
+  } | null;
+}
+
 export default async function Home() {
   const games = await getPublicGames();
 
@@ -30,9 +43,9 @@ export default async function Home() {
               <Card key={game.id} className="overflow-hidden border-2 hover:border-primary/50 transition-colors shadow-lg flex flex-col h-full">
                 {/* Zone Image / Thumbnail */}
                 <div className="h-48 bg-slate-200 flex items-center justify-center relative">
-                  {game.thumbnail ? (
+                  {game.thumbnail && game.path ? (
                     <img 
-                      src={`/games/${game.id}/${game.thumbnail}`} 
+                      src={`/games/${game.path}/${game.thumbnail}`} 
                       alt={game.name}
                       className="w-full h-full object-cover"
                     />

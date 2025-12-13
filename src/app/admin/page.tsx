@@ -20,6 +20,10 @@ export default function AdminPage() {
   const [selectedGame, setSelectedGame] = useState("");
   const [newVersionName, setNewVersionName] = useState("");
   
+  // États dérivés pour l'UI
+  const [isGameUpdate, setIsGameUpdate] = useState(false);
+  const [isVersionUpdate, setIsVersionUpdate] = useState(false);
+  
   // État Upload
   const [activePath, setActivePath] = useState<{name: string, version: string} | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -32,6 +36,24 @@ export default function AdminPage() {
     const g = await listGamesFolders();
     setGames(g);
   };
+
+  // Détecter si on est en mode Update pour le Jeu
+  useEffect(() => {
+    const existing = games.find(g => g.name === newGameName);
+    setIsGameUpdate(!!existing && existing.isImported);
+  }, [newGameName, games]);
+
+  // Détecter si on est en mode Update pour la Version
+  useEffect(() => {
+    if (!selectedGame) return;
+    const game = games.find(g => g.name === selectedGame);
+    if (game) {
+        // Simple check : est-ce que cette version est marquée comme importée dans la liste ?
+        const version = game.versions.find(v => v.name === newVersionName);
+        setIsVersionUpdate(!!version && version.isImported);
+    }
+  }, [selectedGame, newVersionName, games]);
+
 
   const handleCreateGame = async () => {
     if (!newGameName) return toast.error("Nom du jeu requis");
@@ -85,7 +107,6 @@ export default function AdminPage() {
     toast.success("index.html généré et injecté !");
   };
 
-  // Helper pour trouver les versions du jeu sélectionné
   const getSelectedGameVersions = () => {
     const game = games.find(g => g.name === selectedGame);
     return game?.versions || [];
@@ -143,8 +164,18 @@ export default function AdminPage() {
                   value={newGameName}
                   onChange={(e) => setNewGameName(e.target.value)}
                 />
-                <Button onClick={handleCreateGame}>Valider / Importer (V1)</Button>
+                <Button 
+                    onClick={handleCreateGame}
+                    variant={isGameUpdate ? "secondary" : "default"}
+                >
+                    {isGameUpdate ? "Mettre à jour / Relire" : "Créer / Importer (V1)"}
+                </Button>
               </div>
+              {isGameUpdate && (
+                  <p className="text-xs text-blue-500">
+                      Ce jeu existe déjà. Cliquer mettra à jour la base de données avec le contenu actuel du dossier (description.md, thumbnail.png).
+                  </p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -188,7 +219,12 @@ export default function AdminPage() {
                   value={newVersionName}
                   onChange={(e) => setNewVersionName(e.target.value)}
                 />
-                <Button onClick={handleCreateVersion}>Valider / Importer Version</Button>
+                <Button 
+                    onClick={handleCreateVersion}
+                    variant={isVersionUpdate ? "secondary" : "default"}
+                >
+                    {isVersionUpdate ? "Mettre à jour / Relire" : "Créer / Importer"}
+                </Button>
               </div>
             </div>
           )}
@@ -207,8 +243,9 @@ export default function AdminPage() {
             <div className="p-4 bg-muted rounded-lg">
               <h3 className="font-semibold mb-2">État du dossier :</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Si vous avez copié les fichiers manuellement, cliquez simplement sur "Générer index.html" ci-dessous pour finaliser l'import.
-                Sinon, uploadez les fichiers manquants ici.
+                Le système a potentiellement rechargé : <b>description.md</b> et <b>thumbnail.png</b>.
+                <br/>
+                Si vous avez modifié des fichiers, cliquez sur "Générer index.html" pour être sûr que tout est lié.
               </p>
             </div>
 
