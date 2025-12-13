@@ -44,5 +44,9 @@ next-env.d.ts
 # On ignore le contenu mais on garde les dossiers
 public/games/*
 !public/games/.gitkeep
+!public/games/Asteroids
+!public/games/forest
+
+
 data/*
 !data/.gitkeep

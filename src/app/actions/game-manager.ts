@@ -23,12 +23,12 @@ async function readLocalMetadata(dirPath: string) {
 
   try {
     description = await fs.readFile(path.join(dirPath, 'description.md'), 'utf-8');
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     await fs.access(path.join(dirPath, 'thumbnail.png'));
     thumbnail = 'thumbnail.png';
-  } catch (e) {}
+  } catch (e) { }
 
   return { description, thumbnail };
 }
@@ -63,45 +63,46 @@ export interface GameFolder {
 
 export async function listGamesFolders(): Promise<GameFolder[]> {
   await ensureGamesDir();
-  
+
   const db = await getDb();
   await db.read();
   const dbGames = db.data.games;
 
   const entries = await readdir(GAMES_DIR, { withFileTypes: true });
-  
+
   const gameFoldersPromises = entries
     .filter(entry => entry.isDirectory())
     .map(async (entry) => {
       const gamePath = path.join(GAMES_DIR, entry.name);
       const stats = await stat(gamePath);
-      
+
       let versions: GameVersionInfo[] = [];
       let hasImportedVersion = false;
-      let lastImportedGame: GameMetadata | null = null;
+      // lastImportedGame removed
 
       try {
         const versionEntries = await readdir(gamePath, { withFileTypes: true });
-        
+
         const versionsWithStats = await Promise.all(
           versionEntries
             .filter(v => v.isDirectory())
             .map(async (v) => {
               const vPath = path.join(gamePath, v.name);
               const vStats = await stat(vPath);
-              
+
               const safeGameName = entry.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
               const safeVersionName = v.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
               const expectedId = `${safeGameName}-${safeVersionName}`;
-              
+
               const foundGame = dbGames.find(g => g.id === expectedId);
               if (foundGame) {
                 hasImportedVersion = true;
-                lastImportedGame = foundGame;
+                // Retirer lastImportedGame qui cause des problèmes de portée/type
+                hasImportedVersion = true;
               }
 
-              return { 
-                name: v.name, 
+              return {
+                name: v.name,
                 lastModified: vStats.mtimeMs,
                 isImported: !!foundGame,
                 dbId: foundGame?.id,
@@ -114,17 +115,22 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
 
         versions = versionsWithStats.sort((a, b) => b.lastModified - a.lastModified);
 
-      } catch (e) {}
+      } catch (e) { }
+
+
+      // On récupère les métadonnées depuis la version importée (si elle existe)
+      const importedVersion = versions.find(v => v.isImported);
+      const importedGameMetadata = importedVersion?.dbId ? dbGames.find(g => g.id === importedVersion.dbId) : null;
 
       return {
         name: entry.name,
         versions,
         lastModified: stats.mtimeMs,
         isImported: hasImportedVersion,
-        description: lastImportedGame?.description,
-        prettyName: lastImportedGame?.name,
-        width: lastImportedGame?.width || 800,
-        height: lastImportedGame?.height || 600
+        description: importedGameMetadata?.description,
+        prettyName: importedGameMetadata?.name,
+        width: importedGameMetadata?.width || 800,
+        height: importedGameMetadata?.height || 600
       };
     });
 
@@ -150,15 +156,15 @@ export async function listGameFiles(gameName: string, versionName: string): Prom
 export async function createGameFolder(gameName: string, width = 800, height = 600) {
   const safeName = gameName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const dirPath = path.join(GAMES_DIR, safeName, 'v1');
-  
+
   await fs.mkdir(dirPath, { recursive: true });
 
   const meta = await readLocalMetadata(dirPath);
   const db = await getDb();
   const gameId = `${safeName}-v1`;
-  
+
   const existingIndex = db.data.games.findIndex(g => g.id === gameId);
-  
+
   if (existingIndex >= 0) {
     await db.update(({ games }) => {
       const g = games[existingIndex];
@@ -182,62 +188,72 @@ export async function createGameFolder(gameName: string, width = 800, height = 6
   }
 
   await generateIndexHtml(safeName, 'v1', { bgColor: '#000000' });
-  return { 
-    success: true, 
-    gameName: safeName, 
-    version: 'v1', 
-    message: existingIndex >= 0 ? "Jeu mis à jour" : "Nouveau jeu créé" 
+  return {
+    success: true,
+    gameName: safeName,
+    version: 'v1',
+    message: existingIndex >= 0 ? "Jeu mis à jour" : "Nouveau jeu créé"
   };
 }
 
 // --- CRÉATION / MISE À JOUR VERSION ---
 export async function createGameVersion(gameName: string, versionName: string) {
-  const safeVersion = versionName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const dirPath = path.join(GAMES_DIR, gameName, safeVersion);
-  
   try {
-    await fs.access(dirPath);
-  } catch {
-    await fs.mkdir(dirPath, { recursive: true });
-  }
+    const safeVersion = versionName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const dirPath = path.join(GAMES_DIR, gameName, safeVersion);
 
-  const meta = await readLocalMetadata(dirPath);
-  const db = await getDb();
-  const gameId = `${gameName}-${safeVersion}`;
-  
-  const parentGame = db.data.games.find(g => g.name === gameName);
-  const defaultWidth = parentGame?.width || 800;
-  const defaultHeight = parentGame?.height || 600;
+    try {
+      await fs.access(dirPath);
+    } catch {
+      await fs.mkdir(dirPath, { recursive: true });
+    }
 
-  const existingIndex = db.data.games.findIndex(g => g.id === gameId);
+    const meta = await readLocalMetadata(dirPath);
+    const db = await getDb();
+    const gameId = `${gameName}-${safeVersion}`;
 
-  if (existingIndex >= 0) {
-    await db.update(({ games }) => {
-      const g = games[existingIndex];
-      if (meta.description) g.description = meta.description;
-      if (meta.thumbnail) g.thumbnail = meta.thumbnail;
-    });
-  } else {
-    await db.update(({ games }) => games.push({
-      id: gameId,
-      name: gameName,
-      description: meta.description || `Version ${safeVersion}`,
-      path: `${gameName}/${safeVersion}`,
+    const parentGame = db.data.games.find(g => g.name === gameName);
+    const defaultWidth = parentGame?.width || 800;
+    const defaultHeight = parentGame?.height || 600;
+
+    const existingIndex = db.data.games.findIndex(g => g.id === gameId);
+
+    if (existingIndex >= 0) {
+      await db.update(({ games }) => {
+        const g = games[existingIndex];
+        if (meta.description) g.description = meta.description;
+        if (meta.thumbnail) g.thumbnail = meta.thumbnail;
+      });
+    } else {
+      await db.update(({ games }) => games.push({
+        id: gameId,
+        name: gameName,
+        description: meta.description || `Version ${safeVersion}`,
+        path: `${gameName}/${safeVersion}`,
+        version: safeVersion,
+        thumbnail: meta.thumbnail,
+        createdAt: new Date().toISOString(),
+        width: defaultWidth,
+        height: defaultHeight
+      }));
+    }
+
+    await generateIndexHtml(gameName, safeVersion, { bgColor: '#000000' });
+    return {
+      success: true,
+      gameName,
       version: safeVersion,
-      thumbnail: meta.thumbnail,
-      createdAt: new Date().toISOString(),
-      width: defaultWidth,
-      height: defaultHeight
-    }));
+      message: existingIndex >= 0 ? "Version mise à jour" : "Nouvelle version créée"
+    };
+  } catch (e: any) {
+    return {
+      success: false,
+      error: e.message || "Erreur création version",
+      gameName,
+      version: versionName,
+      message: "Erreur"
+    };
   }
-
-  await generateIndexHtml(gameName, safeVersion, { bgColor: '#000000' });
-  return { 
-    success: true, 
-    gameName, 
-    version: safeVersion, 
-    message: existingIndex >= 0 ? "Version mise à jour" : "Nouvelle version créée" 
-  };
 }
 
 export async function uploadGameFile(gameName: string, version: string, formData: FormData) {
@@ -252,6 +268,12 @@ export async function uploadGameFile(gameName: string, version: string, formData
   const filePath = path.join(GAMES_DIR, safeName, safeVersion, file.name);
 
   await fs.writeFile(filePath, buffer);
+
+  // Si c'est un index.html, on lance la régénération (qui fera une injection intelligente)
+  if (file.name.toLowerCase() === 'index.html') {
+    await generateIndexHtml(gameName, version, { bgColor: '#000000' });
+  }
+
   return { success: true, fileName: file.name };
 }
 
@@ -264,8 +286,8 @@ export async function uploadGameThumbnail(gameName: string, version: string, for
 
   const safeName = gameName.replace(/[^a-z0-9-]/g, '-');
   const safeVersion = version.replace(/[^a-z0-9-]/g, '-');
-  
-  const fileName = 'thumbnail.png'; 
+
+  const fileName = 'thumbnail.png';
   const filePath = path.join(GAMES_DIR, safeName, safeVersion, fileName);
 
   await fs.writeFile(filePath, buffer);
@@ -286,43 +308,12 @@ export async function uploadGameThumbnail(gameName: string, version: string, for
 export async function generateIndexHtml(gameName: string, version: string, config: any) {
   const safeName = gameName.replace(/[^a-z0-9-]/g, '-');
   const safeVersion = version.replace(/[^a-z0-9-]/g, '-');
-  // Correction ici : ajout de toLowerCase() pour l'ID injecté dans le HTML
-  const gameId = `${safeName.toLowerCase()}-${safeVersion.toLowerCase()}`; 
+  const gameId = `${safeName.toLowerCase()}-${safeVersion.toLowerCase()}`;
   const dirPath = path.join(GAMES_DIR, safeName, safeVersion);
+  const filePath = path.join(dirPath, 'index.html');
 
-  let scriptTags = '';
-  try {
-    const files = await readdir(dirPath);
-    const jsFiles = files.filter(f => f.endsWith('.js'));
-    jsFiles.sort((a, b) => {
-      if (a === 'data.js') return -1;
-      if (b === 'data.js') return 1;
-      if (a === 'hud.js') return -1;
-      if (b === 'hud.js') return 1;
-      if (a === 'sketch.js') return 1;
-      if (b === 'sketch.js') return -1;
-      return a.localeCompare(b);
-    });
-    scriptTags = jsFiles.map(f => `<script src="${f}"></script>`).join('\n    ');
-  } catch (e) {
-    scriptTags = `<script src="sketch.js"></script>`;
-  }
-
-  const htmlContent = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${gameName}</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: ${config.bgColor || '#000'}; }
-        canvas { display: block; margin: 0 auto; }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
-</head>
-<body>
+  // Script d'API à injecter
+  const apiScript = `
     <script>
         window.gameConfig = { gameId: '${gameId}', ...${JSON.stringify(config)} };
         window.GameAPI = {
@@ -348,13 +339,67 @@ export async function generateIndexHtml(gameName: string, version: string, confi
              } catch (e) { return []; }
           }
         };
-    </script>
+    </script>`;
+
+  try {
+    // 1. Essayer de lire un index existant pour faire de l'injection
+    const existingHtml = await fs.readFile(filePath, 'utf-8');
+
+    // Si l'API n'est pas déjà présente, on l'injecte
+    if (!existingHtml.includes('window.GameAPI =')) {
+      let finalHtml = existingHtml;
+      if (finalHtml.includes('<body')) {
+        // Injection safe : après l'ouverture du body
+        finalHtml = finalHtml.replace(/<body[^>]*>/i, (match) => match + '\n' + apiScript);
+      } else {
+        // Fallback : au début
+        finalHtml = apiScript + '\n' + finalHtml;
+      }
+      await fs.writeFile(filePath, finalHtml);
+    }
+  } catch (error) {
+    // 2. Si pas de fichier existant, on génère le squelette par défaut (Comportement original)
+    let scriptTags = '';
+    try {
+      const files = await readdir(dirPath);
+      const jsFiles = files.filter(f => f.endsWith('.js'));
+      jsFiles.sort((a, b) => {
+        if (a === 'data.js') return -1;
+        if (b === 'data.js') return 1;
+        if (a === 'hud.js') return -1;
+        if (b === 'hud.js') return 1;
+        if (a === 'sketch.js') return 1;
+        if (b === 'sketch.js') return -1;
+        return a.localeCompare(b);
+      });
+      scriptTags = jsFiles.map(f => `<script src="${f}"></script>`).join('\n    ');
+    } catch (e) {
+      scriptTags = `<script src="sketch.js"></script>`;
+    }
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${gameName}</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: ${config.bgColor || '#000'}; }
+        canvas { display: block; margin: 0 auto; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+</head>
+<body>
+    ${apiScript}
     ${scriptTags}
 </body>
 </html>`;
 
-  const filePath = path.join(dirPath, 'index.html');
-  await fs.writeFile(filePath, htmlContent);
+    await fs.writeFile(filePath, htmlContent);
+  }
+
   return { success: true };
 }
 
@@ -389,7 +434,7 @@ export async function deleteVersion(gameFolderName: string, versionName: string)
 
   try {
     await fs.rm(versionPath, { recursive: true, force: true });
-  } catch (e) {}
+  } catch (e) { }
 
   const db = await getDb();
   await db.update(({ games, scores }) => {
@@ -407,7 +452,7 @@ export async function updateGameMetadata(gameFolderName: string, version: string
   const safeName = gameFolderName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const safeVersion = version.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const gameId = `${safeName}-${safeVersion}`;
-  
+
   // Pour le chemin de fichier (fs), on garde la casse originale si nécessaire, ou on utilise le nom du dossier
   // Mais ici on utilise safeName qui est lowercase pour le path aussi (car createGameFolder utilise lowercase pour le dossier)
   // Attention: Si le dossier physique n'est PAS lowercase, cela peut poser problème sur Linux.
@@ -415,7 +460,7 @@ export async function updateGameMetadata(gameFolderName: string, version: string
   const dirPath = path.join(GAMES_DIR, gameFolderName.replace(/[^a-z0-9-]/g, '-'), version.replace(/[^a-z0-9-]/g, '-'));
 
   const db = await getDb();
-  
+
   await db.update(({ games }) => {
     const game = games.find(g => g.id === gameId);
     if (game) {
@@ -428,7 +473,7 @@ export async function updateGameMetadata(gameFolderName: string, version: string
 
   try {
     await fs.writeFile(path.join(dirPath, 'description.md'), newDescription);
-  } catch(e) {}
+  } catch (e) { }
 
   return { success: true };
 }

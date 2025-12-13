@@ -21,10 +21,21 @@ export function GamePlayer({ gameUrl, gameName, width = 800, height = 600 }: Gam
   const updateScale = () => {
     if (containerRef.current) {
       const containerWidth = containerRef.current.offsetWidth;
-      // La largeur totale à faire tenir est celle du jeu + ses bordures
+      // On prend la hauteur de fenêtre moins l'espace approx pris par le header et le texte (ex: 200px)
+      // Ajustez '200' selon la taille réelle de votre header + footer/texte
+      const availableHeight = window.innerHeight - 200;
+
       const totalWidthToScale = width + (BORDER_WIDTH * 2);
-      const newScale = containerWidth / totalWidthToScale;
-      setScale(Math.min(newScale, 1.5));
+      const totalHeightToScale = height + (BORDER_WIDTH * 2);
+
+      const scaleX = containerWidth / totalWidthToScale;
+      const scaleY = availableHeight / totalHeightToScale;
+
+      // On prend le plus petit ratio pour que ça rentre en largeur ET en hauteur
+      // On limite aussi à 1.5x max pour ne pas pixeliser trop
+      const newScale = Math.min(scaleX, scaleY, 1.5);
+
+      setScale(newScale);
     }
   };
 
@@ -33,6 +44,20 @@ export function GamePlayer({ gameUrl, gameName, width = 800, height = 600 }: Gam
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
   }, [width]);
+
+  useEffect(() => {
+    // Timeout de sécurité : si le jeu met plus de 5s à charger (ou gros assets), on force l'affichage
+    const timer = setTimeout(() => {
+      if (isLoading) setIsLoading(false);
+    }, 5000);
+
+    // Vérification immédiate si l'iframe est déjà chargée (cache)
+    if (iframeRef.current?.contentDocument?.readyState === 'complete') {
+      setIsLoading(false);
+    }
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -46,7 +71,7 @@ export function GamePlayer({ gameUrl, gameName, width = 800, height = 600 }: Gam
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="w-full max-w-[1200px] relative"
       // La hauteur du conteneur s'adapte à la hauteur de l'élément mis à l'échelle

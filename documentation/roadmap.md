@@ -1,8 +1,8 @@
 # Roadmap & État du Projet : Game Center Seniors
 
-## 🏁 État Actuel (v1.3 - Résolution Dynamique & Stabilité)
+## 🏁 État Actuel (v1.4 - Automatisation & Robustesse)
 
-L'architecture est **hybride, robuste et désormais flexible**. L'interface d'administration permet une gestion complète du cycle de vie des jeux, y compris leur résolution native. Le lecteur de jeu s'adapte parfaitement à toutes les configurations.
+L'architecture est **hybride, robuste et flexible**. L'interface d'administration permet une gestion complète du cycle de vie des jeux. L'importation est désormais intelligente et préserve l'intégrité des jeux originaux.
 
 ### 🏗️ Architecture Validée
 
@@ -23,7 +23,7 @@ L'architecture est **hybride, robuste et désormais flexible**. L'interface d'ad
 *   [x] Gestion complète via l'onglet "Gérer" (Liste, Suppression, Édition).
 *   [x] Upload de Thumbnails et mise à jour des Métadonnées (Titre/Description).
 *   [x] **Nouveau :** Ajout et gestion de la **résolution native (largeur/hauteur)** pour chaque version de jeu.
-*   [x] Génération du fichier `index.html` (injection du pont API).
+*   [x] **Nouveau :** Injection intelligente de l'API dans les `index.html` existants lors de l'import.
 
 #### 2. API & Scores
 *   [x] **POST /api/scores** : Sauvegarde dans Lowdb.
@@ -31,14 +31,15 @@ L'architecture est **hybride, robuste et désormais flexible**. L'interface d'ad
 
 #### 3. Frontend Public ("Senior First")
 *   [x] **Accueil (`/`)** : Grille de jeux lisible, affichage des meilleurs scores et des images de couverture.
-*   [x] **Zone de Jeu (`/play/[id]`)** : **Lecteur de jeu dynamique** qui respecte la résolution native de chaque jeu (ratio d'aspect parfait) et s'adapte à la largeur de l'écran sans déformation ni rognage, grâce à une mise à l'échelle CSS (`transform: scale`).
+*   [x] **Zone de Jeu (`/play/[id]`)** : Lecteur dynamique avec scaling intelligent et gestion robuste du chargement (timeout de sécurité).
 
 #### 4. Stabilisation & Corrections
-*   [x] **Correction Critique :** Fiabilisation de la sauvegarde des métadonnées (résolution, nom) en uniformisant la gestion des ID (gestion de la casse).
-*   [x] **Correction Affichage :** Résolution définitive du problème de rognage de l'iframe par les bordures (`box-sizing`).
+*   [x] **Correction Critique :** Fiabilisation de la sauvegarde des métadonnées.
+*   [x] **Correction Affichage :** Scaling pixel-perfect et gestion des bordures.
+*   [x] **Correction Import :** Support des chemins relatifs pour les jeux à structure plate (ex: Forest).
+*   [x] **Fiabilité TypeScript :** Refactoring complet du backend.
 
 ### 🐳 Infrastructure Docker
-
 *   **Volumes :** `data` (JSON) et `games` (Fichiers) sont persistants.
 
 ---

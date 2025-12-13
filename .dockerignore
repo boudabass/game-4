@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output
+.next
+
+# Environment variables
+.env
+.env*.local
+
+# Version control
+.git
+.gitignore
+
+# Data & Games (Mount points)
+data
+public/games
+
+# IDE & OS
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
