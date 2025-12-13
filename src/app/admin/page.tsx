@@ -361,7 +361,7 @@ export default function AdminPage() {
                         </div>
                     </div>
                     
-                    <Button onClick={handleCreateGame} variant={isGameUpdate ? "secondary" : "default" className="w-full">
+                    <Button onClick={handleCreateGame} variant={isGameUpdate ? "secondary" : "default"} className="w-full">
                         {isGameUpdate ? "Mettre à jour v1" : "Créer le jeu"}
                     </Button>
                 </CardContent>
