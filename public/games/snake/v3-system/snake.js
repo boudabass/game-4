@@ -1,1 +1,0 @@
-// Ce fichier est désormais vide car la logique du serpent est gérée par les sprites P5Play dans sketch.js
