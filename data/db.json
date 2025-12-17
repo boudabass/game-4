@@ -1,46 +1,6 @@
 {
   "games": [
     {
-      "id": "warrior-v1",
-      "name": "warrior",
-      "description": "Description par défaut",
-      "path": "warrior/v1",
-      "version": "v1",
-      "createdAt": "2025-12-13T02:26:03.853Z",
-      "width": 900,
-      "height": 600
-    },
-    {
-      "id": "tetris-v1",
-      "name": "tetris",
-      "description": "Description par défaut",
-      "path": "tetris/v1",
-      "version": "v1",
-      "createdAt": "2025-12-13T02:27:15.426Z",
-      "width": 600,
-      "height": 600
-    },
-    {
-      "id": "samegame-v1",
-      "name": "sameGame",
-      "description": "Description par défaut",
-      "path": "samegame/v1",
-      "version": "v1",
-      "createdAt": "2025-12-13T02:30:56.737Z",
-      "width": 900,
-      "height": 600
-    },
-    {
-      "id": "jumper-v1",
-      "name": "jumper",
-      "description": "Description par défaut",
-      "path": "jumper/v1",
-      "version": "v1",
-      "createdAt": "2025-12-13T02:31:00.161Z",
-      "width": 900,
-      "height": 600
-    },
-    {
       "id": "breakout-v1",
       "name": "breakout",
       "description": "Description par défaut",
