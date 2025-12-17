@@ -15,8 +15,9 @@ function setup() {
 
 function resetGame() {
     // Réinitialisation des variables de position et vitesse
-    x = width / 2;
-    y = height / 2;
+    // Démarre en haut à gauche, loin de la zone mortelle centrale
+    x = width / 4;
+    y = height / 4;
     speedX = 3;
     speedY = 2;
     
@@ -49,6 +50,7 @@ function draw() {
         
         // Affichage de la zone mortelle
         fill(150, 0, 0, 150); // Rouge transparent
+        rectMode(CENTER); // Assurez-vous que rectMode est CENTER pour le rectangle mortel
         rect(centerRectX, centerRectY, centerW, centerH);
         
         // Détection de collision (carré vs zone mortelle)
