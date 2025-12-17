@@ -1,11 +1,11 @@
 # Étape 6 : p5.play Sprites (2h)
 
 ## 🎯 Objectifs finaux
-- [ ] p5.play chargé et fonctionnel
-- [ ] 3+ sprites visibles
-- [ ] `drawSprites()` obligatoire
-- [ ] Joueur sprite contrôlable
-- [ ] Plateforme statique + collision
+- [x] p5.play chargé et fonctionnel
+- [x] 3+ sprites visibles
+- [x] `drawSprites()` obligatoire
+- [x] Joueur sprite contrôlable
+- [x] Plateforme statique + collision
 
 ## 📚 Concepts à maîtriser
 
@@ -65,12 +65,12 @@ Saut (espace) + gravité
 Collision physique auto
 
 ## ✅ Checklist validation
-[ ] p5.play CDN chargé (console sans erreur)
-[ ] `allSprites.draw()` dans `draw()`
-[ ] 4 sprites visibles (joueur + sol + 2 plateformes)
-[ ] Joueur saute et atterrit
-[ ] Collision plateforme fonctionne
-[ ] Code < 80 lignes
+[x] p5.play CDN chargé (console sans erreur)
+[x] `allSprites.draw()` dans `draw()`
+[x] 4 sprites visibles (joueur + sol + 2 plateformes)
+[x] Joueur saute et atterrit
+[x] Collision plateforme fonctionne
+[x] Code < 80 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ Oubli `allSprites.draw()` → écran vide

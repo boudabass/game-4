@@ -1,11 +1,11 @@
 # Étape 3 : Inputs utilisateur (2h)
 
 ## 🎯 Objectifs finaux
-- [ ] Contrôles clavier (flèches + WASD)
-- [ ] Contrôles souris (clic/touch)
-- [ ] Contrôles tactiles (mobile/tablette)
-- [ ] Système de score + respawn cibles
-- [ ] 3 méthodes input simultanées
+- [x] Contrôles clavier (flèches + WASD)
+- [x] Contrôles souris (clic/touch)
+- [x] Contrôles tactiles (mobile/tablette)
+- [x] Système de score + respawn cibles
+- [x] 3 méthodes input simultanées
 
 ## 📚 Concepts à maîtriser
 
@@ -58,12 +58,12 @@ Score +1, nouvelle cible
 Vitesse cible augmente
 
 ## ✅ Checklist validation
-[ ] Flèches + WASD marchent
-[ ] Clic souris collecte
-[ ] Touch mobile fonctionne
-[ ] Score incrémente
-[ ] Cible respawn instantané
-[ ] Code < 90 lignes
+[x] Flèches + WASD marchent
+[x] Clic souris collecte
+[x] Touch mobile fonctionne
+[x] Score incrémente
+[x] Cible respawn instantané
+[x] Code < 90 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ `keyPressed()` → déclenché 60x/sec

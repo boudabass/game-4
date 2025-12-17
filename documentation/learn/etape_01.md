@@ -1,11 +1,11 @@
 # Étape 1 : Bases p5.js (2h)
 
 ## 🎯 Objectifs finaux
-- [ ] Canvas 800x600 visible
-- [ ] Formes colorées (rect, ellipse, ligne)
-- [ ] Disque suit la souris en temps réel
-- [ ] Fond se met à jour chaque frame
-- [ ] Couleur change selon position souris
+- [x] Canvas 800x600 visible
+- [x] Formes colorées (rect, ellipse, ligne)
+- [x] Disque suit la souris en temps réel
+- [x] Fond se met à jour chaque frame
+- [x] Couleur change selon position souris
 
 ## 📚 Concepts à maîtriser
 
@@ -63,13 +63,13 @@ Fond gris foncé (50)
 Ligne trace (optionnel : de `pmouseX` à `mouseX`)
 
 ## ✅ Checklist validation
-[ ] `setup()` + `draw()` fonctionnent
-[ ] Canvas 800x600 visible
-[ ] `background()` chaque frame (pas de traînées)
-[ ] `rect(100, 100, 100, 100)` rouge visible
-[ ] ellipse suiveuse fluide
-[ ] Couleur change position souris
-[ ] Code < 50 lignes
+[x] `setup()` + `draw()` fonctionnent
+[x] Canvas 800x600 visible
+[x] `background()` chaque frame (pas de traînées)
+[x] `rect(100, 100, 100, 100)` rouge visible
+[x] ellipse suiveuse fluide
+[x] Couleur change position souris
+[x] Code < 50 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ `background()` dans `setup()` → fond figé

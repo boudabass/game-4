@@ -1,11 +1,11 @@
 # Étape 2 : Variables + États (2h)
 
 ## 🎯 Objectifs finaux
-- [ ] Animation automatique (rebonds)
-- [ ] Compteur temps/score fonctionnel
-- [ ] Détection collision bords écran
-- [ ] Game over + restart
-- [ ] Variables vitesse X/Y dynamiques
+- [x] Animation automatique (rebonds)
+- [x] Compteur temps/score fonctionnel
+- [x] Détection collision bords écran
+- [x] Game over + restart
+- [x] Variables vitesse X/Y dynamiques
 
 ## 📚 Concepts à maîtriser
 
@@ -61,12 +61,12 @@ Score = temps survie (`millis()/1000`)
 R = restart instantané
 
 ## ✅ Checklist validation
-[ ] Carré rebondit 4 bords
-[ ] Score incrémente fluide
-[ ] Zone centre détectée
-[ ] Game over affiché
-[ ] R restart fonctionne
-[ ] Code < 70 lignes
+[x] Carré rebondit 4 bords
+[x] Score incrémente fluide
+[x] Zone centre détectée
+[x] Game over affiché
+[x] R restart fonctionne
+[x] Code < 70 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ `speedX++` → accélère infiniment

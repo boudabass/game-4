@@ -1,11 +1,11 @@
 # Étape 5 : Tableaux + Collisions (3h)
 
 ## 🎯 Objectifs finaux
-- [ ] 10+ entités dynamiques (tableau)
-- [ ] Collision précise (distance/rect)
-- [ ] Array push/pop dynamique
-- [ ] Asteroids : éviter ou détruire
-- [ ] Score + vitesse progressive
+- [x] 10+ entités dynamiques (tableau)
+- [x] Collision précise (distance/rect)
+- [x] Array push/pop dynamique
+- [x] Asteroids : éviter ou détruire
+- [x] Score + vitesse progressive
 
 ## 📚 Concepts à maîtriser
 
@@ -65,12 +65,12 @@ Score temps + destructions
 Game over collision + restart R
 
 ## ✅ Checklist validation
-[ ] `asteroids.length > 10` actifs
-[ ] Spawn automatique continu
-[ ] Collision distance précise
-[ ] Clic détruit astéroïde
-[ ] `Array.splice()` fonctionne
-[ ] Code < 120 lignes
+[x] `asteroids.length > 10` actifs
+[x] Spawn automatique continu
+[x] Collision distance précise
+[x] Clic détruit astéroïde
+[x] `Array.splice()` fonctionne
+[x] Code < 120 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ `for (let asteroid of asteroids)` → pas d'index

@@ -1,11 +1,11 @@
 # Étape 4 : Organisation code (2h)
 
 ## 🎯 Objectifs finaux
-- [ ] 5+ fonctions distinctes
-- [ ] Code < 100 lignes total
-- [ ] Logique claire (update/draw séparés)
-- [ ] Mini-shooter : 1 ennemi descendant
-- [ ] Collision = game over + restart
+- [x] 5+ fonctions distinctes
+- [x] Code < 100 lignes total
+- [x] Logique claire (update/draw séparés)
+- [x] Mini-shooter : 1 ennemi descendant
+- [x] Collision = game over + restart
 
 ## 📚 Concepts à maîtriser
 
@@ -58,11 +58,11 @@
 ✅ Vitesse ennemi augmente légèrement
 
 ## ✅ Checklist validation
-[ ] 6 fonctions distinctes (`updatePlayer`, `drawPlayer`, `updateEnemy`, `drawEnemy`, `checkCollisions`, `drawUI`)
-[ ] `draw()` ordonné (update → check → draw)
-[ ] Collision détectée précisément
-[ ] Game over + restart R
-[ ] Code propre < 100 lignes
+[x] 6 fonctions distinctes (`updatePlayer`, `drawPlayer`, `updateEnemy`, `drawEnemy`, `checkCollisions`, `drawUI`)
+[x] `draw()` ordonné (update → check → draw)
+[x] Collision détectée précisément
+[x] Game over + restart R
+[x] Code propre < 100 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ `update()` modifie `draw()` → mélange logique/affichage
