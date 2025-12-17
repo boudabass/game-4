@@ -57,7 +57,7 @@
 - Joueur évite ou détruit (clic)  
 - Score + vitesse progressive  
 
-**Checklist :** [ ] 10+ entités [ ] Collision précise [ ] Array dynamique
+**Checklist :** [x] 10+ entités [x] Collision précise [x] Array dynamique **(VALIDÉE)**
 
 ---
 
