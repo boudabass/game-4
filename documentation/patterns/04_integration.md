@@ -32,21 +32,20 @@ if (kb.pressing('left')) {
 }
 ```
 
-## 2. Audio (p5.sound)
+## 2. Audio
 
-L'intégration audio reste similaire, mais assurez-vous que la librairie `p5.sound` est chargée si nécessaire (bien que `q5.js` puisse avoir des alternatives).
+L'intégration audio doit utiliser les méthodes de chargement asynchrone de Q5.js ou des librairies externes si nécessaire.
 
 ```javascript
-// Si vous utilisez p5.sound (à charger dans index.html si besoin)
+// Exemple de chargement audio (méthode Q5/P5Play)
 let jumpSound;
 
-function preload() {
-    soundFormats('mp3', 'ogg');
+q5.preload = () => {
     jumpSound = loadSound('assets/jump.mp3');
 }
 
 function jump() {
-    if (jumpSound.isLoaded()) {
+    if (jumpSound) {
         jumpSound.play();
     }
 }
