@@ -32,9 +32,6 @@ if (kb.pressing('left')) {
 }
 ```
 
-### Mobile & Touch
-P5Play gère les inputs tactiles de manière plus robuste que p5.js seul.
-
 ## 2. Audio (p5.sound)
 
 L'intégration audio reste similaire, mais assurez-vous que la librairie `p5.sound` est chargée si nécessaire (bien que `q5.js` puisse avoir des alternatives).
@@ -84,3 +81,11 @@ function gameOver() {
         window.GameSystem.Score.submit(score);
     }
 }
+```
+
+### Récupérer les meilleurs scores (Leaderboard)
+
+```javascript
+// async getLeaderboard() -> Array<{ playerName, score, date }>
+const highScores = await window.GameSystem.Score.getLeaderboard();
+console.log(highScores[0]); // Affiche le meilleur score
