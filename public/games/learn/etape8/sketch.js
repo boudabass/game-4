@@ -82,20 +82,24 @@ function draw() {
     // 3. Collisions physiques (Ennemis vs Plateformes)
     enemies.collide(platforms);
     
-    // 4. Logique de patrouille des ennemis (Phase 3)
+    // 4. Logique de patrouille des ennemis (Phase 3 - Corrigée)
     for (let enemy of enemies) {
-        // Créer un point de test juste devant l'ennemi
-        // On utilise une petite distance (10) pour tester si le sol continue
-        let testX = enemy.x + enemy.vel.x * 10;
-        let testY = enemy.y + enemy.h / 2 + 5; // 5 pixels sous les pieds
+        // On détermine la direction du regard (1 = droite, -1 = gauche)
+        // Si la vitesse est proche de 0, on garde 1 par défaut
+        let dir = Math.sign(enemy.vel.x) || 1;
         
-        // platforms.overlap(x, y) renvoie le sprite qui chevauche le point (x, y)
-        // Si aucun sprite n'est trouvé, cela renvoie null/undefined (falsy)
-        let isPlatformAhead = platforms.overlap(testX, testY);
+        // Point de test : devant l'ennemi (largeur/2 + marge) et sous ses pieds (+5px)
+        let scanX = enemy.x + dir * (enemy.w / 2 + 10);
+        let scanY = enemy.y + enemy.h / 2 + 5;
         
-        // Si le point devant l'ennemi n'est PAS sur une plateforme, ou si l'ennemi est bloqué (colliding(platforms, true) vérifie les collisions avec les bords)
-        if (!isPlatformAhead || enemy.colliding(platforms, true)) {
-            enemy.vel.x *= -1; // Inverse la direction
+        // Vérifie s'il y a une plateforme sous ce point
+        let ground = world.getSpritesAt(scanX, scanY, platforms);
+        
+        // Si pas de sol (vide) -> Demi-tour
+        if (ground.length === 0) {
+            enemy.vel.x *= -1;
+            // On recule légèrement pour ne pas rester bloqué au bord
+            enemy.x -= dir * 2;
         }
     }
     
@@ -141,6 +145,8 @@ function spawnEnemy() {
     enemy.vel.x = random([-1, 1]) * 2; // Vitesse de patrouille
     enemy.friction = 0;
     enemy.bounciness = 0;
+    // Si random donne 0, on force une direction
+    if (enemy.vel.x === 0) enemy.vel.x = 2;
 }
 
 function spawnCoin() {
