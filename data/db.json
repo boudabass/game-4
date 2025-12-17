@@ -11,5 +11,30 @@
       "height": 600
     }
   ],
-  "scores": []
+  "scores": [
+    {
+      "gameId": "p5-learn-etape10",
+      "playerName": "lacolleacervelle+admin",
+      "score": 20,
+      "date": "2025-12-17T13:57:45.342Z",
+      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
+      "userEmail": "lacolleacervelle+admin@gmail.com"
+    },
+    {
+      "gameId": "p5-learn-etape10",
+      "playerName": "lacolleacervelle+admin",
+      "score": 40,
+      "date": "2025-12-17T13:58:29.895Z",
+      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
+      "userEmail": "lacolleacervelle+admin@gmail.com"
+    },
+    {
+      "gameId": "p5-learn-etape10",
+      "playerName": "lacolleacervelle+admin",
+      "score": 40,
+      "date": "2025-12-17T14:52:19.459Z",
+      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
+      "userEmail": "lacolleacervelle+admin@gmail.com"
+    }
+  ]
 }
