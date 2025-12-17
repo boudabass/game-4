@@ -1,72 +1,113 @@
-# 🏗️ Patterns : Structure & Architecture (Standard Q5/P5Play)
+# 01_structure.md
+Remplacement du "Scene Manager" manuel
+Ancien paradigme p5.js : gestion manuelle des états via variables globales (state = 'menu') et conditions dans draw().
 
-Ce guide consolide les bonnes pratiques d'architecture en utilisant le nouveau standard **Q5.js + P5Play**.
+Nouveau paradigme q5.js + p5play : utilisation des États de Jeu (addState()) et Scènes (scenes) intégrés à p5play.
 
-## 1. La Boucle Vitale (Game Loop)
-La structure de base est désormais gérée par `q5.js`.
-
-**Fichier : `main.js` ou `sketch.js`**
 ```javascript
-// L'initialisation se fait dans q5.setup
-q5.setup = () => {
-    // Crée le canvas et initialise le moteur de physique
-    new Canvas(windowWidth, windowHeight); 
-    
-    // Initialisation des Sprites et Groupes
-    // let player = new Sprite(100, 100);
-    // let enemies = new Group();
-};
+// ❌ AVANT (p5.js manuel)
+let state = 'menu';
+function draw() {
+    if(state === 'menu') drawMenu();
+    else if(state === 'game') gameLoop();
+    else if(state === 'gameover') drawGameOver();
+}
 
-// La boucle de jeu principale
-q5.draw = () => {
-    clear(); // Nettoyage
-    // La logique de mouvement, collision et rendu des sprites est gérée automatiquement par P5Play.
-    // Ici, on gère les inputs et les changements d'état.
-};
+// ✅ APRÈS (q5 + p5play)
+states.add('menu', { 
+    start: () => console.log('Menu chargé'),
+    update: drawMenu,
+    draw: drawMenu 
+});
+states.add('game', { 
+    start: () => snake = new Snake(),
+    update: gameLoop,
+    draw: () => { clear(); snake.show(); }
+});
+states.add('gameover', { 
+    start: () => GameSystem.Score.submit(snake.total),
+    update: () => {
+        if(keyIsPressed) states.next('menu');
+    }
+});
+states.enable = true; // Active le système d'états
 ```
+Remplacement des listes manuelles par Groupes de Sprites
+Ancien : arrays manuels + boucles for.
 
-## 2. Approches de Gestion d'État
-
-Nous utilisons désormais les fonctionnalités de **Scènes et d'États de Jeu** intégrées à P5Play.
-
-### A. Le "Scene Manager" (Modèle P5Play)
-Idéal pour les jeux avec des phases distinctes (Intro -> Jeu -> Fin).
-
-*   **Principe :** Utiliser la classe `Scene` de P5Play pour gérer les transitions.
-*   **Avantage :** Code très cloisonné, gestion automatique de la boucle de jeu pour chaque état.
+Nouveau : group() de p5play avec itération automatique.
 
 ```javascript
-// Pattern Scene (P5Play)
-let gameScene = new Scene();
-let menuScene = new Scene();
+// ❌ AVANT (Snake p5.js)
+let food = [];
+for(let i = 0; i < 25; i++) {
+    food[i] = createVector(random(width), random(height));
+}
+for(let f of food) {
+    rect(f.x, f.y, scl);
+}
 
-// Dans q5.draw, P5Play gère automatiquement quelle scène est active.
-// On utilise des fonctions comme gameScene.enter() et gameScene.exit().
-```
+// ✅ APRÈS (p5play)
+let foodGroup = group(); // Groupe automatique
+for(let i = 0; i < 25; i++) {
+    let f = sprite(random(width), random(height), scl);
+    f.color = color(255, 0, 100);
+    foodGroup.add(f); // Ajout auto au groupe
+}
 
-### B. Le "Entity Manager" (Modèle P5Play)
-Idéal pour les jeux "Arcade" sur un seul écran avec beaucoup d'objets.
+// Rendu et mise à jour AUTOMATIQUES
+foodGroup.draw(); // Une ligne !
 
-*   **Principe :** Utiliser la classe `Group` de P5Play pour gérer les collections d'entités.
-*   **Avantage :** Gestion facile des interactions entre objets (collisions) via des méthodes intégrées (`group.collides(otherGroup)`).
-
-```javascript
-// Pattern Entity Manager (P5Play)
-let enemies = new Group();
-let bullets = new Group();
-
-function update() {
-    // P5Play gère le mouvement de tous les sprites dans les groupes.
-    
-    // Collision gérée en une ligne :
-    bullets.collides(enemies, (bullet, enemy) => {
-        bullet.remove();
-        enemy.remove();
-    });
+// Collision avec le serpent (auto)
+if(snake.overlaps(foodGroup)) {
+    let eaten = snake.overlapping(foodGroup);
+    eaten.remove(); // Suppression auto
+    // Nouveau food ajouté au groupe
 }
 ```
+Flux de structure recommandé
+```text
+q5.setup()
+├── new Canvas(windowWidth, windowHeight)
+├── states.add('menu', {...})
+├── states.add('game', {...})
+└── states.load('menu') // Démarre sur menu
 
-## 3. Modularité (Classes)
-Chaque entité doit avoir son fichier (ex: `Ball.js`, `Ship.js`).
+q5.draw()
+├── clear() // Fond propre
+├── currentScene.draw() // Auto via states
+└── allSprites.draw() // Tous sprites auto
 
-**Règle d'Or :** Une entité est désormais un `Sprite` ou un `Group` de P5Play. Elle bénéficie des méthodes intégrées (`move`, `render`, `collides`).
+q5.update() // Optionnel, physique auto
+└── World.update() // Physique + collisions
+```
+Bonnes pratiques vérifiées (doc officielle)
+Ordre des scripts (index.html) :
+
+```xml
+<script src="https://unpkg.com/q5@3/q5.min.js"></script>
+<script src="https://unpkg.com/p5play@3/build/p5play.min.js"></script>
+<script>window.DyadGame = { id: 'snake-v2' };</script>
+<script src="../../system/system.js"></script>
+<script src="snake.js"></script>
+```
+Activation des systèmes :
+
+```javascript
+q5.setup = () => {
+    new Canvas(800, 600);
+    states.enable = true;     // États activés
+    allSprites.layer = 0;     // Calque par défaut
+    World.gravity.y = 0;      // Pas de gravité (Snake)
+};
+```
+Intégration GameSystem (inchangée) :
+
+```javascript
+states.gameover = {
+    start: () => {
+        if(window.GameSystem) {
+            window.GameSystem.Score.submit(snake.life * 100);
+        }
+    }
+};
