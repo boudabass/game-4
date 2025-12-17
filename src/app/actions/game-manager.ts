@@ -363,12 +363,12 @@ export async function deleteGame(gameFolderName: string) {
   }
 
   const db = await getDb();
-  await db.update(({ games, scores }) => {
-    // Filtrer les jeux et scores dont l'ID commence par le préfixe du jeu (ex: 'tetris-')
-    const gamesToKeep = games.filter(g => !g.id.startsWith(dbIdPrefix));
-    const scoresToKeep = scores.filter(s => !s.gameId.startsWith(dbIdPrefix));
-    return { games: gamesToKeep, scores: scoresToKeep };
-  });
+  await db.read(); // Lire l'état actuel du disque
+
+  // Filtrer les jeux et scores dont l'ID commence par le préfixe du jeu (ex: 'tetris-')
+  db.data.games = db.data.games.filter(g => !g.id.startsWith(dbIdPrefix));
+  db.data.scores = db.data.scores.filter(s => !s.gameId.startsWith(dbIdPrefix));
+  
   await db.write(); // PERSISTENCE CRITIQUE
 
   revalidatePath('/games');
@@ -398,13 +398,11 @@ export async function deleteVersion(gameFolderName: string, versionName: string)
 
   // 3. Supprimer l'entrée DB
   const db = await getDb();
+  await db.read(); // Lire l'état actuel du disque
   
-  await db.update(({ games, scores }) => {
-    return {
-      games: games.filter(g => g.id !== gameId),
-      scores: scores.filter(s => s.gameId !== gameId)
-    };
-  });
+  db.data.games = db.data.games.filter(g => g.id !== gameId);
+  db.data.scores = db.data.scores.filter(s => s.gameId !== gameId);
+  
   await db.write(); // PERSISTENCE CRITIQUE
   
   revalidatePath('/games');
@@ -427,16 +425,15 @@ export async function updateGameMetadata(gameFolderName: string, version: string
   const dirPath = path.join(GAMES_DIR, gameFolderName.replace(/[^a-z0-9-]/g, '-'), version.replace(/[^a-z0-9-]/g, '-'));
 
   const db = await getDb();
+  await db.read();
 
-  await db.update(({ games }) => {
-    const game = games.find(g => g.id === gameId);
-    if (game) {
-      game.name = newName;
-      game.description = newDescription;
-      game.width = width;
-      game.height = height;
-    }
-  });
+  const game = db.data.games.find(g => g.id === gameId);
+  if (game) {
+    game.name = newName;
+    game.description = newDescription;
+    game.width = width;
+    game.height = height;
+  }
 
   try {
     await fs.writeFile(path.join(dirPath, 'description.md'), newDescription);
