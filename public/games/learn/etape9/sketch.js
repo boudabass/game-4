@@ -1,7 +1,7 @@
 let player;
 let platforms;
 
-// Dimensions du monde (plus grand que le canvas 800x600)
+// Dimensions du monde
 const WORLD_WIDTH = 2000;
 const WORLD_HEIGHT = 1200;
 
@@ -9,11 +9,13 @@ const PLATFORM_COLOR = 'gray';
 const PLAYER_COLOR = 'blue';
 
 function setup() {
-    // On garde le canvas à 800x600 pour la fenêtre d'affichage
     createCanvas(800, 600);
     world.gravity.y = 25;
     
-    // Définir les limites du monde pour p5.play
+    // --- MODE DEBUG ---
+    // allSprites.debug = true;
+    
+    // Limites du monde
     allSprites.bounds = { 
         left: 0, 
         right: WORLD_WIDTH, 
@@ -21,34 +23,38 @@ function setup() {
         bottom: WORLD_HEIGHT 
     };
     
-    // Initialisation des groupes
     platforms = new Group();
     platforms.collider = 'static';
     platforms.color = PLATFORM_COLOR;
     
-    // --- CRÉATION DU NIVEAU ÉTENDU ---
-    // Sol étendu
+    // --- SOL CONTINU ---
+    // Un grand sol pour ne pas tomber
     new platforms.Sprite(WORLD_WIDTH / 2, WORLD_HEIGHT - 20, WORLD_WIDTH, 40);
     
-    // Plateformes sur toute la largeur
-    for(let i = 0; i < 10; i++) {
+    // Plateformes de test
+    // Une plateforme juste sous le joueur au départ
+    new platforms.Sprite(400, 500, 200, 20); 
+    
+    for(let i = 0; i < 15; i++) {
         let w = random(150, 300);
         let x = random(100, WORLD_WIDTH - 100);
-        let y = WORLD_HEIGHT - 100 - (i * 100);
+        let y = random(200, WORLD_HEIGHT - 100);
         new platforms.Sprite(x, y, w, 20);
     }
     
-    // Création du joueur (démarre au centre du monde)
-    player = new Sprite(WORLD_WIDTH / 2, WORLD_HEIGHT - 100, 30, 30);
+    // --- JOUEUR ---
+    // Position de départ connue et sûre (au début du monde)
+    player = new Sprite(400, 400, 30, 30);
     player.color = PLAYER_COLOR;
     player.collider = 'dynamic';
     player.rotationLock = true; 
     player.bounciness = 0;
     player.friction = 0;
     
-    // Position initiale de la caméra au centre du monde
+    // --- CAMÉRA INITIALE ---
     camera.x = player.x;
     camera.y = player.y;
+    camera.zoom = 1; // Zoom par défaut
     
     if(window.GameSystem) {
         window.GameSystem.Lifecycle.notifyReady();
@@ -58,7 +64,7 @@ function setup() {
 function draw() {
     background(50);
     
-    // 1. Mouvement du joueur
+    // 1. Mouvement
     let isGrounded = player.colliding(platforms);
     let targetSpeed = 0;
     if (kb.pressing('left')) targetSpeed = -5;
@@ -73,28 +79,39 @@ function draw() {
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.05);
     }
     
-    // 2. Suivi de la caméra (Lissage)
-    // Lissage (0.1) pour un mouvement fluide
-    camera.x = lerp(camera.x, player.x, 0.1);
-    camera.y = lerp(camera.y, player.y, 0.1);
+    // 2. Caméra Follow (Manuelle)
+    // On suit le joueur
+    let targetCamX = player.x;
+    let targetCamY = player.y;
     
-    // 3. Contraintes de la caméra (pour ne pas voir le noir)
-    // Limites X: de la moitié du canvas à (WorldWidth - moitié du canvas)
+    // Contraintes pour ne pas sortir du monde
     let camMinX = width / 2;
     let camMaxX = WORLD_WIDTH - width / 2;
-    
-    // Limites Y: de la moitié du canvas à (WorldHeight - moitié du canvas)
     let camMinY = height / 2;
     let camMaxY = WORLD_HEIGHT - height / 2;
     
-    camera.x = constrain(camera.x, camMinX, camMaxX);
-    camera.y = constrain(camera.y, camMinY, camMaxY);
+    targetCamX = constrain(targetCamX, camMinX, camMaxX);
+    targetCamY = constrain(targetCamY, camMinY, camMaxY);
     
-    // 4. Rendu
+    // Application avec lissage
+    camera.x = lerp(camera.x, targetCamX, 0.1);
+    camera.y = lerp(camera.y, targetCamY, 0.1);
+    
+    // 3. Rendu
     allSprites.draw();
+    
+    // 4. HUD de DEBUG (fixe sur l'écran)
+    // Pour dessiner l'interface fixe, on désactive la caméra temporairement
+    camera.off();
+        fill(255);
+        textSize(16);
+        textAlign(LEFT, TOP);
+        text(`Player: ${Math.round(player.x)}, ${Math.round(player.y)}`, 10, 10);
+        text(`Camera: ${Math.round(camera.x)}, ${Math.round(camera.y)}`, 10, 30);
+        text(`World: ${WORLD_WIDTH}x${WORLD_HEIGHT}`, 10, 50);
+    camera.on();
 }
 
 function windowResized() {
-    // Redimensionner le canvas si la fenêtre change
     resizeCanvas(windowWidth, windowHeight);
 }
