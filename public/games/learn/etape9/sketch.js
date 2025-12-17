@@ -1,5 +1,6 @@
 let player;
 let platforms;
+let coins;
 
 // Dimensions du monde
 const WORLD_WIDTH = 2000;
@@ -7,6 +8,7 @@ const WORLD_HEIGHT = 1200;
 
 const PLATFORM_COLOR = 'gray';
 const PLAYER_COLOR = 'blue';
+const COIN_COLOR = 'gold';
 
 // Variables de jeu
 let score = 0;
@@ -24,21 +26,36 @@ function setup() {
         bottom: WORLD_HEIGHT 
     };
     
+    // Groupes
     platforms = new Group();
     platforms.collider = 'static';
     platforms.color = PLATFORM_COLOR;
     
-    // --- SOL CONTINU ---
+    coins = new Group();
+    coins.collider = 'static'; // Static pour ne pas tomber, mais on utilisera overlap
+    coins.color = COIN_COLOR;
+    
+    // --- CRÉATION DU NIVEAU ---
+    // Sol
     new platforms.Sprite(WORLD_WIDTH / 2, WORLD_HEIGHT - 20, WORLD_WIDTH, 40);
     
-    // Plateformes de test
+    // Plateforme de départ
     new platforms.Sprite(400, 500, 200, 20); 
     
-    for(let i = 0; i < 15; i++) {
+    // Génération procédurale de plateformes et pièces
+    for(let i = 0; i < 20; i++) {
         let w = random(150, 300);
         let x = random(100, WORLD_WIDTH - 100);
-        let y = random(200, WORLD_HEIGHT - 100);
+        let y = random(200, WORLD_HEIGHT - 150);
+        
+        // Créer une plateforme
         new platforms.Sprite(x, y, w, 20);
+        
+        // Ajouter une pièce au dessus (1 chance sur 2)
+        if (random() > 0.5) {
+            let coin = new coins.Sprite(x, y - 40, 20, 20);
+            coin.shape = 'circle';
+        }
     }
     
     // --- JOUEUR ---
@@ -77,6 +94,9 @@ function draw() {
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.05);
     }
     
+    // Interaction Pièces
+    player.overlaps(coins, collectCoin);
+    
     // 2. Caméra Follow
     let targetCamX = player.x;
     let targetCamY = player.y;
@@ -92,30 +112,44 @@ function draw() {
     camera.x = lerp(camera.x, targetCamX, 0.1);
     camera.y = lerp(camera.y, targetCamY, 0.1);
     
-    // 3. Rendu du Monde
+    // 3. Rendu Monde
     camera.on(); 
     allSprites.draw();
     camera.off(); 
     
-    // 4. Rendu du HUD (Interface Fixe)
+    // 4. Rendu HUD
     drawHUD();
 }
 
+function collectCoin(player, coin) {
+    coin.remove();
+    score += 10;
+}
+
 function drawHUD() {
-    fill(0, 150); // Fond semi-transparent pour lisibilité
-    noStroke();
-    rect(100, 40, 180, 60, 10); // x, y, w, h, radius
+    push(); // Isole les changements de style
+    rectMode(CORNER); // Force le mode coin pour le HUD
     
+    // Fond semi-transparent (x, y, w, h, radius)
+    fill(0, 150); 
+    noStroke();
+    rect(10, 10, 200, 70, 10); 
+    
+    // Texte Score
     fill(255);
     textSize(20);
-    textAlign(LEFT, CENTER);
-    text(`Score: ${score}`, 30, 30);
+    textAlign(LEFT, TOP);
+    text(`Score: ${score}`, 30, 25);
     
-    // Dessin des vies (coeurs simples)
+    // Vies (Coeurs)
     fill(255, 50, 50);
+    noStroke();
     for(let i = 0; i < lives; i++) {
-        ellipse(30 + i * 25, 55, 15);
+        let x = 30 + i * 30;
+        let y = 60;
+        ellipse(x, y, 15);
     }
+    pop();
 }
 
 function windowResized() {
