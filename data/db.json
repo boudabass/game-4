@@ -50,6 +50,16 @@
       "createdAt": "2025-12-16T22:00:00.000Z",
       "width": 800,
       "height": 600
+    },
+    {
+      "id": "q5-test-v1",
+      "name": "Q5 Test",
+      "description": "Jeu de validation minimal pour la stack q5.js/p5play.",
+      "path": "q5-test/v1",
+      "version": "v1",
+      "createdAt": "2025-12-17T10:00:00.000Z",
+      "width": 800,
+      "height": 600
     }
   ],
   "scores": [
