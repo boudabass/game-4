@@ -14,6 +14,10 @@ const COIN_COLOR = 'gold';
 let score = 0;
 let lives = 3;
 
+// Variables pour la fluidité des contrôles
+let groundTimer = 0; // Coyote Time
+let jumpTimer = 0;   // Jump Buffer
+
 function setup() {
     createCanvas(800, 600);
     world.gravity.y = 25;
@@ -36,10 +40,8 @@ function setup() {
     coins.color = COIN_COLOR;
     
     // --- CRÉATION DU NIVEAU ---
-    // Sol (avec des trous pour pouvoir tomber et tester le respawn)
-    // On fait deux bouts de sol au lieu d'un seul continu
-    new platforms.Sprite(WORLD_WIDTH * 0.25, WORLD_HEIGHT - 20, WORLD_WIDTH * 0.4, 40);
-    new platforms.Sprite(WORLD_WIDTH * 0.75, WORLD_HEIGHT - 20, WORLD_WIDTH * 0.4, 40);
+    // Sol
+    new platforms.Sprite(WORLD_WIDTH / 2, WORLD_HEIGHT - 20, WORLD_WIDTH, 40);
     
     // Plateforme de départ
     new platforms.Sprite(400, 500, 200, 20); 
@@ -49,6 +51,7 @@ function setup() {
         let w = random(150, 300);
         let x = random(100, WORLD_WIDTH - 100);
         let y = random(200, WORLD_HEIGHT - 150);
+        
         new platforms.Sprite(x, y, w, 20);
         
         if (random() > 0.5) {
@@ -78,23 +81,45 @@ function setup() {
 function draw() {
     background(50);
     
-    // 1. Mouvement
-    let isGrounded = player.colliding(platforms);
+    // --- GESTION AVANCÉE DES SAUTS (Fluidité) ---
+    
+    // 1. Mise à jour des Timers
+    // Si on touche le sol, on remplit le timer de "sol"
+    if (player.colliding(platforms)) {
+        groundTimer = 6; // Le joueur est considéré "au sol" pendant 6 frames après l'avoir quitté
+    }
+    // Si on appuie sur saut, on remplit le timer de "saut"
+    if (kb.presses('space') || kb.presses('up')) {
+        jumpTimer = 8; // La demande de saut reste valide 8 frames
+    }
+    
+    // Décrémentation des timers
+    if (groundTimer > 0) groundTimer--;
+    if (jumpTimer > 0) jumpTimer--;
+    
+    // 2. Exécution du Saut
+    // Si on a demandé un saut RÉCEMMENT et qu'on était au sol RÉCEMMENT
+    if (jumpTimer > 0 && groundTimer > 0) {
+        player.vel.y = -12;
+        jumpTimer = 0;   // On consomme le saut
+        groundTimer = 0; // On n'est plus au sol
+    }
+
+    // --- DÉPLACEMENTS ---
+    
     let targetSpeed = 0;
     if (kb.pressing('left')) targetSpeed = -5;
     if (kb.pressing('right')) targetSpeed = 5;
 
-    if (isGrounded) {
+    // On utilise groundTimer au lieu de la collision directe pour la friction aussi
+    // Cela rend le mouvement plus agréable juste après un saut
+    if (groundTimer > 0) {
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.2);
-        if (kb.presses('space') || kb.presses('up')) {
-            player.vel.y = -12;
-        }
     } else {
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.05);
     }
     
     // --- RESPAWN ---
-    // Si le joueur tombe sous le bas du monde
     if (player.y > WORLD_HEIGHT + 100) {
         resetPlayer();
     }
@@ -102,7 +127,7 @@ function draw() {
     // Interaction Pièces
     player.overlaps(coins, collectCoin);
     
-    // 2. Caméra Follow
+    // --- CAMÉRA ---
     let targetCamX = player.x;
     let targetCamY = player.y;
     
@@ -117,26 +142,12 @@ function draw() {
     camera.x = lerp(camera.x, targetCamX, 0.1);
     camera.y = lerp(camera.y, targetCamY, 0.1);
     
-    // 3. Rendu Monde
+    // --- RENDU ---
     camera.on(); 
     allSprites.draw();
     camera.off(); 
     
-    // 4. Rendu HUD
     drawHUD();
-}
-
-function resetPlayer() {
-    lives--; // Punition optionnelle
-    
-    // Téléportation au début (Attention aux coordonnées selon votre setup)
-    player.x = 400;
-    player.y = 400;
-    player.vel.x = 0;
-    player.vel.y = 0;
-    
-    // On force la caméra à revenir instantanément pour ne pas donner le mal de mer
-    // ou on la laisse lerp (revenir doucement). Ici le lerp va le faire revenir vite.
 }
 
 function collectCoin(player, coin) {
@@ -165,6 +176,22 @@ function drawHUD() {
         ellipse(x, y, 15);
     }
     pop();
+}
+
+function resetPlayer() {
+    lives--;
+    player.x = 400;
+    player.y = 400;
+    player.vel.x = 0;
+    player.vel.y = 0;
+    
+    // Si Game Over (plus de vies), on remet tout à zéro
+    if (lives <= 0) {
+        lives = 3;
+        score = 0;
+        // On pourrait recharger le niveau ici pour faire réapparaître les pièces
+        // Pour l'instant on garde le niveau tel quel
+    }
 }
 
 function windowResized() {
