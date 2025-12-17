@@ -46,11 +46,9 @@ function setup() {
     player.bounciness = 0;
     player.friction = 0;
     
-    // --- CONFIGURATION CAMÉRA ---
-    // La caméra suit le joueur avec un léger lissage (0.1)
-    camera.follow(player, 0.1);
-    // La caméra ne doit pas sortir des limites du monde
-    camera.bounds = allSprites.bounds;
+    // Position initiale de la caméra au centre du monde
+    camera.x = player.x;
+    camera.y = player.y;
     
     if(window.GameSystem) {
         window.GameSystem.Lifecycle.notifyReady();
@@ -75,12 +73,25 @@ function draw() {
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.05);
     }
     
-    // 2. Rendu
-    allSprites.draw();
+    // 2. Suivi de la caméra (Lissage)
+    // Lissage (0.1) pour un mouvement fluide
+    camera.x = lerp(camera.x, player.x, 0.1);
+    camera.y = lerp(camera.y, player.y, 0.1);
     
-    // 3. Debug (pour voir les limites du monde)
-    // fill(255);
-    // text(`Cam X: ${camera.x.toFixed(0)}`, 20, 20);
+    // 3. Contraintes de la caméra (pour ne pas voir le noir)
+    // Limites X: de la moitié du canvas à (WorldWidth - moitié du canvas)
+    let camMinX = width / 2;
+    let camMaxX = WORLD_WIDTH - width / 2;
+    
+    // Limites Y: de la moitié du canvas à (WorldHeight - moitié du canvas)
+    let camMinY = height / 2;
+    let camMaxY = WORLD_HEIGHT - height / 2;
+    
+    camera.x = constrain(camera.x, camMinX, camMaxX);
+    camera.y = constrain(camera.y, camMinY, camMaxY);
+    
+    // 4. Rendu
+    allSprites.draw();
 }
 
 function windowResized() {
