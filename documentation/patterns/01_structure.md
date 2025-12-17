@@ -1,113 +1,69 @@
-# 01_structure.md
-Remplacement du "Scene Manager" manuel
-Ancien paradigme p5.js : gestion manuelle des états via variables globales (state = 'menu') et conditions dans draw().
+# 🏗️ Patterns : Structure & Architecture
 
-Nouveau paradigme q5.js + p5play : utilisation des États de Jeu (addState()) et Scènes (scenes) intégrés à p5play.
+Ce guide consolide les bonnes pratiques d'architecture observées dans nos jeux (Forest, Asteroids, Breakout).
 
+## 1. La Boucle Vital (Game Loop)
+En p5.js, la structure de base est imposée mais nous la structurons ainsi pour rester propre :
+
+**Fichier : `main.js` ou `sketch.js`**
 ```javascript
-// ❌ AVANT (p5.js manuel)
-let state = 'menu';
+let game; // Instance unique du jeu
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    // Initialisation du Manager Principal
+    game = new GameService(); 
+    game.init();
+}
+
 function draw() {
-    if(state === 'menu') drawMenu();
-    else if(state === 'game') gameLoop();
-    else if(state === 'gameover') drawGameOver();
+    background(0); // Nettoyage
+    game.update(); // Logique (Mouvement, Règles)
+    game.render(); // Affichage
 }
+```
 
-// ✅ APRÈS (q5 + p5play)
-states.add('menu', { 
-    start: () => console.log('Menu chargé'),
-    update: drawMenu,
-    draw: drawMenu 
-});
-states.add('game', { 
-    start: () => snake = new Snake(),
-    update: gameLoop,
-    draw: () => { clear(); snake.show(); }
-});
-states.add('gameover', { 
-    start: () => GameSystem.Score.submit(snake.total),
-    update: () => {
-        if(keyIsPressed) states.next('menu');
+## 2. Approches de Gestion d'État
+
+Nous avons identifié deux patterns principaux pour gérer la complexité.
+
+### A. Le "Scene Manager" (Modèle : Forest)
+Idéal pour les jeux avec des phases distinctes (Intro -> Jeu -> Fin).
+
+*   **Principe :** Une variable `currentScene` détermine quel objet est actif.
+*   **Avantage :** Code très cloisonné. Chaque scène gère ses propres clics et affichages.
+
+```javascript
+// Pattern Scene
+function draw() {
+    if (sceneState === 'INTRO') intro.draw();
+    else if (sceneState === 'GAME') gameLevel.draw();
+    else if (sceneState === 'GAMEOVER') gameOver.draw();
+}
+```
+
+### B. Le "Entity Manager" (Modèle : Asteroids, Breakout)
+Idéal pour les jeux "Arcade" sur un seul écran avec beaucoup d'objets.
+
+*   **Principe :** Une classe `GameService` contient des listes d'objets.
+*   **Avantage :** Gestion facile des interactions entre objets (collisions).
+
+```javascript
+class GameService {
+    constructor() {
+        this.entities = []; // Joueur, Ennemis, Balles...
     }
-});
-states.enable = true; // Active le système d'états
-```
-Remplacement des listes manuelles par Groupes de Sprites
-Ancien : arrays manuels + boucles for.
 
-Nouveau : group() de p5play avec itération automatique.
-
-```javascript
-// ❌ AVANT (Snake p5.js)
-let food = [];
-for(let i = 0; i < 25; i++) {
-    food[i] = createVector(random(width), random(height));
-}
-for(let f of food) {
-    rect(f.x, f.y, scl);
-}
-
-// ✅ APRÈS (p5play)
-let foodGroup = group(); // Groupe automatique
-for(let i = 0; i < 25; i++) {
-    let f = sprite(random(width), random(height), scl);
-    f.color = color(255, 0, 100);
-    foodGroup.add(f); // Ajout auto au groupe
-}
-
-// Rendu et mise à jour AUTOMATIQUES
-foodGroup.draw(); // Une ligne !
-
-// Collision avec le serpent (auto)
-if(snake.overlaps(foodGroup)) {
-    let eaten = snake.overlapping(foodGroup);
-    eaten.remove(); // Suppression auto
-    // Nouveau food ajouté au groupe
-}
-```
-Flux de structure recommandé
-```text
-q5.setup()
-├── new Canvas(windowWidth, windowHeight)
-├── states.add('menu', {...})
-├── states.add('game', {...})
-└── states.load('menu') // Démarre sur menu
-
-q5.draw()
-├── clear() // Fond propre
-├── currentScene.draw() // Auto via states
-└── allSprites.draw() // Tous sprites auto
-
-q5.update() // Optionnel, physique auto
-└── World.update() // Physique + collisions
-```
-Bonnes pratiques vérifiées (doc officielle)
-Ordre des scripts (index.html) :
-
-```xml
-<script src="https://unpkg.com/q5@3/q5.min.js"></script>
-<script src="https://unpkg.com/p5play@3/build/p5play.min.js"></script>
-<script>window.DyadGame = { id: 'snake-v2' };</script>
-<script src="../../system/system.js"></script>
-<script src="snake.js"></script>
-```
-Activation des systèmes :
-
-```javascript
-q5.setup = () => {
-    new Canvas(800, 600);
-    states.enable = true;     // États activés
-    allSprites.layer = 0;     // Calque par défaut
-    World.gravity.y = 0;      // Pas de gravité (Snake)
-};
-```
-Intégration GameSystem (inchangée) :
-
-```javascript
-states.gameover = {
-    start: () => {
-        if(window.GameSystem) {
-            window.GameSystem.Score.submit(snake.life * 100);
-        }
+    update() {
+        // Boucle polymorphique : tout le monde bouge
+        this.entities.forEach(e => e.move());
+        this.checkCollisions();
     }
-};
+}
+```
+
+## 3. Modularité (Classes)
+Ne **jamais** tout écrire dans le fichier principal.
+Chaque entité doit avoir son fichier (ex: `Ball.js`, `Ship.js`).
+
+**Règle d'Or :** Une entité doit savoir se dessiner (`render`) et se déplacer (`update`) elle-même. Le `main.js` ne fait que les coordonner.

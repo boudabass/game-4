@@ -1,6 +1,4 @@
-# Analyse Pédagogique : The Healing Forest (Architecture Héritée - LEGACY p5.js)
-
-**⚠️ ATTENTION :** Ce document décrit l'architecture du jeu Forest, qui utilisait l'ancienne librairie **p5.js**. Pour tout nouveau développement, vous devez utiliser le standard **Q5.js + P5Play**. Cette analyse est conservée à titre historique et pédagogique pour comprendre les problèmes que P5Play résout.
+# Analyse Pédagogique : The Healing Forest
 
 Ce document décompose le jeu **Forest** pour comprendre comment un jeu **p5.js** est structuré.
 
@@ -84,7 +82,7 @@ On dessine une image noire transparente au centre, et opaque sur les bords, puis
 
 ### Résumé pour nos futurs jeux
 Pour créer un jeu similaire, il nous faut :
-1.  Un `main.js` avec `q5.setup()` et `q5.draw()` (Standard Q5.js).
-2.  Un système de **Scenes** (via `states.add()` de P5Play) pour gérer Intro/Jeu/Fin.
-3.  Des **Sprites** P5Play pour chaque élément (Arbre, Hero, Ennemi).
-4.  Une variable globale (`window.GameSystem`) pour gérer le score entre les scènes.
+1.  Un `main.js` avec `setup()` et `draw()`.
+2.  Un système de **Scenes** (Switch case) pour gérer Intro/Jeu/Fin.
+3.  Des **Classes** séparées pour chaque élément (Arbre, Hero, Ennemi).
+4.  Une variable globale (ex: `GameSystem`) pour gérer le score entre les scènes.

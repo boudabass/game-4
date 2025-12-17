@@ -1,103 +1,73 @@
-# 🚀 Patterns : Physique & Mouvement (Standard Q5/P5Play)
+# 🚀 Patterns : Physique & Mouvement
 
-## 1. Remplacement de p5.Vector manuel
-Ancien paradigme p5.js : gestion manuelle des positions, vitesses et collisions avec `createVector()` et `add()`.
+La plupart des jeux interactifs (Asteroids, Forest) nécessitent une simulation physique, même basique.
 
-Nouveau paradigme p5play : propriétés intégrées `sprite.pos`, `sprite.vel`, `sprite.acc` mises à jour automatiquement chaque frame.
+## 1. La Puissance des Vecteurs (`p5.Vector`)
+
+Au lieu de gérer `x`, `y`, `speedX`, `speedY` séparément, utilisez `p5.Vector`. C'est le standard utilisé dans **Asteroids**.
+
+### Le Trio Sacré :
+1.  **Position (`pos`)** : Où je suis.
+2.  **Vitesse (`vel`)** : De combien je bouge à chaque frame.
+3.  **Accélération (`acc`)** : La force du moteur / gravité.
 
 ```javascript
-// ❌ AVANT (p5.js manuel - Snake)
-class Snake {
-    constructor(x, y) {
-        this.pos = createVector(x, y);      // Vector manuel
-        this.vel = createVector(scl, 0);    // Vector manuel
-    }
-    
-    update() {
-        this.pos.add(this.vel);             // Calcul manuel
-        this.vel.limit(scl);                // Limite manuelle
-    }
+/* Dans votre classe (ex: Ship.js) */
+constructor() {
+    this.pos = createVector(width/2, height/2);
+    this.vel = createVector(0, 0);
+    this.acc = createVector(0, 0);
 }
 
-// ✅ APRÈS (p5play)
-let snake = sprite(width/2, height/2, scl);
-snake.vel = vec2(0, scl);           // vec2() plus léger que createVector
-// TOUT EST AUTOMATIQUE : pos += vel chaque frame
-// vel.limit(scl) géré par p5play
-```
-## 2. Propriétés physiques principales (doc p5play)
-| Propriété | Type | Description | Exemple Snake |
-|---|---|---|---|
-| `sprite.pos` | `vec2` | Position (x, y) | `snake.pos = vec2(width/2, height/2)` |
-| `sprite.vel` | `vec2` | Vitesse (dx, dy) | `snake.vel = vec2(scl, 0)` |
-| `sprite.acc` | `vec2` | Accélération | `snake.acc = vec2(0, 0.1)` (futur) |
-| `sprite.oldPos` | `vec2` | Position précédente | Collision précise |
-| `sprite.friction` | `number` | Résistance (0-1) | `snake.friction = 0.9` |
-
-## 3. Gestion des bords d'écran intégrée
-Fini les conditions manuelles `if(pos.x < 0) pos.x = width`.
-
-```javascript
-// ❌ AVANT (4 conditions if/else)
-edges() {
-    if(this.pos.x < 0) this.pos.x = width;
-    else if(this.pos.x > width) this.pos.x = 0;
-    // ... 6 lignes
+applyForce(force) {
+    this.acc.add(force); // F = ma (si m=1)
 }
 
-// ✅ APRÈS (1 ligne)
-snake.wrap();   // Wrap autour de l'écran (Asteroids-style)
-snake.bounce(); // Rebond aux bords
-snake.removeOnCollide(); // Mort aux bords
+update() {
+    this.vel.add(this.acc); // La vitesse change selon l'accélération
+    this.pos.add(this.vel); // La position change selon la vitesse
+    this.acc.mult(0);       // On remet l'accélération à 0 pour la prochaine frame
+}
 ```
-## 4. Flux physique automatique
-```javascript
-q5.setup = () => {
-    new Canvas(windowWidth, windowHeight);
-    snake = sprite(width/2, height/2, scl);
-    snake.color = color(255);
-    World.gravity.y = 0;    // Pas de gravité (Snake)
-};
 
-q5.draw = () => {
-    clear();
+## 2. Le Mouvement de Caméra ("Scrolling")
+
+Pour un jeu plus grand que l'écran (comme **Forest**), on ne bouge pas la "caméra" (qui n'existe pas en 2D), on bouge **tout le monde** dans le sens inverse du joueur.
+
+### Technique : `translate()`
+Utilisez `push()` et `pop()` pour isoler ce mouvement du HUD (score, vies).
+
+```javascript
+/* Dans draw() */
+
+// 1. Calcul du décalage (Le joueur doit rester au centre)
+let camX = -player.x + width / 2;
+let camY = -player.y + height / 2;
+
+push(); 
+    // Appliquer le décalage à tout ce qui est dessiné ensuite
+    translate(camX, camY); 
     
-    // PHYSIQUE 100% AUTOMATIQUE (aucune boucle manuelle !)
-    // 1. Mise à jour positions (pos += vel)
-    // 2. Vérification collisions
-    // 3. Application friction
-    // 4. Wrap/bounce si configuré
-    
-    allSprites.draw();  // Rendu automatique
-};
+    // Dessiner le monde
+    ground.show();
+    enemies.forEach(e => e.show());
+    player.show(); 
+pop();
+
+// 2. Dessiner le HUD (Sans translate, donc fixe à l'écran)
+fill(255);
+text("Score: " + score, 20, 20);
 ```
-## 5. Bonnes pratiques vérifiées (doc officielle)
-Configuration World (une seule fois) :
+
+## 3. L'Espace Infini ("Wrap Around")
+
+Utilisé dans **Asteroids**. Si on sort à droite, on rentre à gauche.
 
 ```javascript
-World.gravity = vec2(0, 0);     // Snake (pas de gravité)
-World.drag = 0.9;               // Friction globale
-allSprites.tileSize = scl;      // Grille uniforme
+function wrapEdges(obj) {
+    if (obj.pos.x > width)  obj.pos.x = 0;
+    if (obj.pos.x < 0)      obj.pos.x = width;
+    if (obj.pos.y > height) obj.pos.y = 0;
+    if (obj.pos.y < 0)      obj.pos.y = height;
+}
 ```
-Contrôle directionnel Snake :
-
-```javascript
-q5.keyPress = () => {
-    if(q5.key === 'left')  snake.vel.set(-scl, 0);
-    if(q5.key === 'right') snake.vel.set(scl, 0);
-    if(q5.key === 'up')    snake.vel.set(0, -scl);
-    if(q5.key === 'down')  snake.vel.set(0, scl);
-};
-```
-Limitation vitesse (optionnel) :
-
-```javascript
-snake.maxSpeed = scl;  // Plus propre que vel.limit()
-```
-Intégration GameSystem (inchangée)
-```javascript
-// Collision auto → GameSystem
-snake.collides = () => {
-    window.GameSystem.Score.submit(snake.life * 100);
-    states.next('gameover');
-};

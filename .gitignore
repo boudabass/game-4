@@ -50,7 +50,7 @@ next-env.d.ts
 
 data/*
 !data/.gitkeep
-!public/system
+!public/games/system
 !public/games/test-hub
 
 !data/db.json

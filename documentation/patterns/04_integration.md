@@ -1,51 +1,41 @@
-# 🎛️ Patterns : Entrées, Audio & Intégration (Standard Q5/P5Play)
+# 🎛️ Patterns : Entrées, Audio & Intégration
 
-Ce guide couvre les interactions avec le joueur et le système central (Hub) en utilisant les méthodes standardisées de Q5/P5Play.
+Ce guide couvre les interactions avec le joueur et le système central (Hub).
 
 ## 1. Gestion des Entrées (Inputs)
 
-P5Play simplifie la gestion des inputs en les intégrant directement aux sprites ou en utilisant les fonctions de `q5.js`.
-
-### Clavier & Souris (q5.js)
-Utilisez les fonctions de rappel de `q5.js` pour les événements globaux.
+### Clavier & Souris (p5.js)
+Ne gérez pas les inputs n'importe où. Centralisez-les.
 
 ```javascript
-// Déclenchement unique à l'appui
-q5.keyPress = () => {
-    if (q5.key === ' ') player.fire();
-};
+function keyPressed() {
+    if (key === ' ') ship.fire();
+    if (keyCode === UP_ARROW) ship.thrust(true);
+}
 
-// Déclenchement continu (pour le mouvement)
-q5.draw = () => {
-    if (q5.keyIsDown('up')) player.vel.y = -5;
-    // ...
-};
-```
-
-### Inputs intégrés aux Sprites (P5Play)
-P5Play permet de vérifier l'état des touches directement sur le sprite.
-
-```javascript
-// Dans q5.draw()
-if (kb.pressing('left')) {
-    player.move(5, 'left');
+function keyReleased() {
+    if (keyCode === UP_ARROW) ship.thrust(false);
 }
 ```
 
-## 2. Audio
+### Mobile & Touch
+Pour le mobile, gérer `touchStarted` est souvent insuffisant (pas de multitouch facile).
+**Conseil :** Utilisez une librairie dédiée comme `p5.touchgui` (utilisée dans Asteroids) ou créez des boutons virtuels simples.
 
-L'intégration audio doit utiliser les méthodes de chargement asynchrone de Q5.js ou des librairies externes si nécessaire.
+## 2. Audio (p5.sound)
+
+Charger les sons dans `preload()` pour éviter les bugs de chargement.
 
 ```javascript
-// Exemple de chargement audio (méthode Q5/P5Play)
 let jumpSound;
 
-q5.preload = () => {
+function preload() {
+    soundFormats('mp3', 'ogg');
     jumpSound = loadSound('assets/jump.mp3');
 }
 
 function jump() {
-    if (jumpSound) {
+    if (jumpSound.isLoaded()) {
         jumpSound.play();
     }
 }
@@ -62,17 +52,15 @@ C'est le contrat d'entrée.
 <script>
     window.DyadGame = { id: 'mon-jeu-v1', version: '1.0' };
 </script>
-<script src="https://unpkg.com/q5@3/q5.min.js"></script>
-<script src="https://unpkg.com/p5play@3/build/p5play.min.js"></script>
 <script src="../../system/system.js"></script>
 ```
 
 ### Sauvegarde du Score
-Dès la fin de partie, envoyez le score.
+Dès la fin de partie, envoyez le score. C'est asynchrone, mais on n'attend souvent pas la réponse pour afficher "Game Over".
 
 ```javascript
 function gameOver() {
-    // Utiliser les états de jeu P5Play pour gérer la fin de partie
+    // Affiche l'écran de fin
     // ...
     
     // Sauvegarde en arrière-plan
@@ -81,10 +69,3 @@ function gameOver() {
     }
 }
 ```
-
-### Récupérer les meilleurs scores (Leaderboard)
-
-```javascript
-// async getLeaderboard() -> Array<{ playerName, score, date }>
-const highScores = await window.GameSystem.Score.getLeaderboard();
-console.log(highScores[0]); // Affiche le meilleur score

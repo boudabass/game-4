@@ -1,6 +1,4 @@
-# Analyse Pédagogique : Asteroids (Architecture Héritée - LEGACY p5.js)
-
-**⚠️ ATTENTION :** Ce document décrit l'architecture du jeu Asteroids, qui utilisait l'ancienne librairie **p5.js**. Pour tout nouveau développement, vous devez utiliser le standard **Q5.js + P5Play**. Cette analyse est conservée à titre historique et pédagogique pour comprendre les problèmes que P5Play résout.
+# Analyse Pédagogique : Asteroids
 
 Ce document décompose le jeu **Asteroids** pour comprendre une approche plus "Orientée Objet" et mathématique.
 
@@ -76,6 +74,6 @@ if (obj.x > largeur_ecran) {
 
 ### Résumé pour nos futurs jeux
 Ce que **Asteroids** nous apprend de plus que **Forest** :
-1.  **Listes Dynamiques :** Utiliser des **Groupes P5Play** (`group()`) pour gérer un nombre variable d'ennemis.
-2.  **Vecteurs :** Utiliser `vec2()` (P5Play) pour des mouvements fluides et réalistes.
-3.  **Gestionnaire Central :** Une classe `GameService` ou `GameManager` est très utile pour séparer la logique pure de l'affichage Q5.js.
+1.  **Listes Dynamiques :** Utiliser des tableaux (`[]`) pour gérer un nombre variable d'ennemis.
+2.  **Vecteurs :** Utiliser `createVector()` pour des mouvements fluides et réalistes.
+3.  **Gestionnaire Central :** Une classe `GameService` ou `GameManager` est très utile pour séparer la logique pure de l'affichage p5.js.
