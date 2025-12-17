@@ -12,7 +12,7 @@ function setup() {
     player.collider = 'dynamic';
     player.rotationLock = true; 
     player.bounciness = 0;
-    player.friction = 0;
+    player.friction = 0; // Gestion manuelle inertie
 
     platforms = new Group();
     platforms.collider = 'static';
@@ -37,14 +37,13 @@ function draw() {
     // --- INPUTS ---
     let targetSpeed = 0;
     
-    // Vitesse réduite : +/- 5 au lieu de +/- 6 ou plus
-    if (kb.pressing('left')) targetSpeed = -5;
-    if (kb.pressing('right')) targetSpeed = 5;
+    // Vitesse réduite à 4 (80% de 5)
+    if (kb.pressing('left')) targetSpeed = -4;
+    if (kb.pressing('right')) targetSpeed = 4;
 
     // --- PHYSIQUE DE DÉPLACEMENT ---
     if (isGrounded) {
         // AU SOL : Réactif (0.2)
-        // On change vite de direction
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.2);
         
         // SAUT
@@ -53,8 +52,6 @@ function draw() {
         }
     } else {
         // EN L'AIR : Moins réactif (0.05)
-        // On peut influencer la trajectoire, mais c'est plus lent/lourd
-        // Cela permet de corriger un saut, mais pas de faire des zig-zags instantanés
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.05);
     }
     
