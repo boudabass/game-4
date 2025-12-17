@@ -2,10 +2,18 @@ let playerInstance;
 let platforms;
 let enemiesGroup;
 let coinsGroup;
-let enemiesList = []; // Pour stocker les instances de classe Enemy
+let enemiesList = []; 
 
 let score = 0;
 let lives = 3;
+
+// Gestionnaire d'états maison
+const GameState = {
+    MENU: 'menu',
+    GAME: 'game',
+    GAMEOVER: 'gameover'
+};
+let currentState = GameState.MENU;
 
 function setup() {
     createCanvas(800, 600);
@@ -19,111 +27,123 @@ function setup() {
         bottom: Config.worldHeight 
     };
     
-    // --- DÉFINITION DES ÉTATS ---
+    // Initialisation du menu
+    startMenu();
+}
+
+function draw() {
+    // Machine à états simple
+    switch (currentState) {
+        case GameState.MENU:
+            drawMenu();
+            break;
+        case GameState.GAME:
+            updateGame();
+            drawGame();
+            break;
+        case GameState.GAMEOVER:
+            drawGameOver();
+            break;
+    }
+}
+
+// --- ÉTAT : MENU ---
+
+function startMenu() {
+    // Nettoyage visuel si on revient du jeu
+    if (allSprites) allSprites.visible = false;
+    camera.x = 400;
+    camera.y = 300;
+    camera.zoom = 1;
     
-    // ÉTAT : MENU
-    states.add('menu', {
-        start: () => {
-            // Nettoyage
-            allSprites.visible = false; // Cache tout le jeu en arrière-plan
-            camera.x = 400;
-            camera.y = 300;
-            camera.zoom = 1;
-            
-            if(window.GameSystem) window.GameSystem.Lifecycle.notifyReady();
-        },
-        draw: () => {
-            background(20);
-            fill(255);
-            textAlign(CENTER, CENTER);
-            textSize(40);
-            text("SUPER PLATEFORMER", width/2, height/2 - 50);
-            textSize(20);
-            text("Appuyez sur ESPACE pour jouer", width/2, height/2 + 20);
-            text("Flèches pour bouger", width/2, height/2 + 50);
-        },
-        update: () => {
-            if (kb.presses('space')) {
-                states.next('game');
-            }
-        }
-    });
+    if(window.GameSystem) window.GameSystem.Lifecycle.notifyReady();
+}
+
+function drawMenu() {
+    background(20);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(40);
+    text("SUPER PLATEFORMER", width/2, height/2 - 50);
+    textSize(20);
+    text("Appuyez sur ESPACE pour jouer", width/2, height/2 + 20);
+    text("Flèches pour bouger", width/2, height/2 + 50);
     
-    // ÉTAT : JEU
-    states.add('game', {
-        start: () => {
-            // Initialisation du niveau
-            initLevel();
-            allSprites.visible = true;
-            score = 0;
-            lives = 3;
-        },
-        update: () => {
-            // Mise à jour du joueur
-            playerInstance.update(platforms);
-            
-            // Mise à jour des ennemis
-            for(let e of enemiesList) {
-                if(!e.sprite.removed) e.update(platforms);
-            }
-            
-            // Collisions
-            enemiesGroup.collide(platforms);
-            
-            // Interactions
-            if (playerInstance.sprite.overlaps(coinsGroup, collectCoin));
-            if (playerInstance.sprite.collides(enemiesGroup, hitEnemy));
-            
-            // Respawn chute
-            if (playerInstance.y > Config.worldHeight + 100) {
-                handleDeath();
-            }
-            
-            // Caméra
-            updateCamera();
-        },
-        draw: () => {
-            background(Config.colors.background);
-            
-            camera.on();
-            allSprites.draw();
-            camera.off();
-            
-            drawHUD();
-        }
-    });
+    if (kb.presses('space')) {
+        startGame();
+    }
+}
+
+// --- ÉTAT : JEU ---
+
+function startGame() {
+    currentState = GameState.GAME;
+    initLevel();
+    allSprites.visible = true; // On affiche tout
+    score = 0;
+    lives = 3;
+}
+
+function updateGame() {
+    // Mise à jour du joueur
+    playerInstance.update(platforms);
     
-    // ÉTAT : GAME OVER
-    states.add('gameover', {
-        start: () => {
-            if(window.GameSystem) window.GameSystem.Score.submit(score);
-        },
-        draw: () => {
-            background(0, 0, 0, 200); // Fond semi-transparent par dessus le jeu (si on le laissait visible)
-            // Mais ici on redessine un fond noir
-            background(10);
-            
-            fill(255, 50, 50);
-            textAlign(CENTER, CENTER);
-            textSize(50);
-            text("GAME OVER", width/2, height/2 - 40);
-            
-            fill(255);
-            textSize(30);
-            text(`Score Final: ${score}`, width/2, height/2 + 20);
-            textSize(20);
-            text("Appuyez sur R pour rejouer", width/2, height/2 + 60);
-        },
-        update: () => {
-            if (kb.presses('r')) {
-                states.next('game'); // Relance le jeu
-            }
-        }
-    });
+    // Mise à jour des ennemis
+    for(let e of enemiesList) {
+        if(!e.sprite.removed) e.update(platforms);
+    }
     
-    // Démarrage
-    states.enable = true;
-    states.load('menu');
+    // Collisions
+    enemiesGroup.collide(platforms);
+    
+    // Interactions
+    if (playerInstance.sprite.overlaps(coinsGroup, collectCoin));
+    if (playerInstance.sprite.collides(enemiesGroup, hitEnemy));
+    
+    // Respawn chute
+    if (playerInstance.y > Config.worldHeight + 100) {
+        handleDeath();
+    }
+    
+    // Caméra
+    updateCamera();
+}
+
+function drawGame() {
+    background(Config.colors.background);
+    
+    camera.on();
+    allSprites.draw();
+    camera.off();
+    
+    drawHUD();
+}
+
+// --- ÉTAT : GAME OVER ---
+
+function startGameOver() {
+    currentState = GameState.GAMEOVER;
+    if(window.GameSystem) window.GameSystem.Score.submit(score);
+}
+
+function drawGameOver() {
+    // On dessine un fond noir par dessus le jeu figé (ou pas, ici on redessine)
+    background(10);
+    
+    fill(255, 50, 50);
+    textAlign(CENTER, CENTER);
+    textSize(50);
+    text("GAME OVER", width/2, height/2 - 40);
+    
+    fill(255);
+    textSize(30);
+    text(`Score Final: ${score}`, width/2, height/2 + 20);
+    textSize(20);
+    text("Appuyez sur R pour rejouer", width/2, height/2 + 60);
+    
+    if (kb.presses('r')) {
+        startGame(); // Relance le jeu directement
+    }
 }
 
 // --- FONCTIONS DU JEU ---
@@ -192,7 +212,7 @@ function hitEnemy(playerSprite, enemySprite) {
 function handleDeath() {
     lives--;
     if (lives <= 0) {
-        states.next('gameover');
+        startGameOver();
     } else {
         // Respawn simple
         playerInstance.x = 400;
