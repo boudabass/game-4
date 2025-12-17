@@ -1,134 +1,140 @@
-Quest System — Missions, Événements & Suivi
-Le Quest System régit les tâches et événements proposés au joueur à travers la Ville, la Taverne, et les saisons.
-Il donne du rythme à la progression et structure la journée sans contraindre la liberté du joueur.
+🧭 Quest System v1.1 — Avancées et Dynamique Sociale
+Le Quest System v1.1 étend la base stable v1.0 en ajoutant :
 
-1. 🧱 Structure Générale
-Élément	Rôle	Description
-Quêtes journalières	Activités courtes (farming, loot)	Générées par la Taverne ou PNJ Ville
-Quêtes saisonnières	Missions liées au calendrier (jour 28)	Débloquées automatiquement
-Quêtes spéciales	Liées à une machine, mine ou événement	Déclenchées manuellement
-Quête active	Mission suivie	Affichée sur HUD (icône + couleur priorité)
-Chaque quête existe sous forme d’un objet unique, stocké en mémoire locale et synchronisé par jour.
+des sous-types de quêtes fonctionnelles (livraison, craft, exploration, événement),
 
-2. 🧾 Types de Quêtes
-Type	Exemple	Origine	Récompense
-🌱 Ressources	“Apporte 10 Baies fraîches à Marcel”	Taverne / Magasin	💰 +25 – 100 ou Potion
-⚙️ Production	“Fabrique 4 Briques à l’Établi”	Atelier / Machine Sud	Loot rare
-🌾 Récolte	“Récolte 20 cultures avant la prochaine pluie”	PNJ Ville	💰 +150
-⛏️ Exploration	“Atteins le 5ᵉ étage de la mine”	PNJ spécial montagne	Potion + Avancement stats
-🎉 Saisonnière	“Participe à la Foire agricole (Jour 28)”	Mairie	Multiplicateur or saison
-Les quêtes quotidiennes expirent à la fin de la journée, sauf pour les saisonnières qui durent toute la période active.
+un système léger de réputation par PNJ,
 
-3. 🎯 Structure d’une Quête
+et une gestion du temps et de l’énergie dans la progression des quêtes.
+
+1. 🧱 Niveaux de Quêtes
+Les quêtes sont désormais classées par catégorie et complexité.
+Chaque type module la difficulté, la durée et la récompense.
+
+Type	Sous-type	Exemple	Durée / Condition	Effet énergie
+🌱 Ressource	Livraison	“Apporter 10 Baies à Marcel”	Jour unique / stock existant	Faible (transport)
+⚙️ Production	Craft	“Fabriquer 4 Planche à l’Établi”	1–2 jours / via Machines	Moyen
+⛏️ Exploration	Objectif spatial	“Atteindre le N5 de la Mine”	Jour + nuit	Fort
+💬 Sociale	Dialogue / PNJ	“Parler à Élodie avant 18 h”	Temps précis	Aucune
+🎉 Saisonnière	Événement	“Participer au Marché artisanal”	Jour 28 uniquement	Variable
+Chaque sous-type utilise la même structure d’interface, mais présente des icônes locales (graine, marteau, lampion…).
+
+2. 🧭 Réputation PNJ (v1.1 légère)
+Le joueur développe une relation chiffrée par PNJ à chaque quête terminée.
+C’est purement fonctionnel (impact boutique et dialogue, sans narration).
+
+PNJ	Base de relation	Effet palier
+👨‍🌾 Marcel	+1 par quête jardin/farming	-5 % prix graines
+🪓 Élodie	+1 par quête outil/craft	Accès anticipé plans Lv3
+🍺 Romain	+1 par quête livraison nocturne	+20 énergie bonus taverne
+🏛️ Lenoir	+1 par quête saisonnière	Réduction coût passage saison
+🧑‍🌾 Mineur	+1 par exploration réussie	+5 % loot métal
+Échelle : 0–20 → seuils à 5 / 10 / 15 / 20.
+Traitée uniquement à travers la fonction de validation de quête, sans gestion émotionnelle ni choix de dialogue.
+
+3. ⏳ Synchronisation Temps / Énergie
+La complétion d’une quête déclenche un coût énergétique indirect (représentation de la fatigue).
+
+Classe	Coût énergie	Fenêtre horaire	Expiration
+Ressource / Sociale	-5	8h–20h	Fin de jour
+Craft / Production	-10	6h–18h	Jour + 1
+Exploration	-25	18h–6h	Fin de nuit
+Saisonnière	-15	Jour 28 uniquement	Fin événement
+Si le joueur se présente sans énergie suffisante, la quête reste “EN ATTENTE” jusqu’à repos ou potion.
+
+Aucun échec direct : le joueur choisit entre dormir, boire une potion ou abandonner.
+
+4. ⚙️ Avancement Progressif
+Certaines quêtes franchissent désormais plusieurs étapes internes (1→3).
+Chaque étape se valide automatiquement au passage de condition.
+
+Exemple	Étape 1	Étape 2	Étape 3	Récompense
+“Collecter 12 Bois pour Élodie”	Couper 3 arbres	Donner 6 bois	Retour Atelier	+75💰
+“Explorer la Mine 5e étage”	Niv 1	Niv 3	Niv 5	+Potion + Stat +1
+“Foire agricole”	Préparer	Participer	Retour mairie	+Or ×1.1
+Chaque étape change la couleur de l’icône HUD (progression visuelle continue).
+
+5. 📜 Conditions de Déclenchement
+Une quête peut être activée par :
+
+Source	Condition
+PNJ	Tap direct + dialogue
+Événement horaire	Début ou fin de période (20h taverne, 6h matin)
+Machine active	Fin production spéciale
+Saison	Jour 28 auto‑script
+Quête précédente	Lien logique 1→2 (v1.1 simple)
+Les quêtes “enchaînées” se limitent à des successeurs directs, ex :
+
+“Apporte le métal → Fabrique l’outil → Livre à Élodie”.
+
+Aucun arbre narratif complexe n’est encore introduit (v2.0 envisagé).
+
+6. 🎨 HUD & Journal Améliorés
+HUD
+Flèche directionnelle optionnelle vers le lieu du PNJ ou machine.
+
+Icône colorée selon priorité + petit chrono horaire sous l’icône.
+
+Clic = accès direct au journal filtré sur la quête concernée.
+
+Journal
+Ajout de filtre par type et état :
+
 text
-┌─────────────────────────────┐
-│ Nom : Livraison de Baies    │
-│ Type : Ressource (Taverne)  │
-│ Objectif : 10× Baie         │
-│ État : [EN COURS]           │
-│ Progression : 4 / 10        │
-│ Récompense : +50💰 +Potion  │
-│ Expiration : Fin du jour    │
-│ Bouton : [Abandonner]       │
-└─────────────────────────────┘
-États possibles :
-EN COURS → suivie activement
+Filtres : [🌱 Ressources] [⚙️ Craft] [⛏️ Exploration] [🎉 Saison] [🕓 Expirées]
+Chaque entrée affiche maintenant le temps restant et une barre de progression.
 
-ACCOMPLIE → récompense disponible
+7. 🏅 Récompenses Avancées
+Récompenses ajustées en fonction du type / réputation PNJ / saison.
 
-EXPIRÉE → supprimée du journal
+Facteur	Bonus	Exemple
+Réputation > 10	+10 % or	fidélité persistante
+Accomplie avant délai –50 % temps	+1 Potion	rapidité
+Jour 28 (saisonnière)	Multiplie par 1.2	équilibre saison
+Quête nocturne terminée avant 4h	+20 énergie gratuite	adaptation fatigue
+Les bonus se cumulent automatiquement lors de la validation.
 
-ABANDONNÉE → supprimée immédiatement
+8. 🔔 Feedbacks Améliorés
+Événement	Animation	Son
+Étape validée	Rayon jaune depuis icône HUD	“pling court”
+Quête finalisée	Halo vert croissant + compteur or animé	“coin roll long”
+Réputation +1	Icône PNJ scintille brèvement sur mini‑map	“success pop low”
+Échec ou abandon	Décoloration icône	“bip sec”
+Tous les feedbacks sont non bloquants et visuellement légers (max 0.6 s).
 
-4. 🔄 Acquisition et Suivi
-Action	Origine	Résultat
-Tap PNJ / Taverne (“Aide demandée”)	Génère une quête disponible	Affiche fenêtre “Accepter / Refuser”
-Accepter	Ajoute au Journal des quêtes	Icône HUD allumée
-Réaliser objectif	MAJ automatique progression	Notification sonore
-Retourner au PNJ	Validation et récompense	Quête marquée “ACCOMPLIE”
-Expiration (jour suivant)	Suppression auto	Message : “La quête a expiré.”
-Limite active : 3 quêtes simultanées (priorisées par type et importance).
+9. 🔒 Sauvegarde & Persistance
+Chaque quête conserve dans la sauvegarde :
 
-5. 🕓 Liens avec le Temps (City Time System)
-Le système de quêtes est directement dépendant de l’horloge interne.
+ID + état (en cours/terminée/expirée)
 
-Certaines quêtes n’existent que :
+Progression (% ou étape)
 
-De jour (Ville, Magasin, Mairie).
+Horodatage jour/saison
 
-De nuit (Taverne, Mines).
+PNJ associé & relation
 
-Les quêtes liées à la saison se déclenchent automatiquement à jour 28.
+La synchronisation s’effectue :
 
-Les icônes du HUD affichent chaque quête selon priorité :
+lors d’un changement de jour (sleep),
 
-Priorité	Couleur	Condition
-🔴 Haute	Temps restant < 4 h ou objectif critique	
-🟠 Moyenne	Active et suivie	
-🟢 Basse	Accomplie / attente validation	
-⚪ Neutre	Observation / info	
-Tap sur une icône ouvre le Menu Quêtes (journal + suivi + abandon).
+ou d’une validation (PNJ dialogue).
+Aucune donnée perte entre cycles.
 
-6. 🗂️ Journal des Quêtes (interface)
-text
-┌─────────── JOURNAL ───────────┐
-│ [ Quêtes actives x3 ]        │
-│──────────────────────────────│
-│ 🌱 Baies pour Marcel [4/10]  │
-│ ⛏️ Niveau 5 Mine [2/5]       │
-│ 🎉 Foire agricole [Jour 28]   │
-│──────────────────────────────│
-│ [📜 Détails] [➕ Suivre] [❌ Abandonner] |
-└──────────────────────────────┘
-Détails : nom, type, récompense, expiration.
+10. ✅ Règles absolues — Quest System v1.1
+✅ 5 types + 5 PNJ rattachés.
 
-Suivre : active icône HUD + flèche directionnelle (ville/minimap).
+✅ Réputation locale 0–20 avec effets cumulables.
 
-Abandonner : supprime la quête instantanément.
+✅ Quêtes dépendantes du temps et de l’énergie.
 
-Les quêtes saisonnières ne peuvent pas être abandonnées.
+✅ Étapes internes progressives avec retours HUD.
 
-7. 💰 Récompenses et Effets
-Type	Effet	Valeur
-💰 Pièces	Ajoute or à HUD	+25 – 300 selon difficulté
-🍷 Potion (Énergie / Santé)	Ajout inventaire [🧺 LOOT 🧪]	1–3 unités
-⚙️ Outils	Remplacement auto (upgrade direct)	Lv+1 si machine dispo
-💡 Statistique	Increment “Village Progression” (Mairie)	+1 par saison
-Certaines récompenses déclenchent aussi un son contextuel et un halo sur le HUD (flash vert court).
+✅ Bonus récompense dynamique selon performance.
 
-8. 🎭 Catégories de PNJ Quêteurs
-PNJ	Type de quête	Disponibilité horaire	Récompense dominante
-🍺 Romain (Taverne)	Jour/nuit → Ressource & livraison	20h–6h	💰 / Potion
-👨‍🌾 Marcel (Magasin)	Jour → Récolte / Vente	8h–18h	💰
-🪓 Élodie (Atelier)	Jour → Production outils	8h–18h	Outils
-🏛️ Lenoir (Mairie)	Saison → Progrès global	6h–20h	Statistiques
-🧑‍🌾 PNJ mine	Nuit/jour → Exploration	Permanente	Potion / Loot métal
-9. 🔔 Notifications et Feedback
-Événement	Visuel	Son
-Quête acceptée	Bandeau “Nouvelle mission”	“pling doux”
-Objectif accompli	Halo vert HUD	“coin métal clair”
-Quête expirée	HUD rouge	“bip grave”
-Récompense reçue	+💰 animation compteur	“success bell short”
-Durée moyenne : 0.5 s.
-Non bloquant (aucun rechargement interface).
+✅ Sauvegarde complète (time + état + PNJ).
 
-10. ✅ Règles absolues — Quest System v1.0
-✅ Maximum 3 quêtes actives simultanées.
+❌ Pas de dialogues à choix multiples (prévu v2.0).
 
-✅ Logique horaire respectée (jour/nuit/saison).
+❌ Pas de quêtes simultanées inter‑PNJ (v2.0).
 
-✅ Interface centralisée “Journal des quêtes” + HUD icons colorées.
-
-✅ Récompense immédiate et automatique.
-
-✅ Expiration automatique à minuit ou changement jour.
-
-✅ PNJ fixes déclencheurs (Ville seule).
-
-✅ Sauvegarde du statut quête via TimeSystem.
-
-❌ Pas de chaînes narratives ni choix multiples (v1.0).
-
-❌ Pas de succès cumulatif.
-
-❌ Pas de transport automatique vers PNJ.
+❌ Pas d’interface multi‑joueur ou online.
