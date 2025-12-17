@@ -1,63 +1,115 @@
 # 💥 Patterns : Collisions & Interactions (Standard Q5/P5Play)
 
-La détection de collision est désormais gérée par le moteur de physique de **P5Play**, ce qui élimine le besoin de calculs manuels.
+## 1. Remplacement des calculs manuels de distance
+Ancien paradigme p5.js : vérifications manuelles avec `dist()` et conditions `if`.
 
-## 1. Collision entre Sprites ou Groupes
-
-P5Play utilise des méthodes simples pour gérer les interactions.
-
-### Collision avec Callback (Le plus courant)
-Détecte la collision et exécute une fonction immédiatement.
+Nouveau paradigme p5play : méthodes intégrées `overlaps()`, `collides()`, `overlapping()` avec hitboxes automatiques.
 
 ```javascript
-// Si le joueur touche un powerup (qui est dans le groupe 'powerups')
-player.collides(powerups, (playerSprite, powerupSprite) => {
-    powerupSprite.remove(); // Le powerup disparaît
-    playerSprite.score += 100;
-});
-```
-
-### Overlap (Chevauchement)
-Vérifie si deux sprites se chevauchent sans appliquer de force de rebond (utile pour les zones de déclenchement ou la nourriture).
-
-```javascript
-if (player.overlaps(foodGroup)) {
-    let eaten = player.overlapping(foodGroup);
-    eaten.remove();
-}
-```
-
-## 2. Hitbox et Formes
-
-P5Play gère les formes de collision automatiquement (cercle, rectangle, polygone).
-
-*   **Cercle vs Cercle :** Par défaut pour les sprites créés sans forme spécifique.
-*   **Rectangle vs Rectangle (AABB) :** Spécifiez la forme lors de la création du sprite.
-
-```javascript
-// Création d'un sprite rectangulaire
-let block = new Sprite(100, 100, 50, 50, 'box'); 
-```
-
-## 3. Optimisation : Le Moteur de Physique
-
-L'optimisation des collisions (comme l'ancien Quadtree) est gérée en interne par le moteur de physique (Box2D) utilisé par P5Play. Vous n'avez plus besoin de vous en soucier.
-
-## 4. Gestion des "Hitbox"
-La hitbox est définie par la taille du sprite.
-
-**Conseil :** Si vous utilisez une image (sprite.img), vous pouvez ajuster la taille de la hitbox indépendamment de la taille de l'image affichée.
-
-```javascript
-class Enemy {
-    constructor(x, y) {
-        // Crée un sprite de 50x50
-        this.sprite = new Sprite(x, y, 50, 50); 
-        this.sprite.img = 'assets/monster.png';
-        
-        // Réduit la hitbox à 30x30 pour un jeu plus indulgent
-        this.sprite.collider = 'box';
-        this.sprite.w = 30;
-        this.sprite.h = 30;
+// ❌ AVANT (p5.js manuel - Snake)
+eat(food) {
+    let d = dist(this.pos.x, this.pos.y, food.x, food.y);
+    if(d < 1) {  // Calcul manuel
+        this.total++;
+        return true;
     }
 }
+
+// ✅ APRÈS (p5play - 1 ligne)
+if(snake.overlaps(foodGroup)) {  // Détection auto
+    let eaten = snake.overlapping(foodGroup);  // Sprite touché
+    eaten.remove();
+    snake.life++;  // Compteur auto
+}
+```
+## 2. Méthodes de collision officielles p5play
+| Méthode | Retour | Usage | Exemple Snake |
+|---|---|---|---|
+| `sprite.overlaps(other)` | `boolean` | Détection sans destruction | `snake.overlaps(foodGroup)` |
+| `sprite.collides(other)` | `boolean` | Collision avec callback | `snake.collides = () => gameOver()` |
+| `sprite.overlapping(group)` | `array<Sprite>` | Liste des sprites touchés | `let eaten = snake.overlapping(food)` |
+| `group.overlaps(group)` | `boolean` | Groupe vs groupe | `bullets.overlaps(enemies)` |
+
+## 3. Configuration des hitboxes (doc officielle)
+```javascript
+// Hitbox par défaut = taille du sprite
+let snake = sprite(100, 100, 20);  // Hitbox 20x20
+
+// Hitbox personnalisée
+snake.hitbox = rect(10, 10);  // Plus petite que visuel
+snake.debug = true;           // Affichage hitbox (dev)
+
+// Collision pixel-perfect (images)
+snake.img = 'snake.png';
+snake.useImageHitbox = true;  // Basé sur pixels transparents
+```
+## 4. Callbacks de collision (gameplay)
+```javascript
+// 1. Callback global sur sprite
+snake.collides = () => {
+    if(window.GameSystem) {
+        window.GameSystem.Score.submit(snake.life * 100);
+    }
+    states.next('gameover');
+};
+
+// 2. Collision conditionnelle
+snake.overlaps(foodGroup, () => {
+    let eaten = snake.overlapping(foodGroup);
+    eaten.remove();
+    // Nouveau food auto
+    newFood();
+});
+
+// 3. Collision avec filtre
+if(snake.overlaps(enemies, true)) {  // true = callback
+    snake.life--;
+}
+```
+## 5. Groupes vs collisions optimisées
+```javascript
+// ❌ MAUVAIS : vérifications individuelles
+for(let enemy of enemies) {
+    if(player.overlaps(enemy)) enemy.remove();
+}
+
+// ✅ BON : groupe optimisé (Quadtree interne)
+player.overlaps(enemiesGroup, enemy => enemy.remove());
+
+// Performance : O(1) vs O(n²) grâce à Box2D + Quadtree
+```
+## 6. Flux de collision automatique
+```javascript
+q5.draw = () => {
+    clear();
+    
+    // TOUTES LES COLLISIONS SONT AUTOMATIQUES
+    // 1. overlaps() / collides() vérifiées chaque frame
+    // 2. Callbacks exécutés
+    // 3. Hitbox mises à jour
+    
+    allSprites.draw();  // Rendu avec collisions appliquées
+};
+```
+## 7. Bonnes pratiques vérifiées (doc p5play)
+Configuration collision World :
+
+```javascript
+World.check = true;      // Active collisions (défaut)
+allSprites.collider = 'dynamic';  // Physique complète
+foodGroup.collider = 'static';    // Nourriture immobile
+```
+Debug collisions (dev) :
+
+```javascript
+allSprites.debug = true;  // Hitbox + vecteurs visibles
+camera.debug = true;      // Zone caméra
+// Performance : max 500 sprites en collisions actives recommandées.
+```
+Intégration GameSystem Snake
+```javascript
+// Collision serpent → queue (auto)
+snake.collides(tailGroup, () => {
+    window.GameSystem.Score.submit(snake.life * 100);
+    states.next('gameover');
+});
