@@ -1,25 +1,6 @@
 {
   "games": [
     {
-      "id": "snake-v1",
-      "name": "snake",
-      "description": "super cool",
-      "path": "snake/v1",
-      "version": "v1",
-      "createdAt": "2025-12-13T02:08:37.802Z",
-      "thumbnail": "thumbnail.png",
-      "width": 900,
-      "height": 600
-    },
-    {
-      "id": "snake-v2",
-      "name": "snake",
-      "description": "Version v2",
-      "path": "snake/v2",
-      "version": "v2",
-      "createdAt": "2025-12-13T02:10:01.476Z"
-    },
-    {
       "id": "warrior-v1",
       "name": "warrior",
       "description": "Description par défaut",
