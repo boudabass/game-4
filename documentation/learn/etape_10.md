@@ -1,11 +1,11 @@
 # Étape 10 : Architecture jeu complet (3h)
 
 ## 🎯 Objectifs finaux
-- [ ] Structure pro (fichiers séparés)
-- [ ] Multi-états (Menu, Jeu, Game Over)
-- [ ] Utilisation des `states` p5play
-- [ ] Intégration `GameSystem` (score final)
-- [ ] Plateformer complet v1
+- [x] Structure pro (fichiers séparés)
+- [x] Multi-états (Menu, Jeu, Game Over)
+- [x] Utilisation des `states` p5play (Adapté : Gestionnaire maison switch/case)
+- [x] Intégration `GameSystem` (score final)
+- [x] Plateformer complet v1
 
 ## 📚 Concepts à maîtriser
 
@@ -54,11 +54,11 @@
 Jeu complet avec Menu, Game Over, Score, Vies, Ennemis, Pièces.
 
 ## ✅ Checklist validation
-[ ] 3 états (`menu`, `game`, `gameover`) fonctionnels
-[ ] Logique séparée en fichiers
-[ ] `GameSystem.Score.submit()` appelé à la fin
-[ ] `GameSystem.Lifecycle.notifyReady()` appelé au début
-[ ] Le jeu est un produit fini (Menu → Jeu → Fin)
+[x] 3 états (`menu`, `game`, `gameover`) fonctionnels
+[x] Logique séparée en fichiers
+[x] `GameSystem.Score.submit()` appelé à la fin
+[x] `GameSystem.Lifecycle.notifyReady()` appelé au début
+[x] Le jeu est un produit fini (Menu → Jeu → Fin)
 
 ## 🚨 Erreurs fréquentes
 ❌ Oubli de charger un script dans `index.html` → `undefined`

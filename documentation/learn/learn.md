@@ -113,3 +113,5 @@
 **Objectifs :** Structure pro, multi-états, config  
 **Fonctions clés :** États (menu/jeu/pause), fichiers séparés, config JSON  
 **Mini-jeu final :** *Plateformer complet v1*
+
+**Checklist :** [x] Architecture modulaire [x] Gestion États [x] Config séparée **(VALIDÉE)**
