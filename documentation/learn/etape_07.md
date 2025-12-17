@@ -1,11 +1,11 @@
 # Étape 7 : Physique p5.play (3h)
 
 ## 🎯 Objectifs finaux
-- [ ] Gravité automatique fonctionnelle
-- [ ] Saut précis et contrôlable
-- [ ] 10+ collisions physiques
-- [ ] Plateformer : ne pas tomber
-- [ ] Rebond + limites niveau
+- [x] Gravité automatique fonctionnelle
+- [x] Saut précis et contrôlable
+- [x] 10+ collisions physiques
+- [x] Plateformer : ne pas tomber
+- [x] Rebond + limites niveau
 
 ## 📚 Concepts à maîtriser
 
@@ -56,12 +56,12 @@ Chute = respawn
 Score = plateformes atteintes
 
 ## ✅ Checklist validation
-[ ] Gravité fluide (chute réaliste)
-[ ] Saut précis (pas double-saut)
-[ ] 12+ collisions actives
-[ ] Plateformes variées
-[ ] Respawn après chute
-[ ] Code < 100 lignes
+[x] Gravité fluide (chute réaliste)
+[x] Saut précis (pas double-saut)
+[x] 12+ collisions actives
+[x] Plateformes variées
+[x] Respawn après chute
+[x] Code < 100 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ gravité dans `setup()` → figé
