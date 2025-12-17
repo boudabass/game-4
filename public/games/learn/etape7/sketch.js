@@ -12,7 +12,7 @@ function setup() {
     player.collider = 'dynamic';
     player.rotationLock = true; 
     player.bounciness = 0;
-    player.friction = 0; // Gestion manuelle inertie
+    player.friction = 0;
 
     platforms = new Group();
     platforms.collider = 'static';
@@ -37,9 +37,8 @@ function draw() {
     // --- INPUTS ---
     let targetSpeed = 0;
     
-    // Vitesse réduite à 4 (80% de 5)
-    if (kb.pressing('left')) targetSpeed = -4;
-    if (kb.pressing('right')) targetSpeed = 4;
+    if (kb.pressing('left')) targetSpeed = -5;
+    if (kb.pressing('right')) targetSpeed = 5;
 
     // --- PHYSIQUE DE DÉPLACEMENT ---
     if (isGrounded) {

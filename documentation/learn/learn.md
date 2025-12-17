@@ -69,7 +69,7 @@
 - Sol + 2 plateformes fixes  
 - Sprites visibles, collisions  
 
-**Checklist :** [x] p5.play chargé [x] 3+ sprites [x] drawSprites() fonctionne **(VALIDÉE)**
+**Checklist :** [ ] p5.play chargé [ ] 3+ sprites [ ] drawSprites() fonctionne
 
 ---
 
@@ -81,7 +81,7 @@
 - 5 plateformes + sol  
 - Physique réaliste (chute, rebond)  
 
-**Checklist :** [x] Gravité auto [x] Saut précis [ ] 10+ collisions
+**Checklist :** [ ] Gravité auto [ ] Saut précis [ ] 10+ collisions
 
 ---
 
