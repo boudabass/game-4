@@ -82,15 +82,23 @@ function draw() {
     // 3. Collisions physiques (Ennemis vs Plateformes)
     enemies.collide(platforms);
     
-    // 4. Interactions (Callbacks)
+    // 4. Logique de patrouille des ennemis (Phase 3)
+    for (let enemy of enemies) {
+        // Créer un point de test juste devant l'ennemi
+        let testX = enemy.x + enemy.vel.x * 10;
+        let testY = enemy.y + enemy.h / 2 + 5; // Juste sous les pieds
+        
+        // Si le point devant l'ennemi n'est pas sur une plateforme, ou si l'ennemi est bloqué
+        if (!platforms.overlap(testX, testY) || enemy.colliding(platforms, true)) {
+            enemy.vel.x *= -1; // Inverse la direction
+        }
+    }
     
-    // Joueur collecte pièce (Overlap)
+    // 5. Interactions (Callbacks)
     player.overlaps(coins, collectCoin);
-    
-    // Joueur touche ennemi (Collision)
     player.collides(enemies, hitEnemy);
     
-    // 5. Rendu et UI
+    // 6. Rendu et UI
     allSprites.draw();
     drawUI();
 }
@@ -106,7 +114,7 @@ function handlePlayerDeath() {
         // Game Over simplifié: on réinitialise tout
         lives = 3;
         score = 0;
-        enemies.removeAll(); // Supprime les ennemis sans les détruire du monde (pourrait être delete, mais removeAll est plus sûr ici)
+        enemies.removeAll();
         coins.removeAll();
     }
     resetPlayer();
@@ -114,11 +122,10 @@ function handlePlayerDeath() {
 
 function collectCoin(player, coin) {
     score += 10;
-    coin.remove(); // Supprime la pièce du monde
+    coin.remove();
 }
 
 function hitEnemy(player, enemy) {
-    // L'ennemi est détruit, le joueur perd une vie
     enemy.remove();
     handlePlayerDeath();
 }
@@ -126,7 +133,7 @@ function hitEnemy(player, enemy) {
 function spawnEnemy() {
     let x = random(50, width - 50);
     let enemy = new enemies.Sprite(x, 0, 25, 25);
-    enemy.vel.x = random([-1, 1]); 
+    enemy.vel.x = random([-1, 1]) * 2; // Vitesse de patrouille
     enemy.friction = 0;
     enemy.bounciness = 0;
 }
