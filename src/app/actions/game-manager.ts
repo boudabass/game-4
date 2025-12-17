@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { readdir, stat } from 'fs/promises';
 import { getDb, GameMetadata } from '@/lib/database';
+import { revalidatePath } from 'next/cache'; // Importation nécessaire
 
 const GAMES_DIR = path.join(process.cwd(), 'public', 'games');
 
@@ -254,6 +255,7 @@ export async function createGameFolder(gameName: string, width = 800, height = 6
   }
 
   await createStandardGameFiles(safeName, 'v1', { bgColor: '#000000' });
+  revalidatePath('/games');
 
   return {
     success: true,
@@ -306,6 +308,7 @@ export async function createGameVersion(gameName: string, versionName: string) {
     }
 
     await createStandardGameFiles(gameName, safeVersion, { bgColor: '#000000' });
+    revalidatePath('/games');
 
     return {
       success: true,
@@ -362,6 +365,10 @@ export async function deleteGame(gameFolderName: string) {
     return { games: gamesToKeep, scores: scoresToKeep };
   });
 
+  revalidatePath('/games');
+  revalidatePath('/dashboard');
+  revalidatePath('/scores');
+
   return { success: true };
 }
 
@@ -393,6 +400,10 @@ export async function deleteVersion(gameFolderName: string, versionName: string)
     };
   });
   
+  revalidatePath('/games');
+  revalidatePath('/dashboard');
+  revalidatePath('/scores');
+
   return { success: true };
 }
 
@@ -423,6 +434,10 @@ export async function updateGameMetadata(gameFolderName: string, version: string
   try {
     await fs.writeFile(path.join(dirPath, 'description.md'), newDescription);
   } catch (e) { }
+
+  revalidatePath('/games');
+  revalidatePath('/dashboard');
+  revalidatePath('/scores');
 
   return { success: true };
 }
@@ -466,5 +481,7 @@ export async function generateIndexHtml(gameName: string, version: string, confi
   } catch (e) { }
 
   // On rappelle la fonction interne qui contient le template
-  return await createStandardGameFiles(gameName, version, config);
+  const result = await createStandardGameFiles(gameName, version, config);
+  revalidatePath('/games');
+  return result;
 }
