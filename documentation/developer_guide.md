@@ -20,8 +20,6 @@ mon-jeu/v1/
 
 Ton fichier `index.html` **doit** inclure le script de configuration ET les librairies **q5/p5play** avant tes propres scripts.
 
-**ATTENTION : Nous n'utilisons PLUS p5.js seul. Utilisez q5.js et p5play.**
-
 ```html
 <!DOCTYPE html>
 <html lang="fr">
@@ -43,35 +41,39 @@ Ton fichier `index.html` **doit** inclure le script de configuration ET les libr
     <script src="https://unpkg.com/p5play@3/build/p5play.min.js"></script>
 
     <!-- 3️⃣ CHARGEMENT DU SYSTÈME (Ne pas modifier ce chemin) -->
-    <script src="../../system/system.js"></script>
+    <script src="/system/system.js"></script>
 
     <!-- 4️⃣ TON JEU -->
     <script src="main.js"></script>
-</body>
+</head>
+<body>
 </html>
 ```
 
-## 3. L'API `GameSystem` et la Boucle de Jeu
+## 3. Mode de Rendu et Stabilité (Règle d'Or)
+
+Pour garantir une compatibilité maximale et éviter les erreurs liées au matériel graphique (GPU), tous les jeux doivent :
+
+1.  **Forcer q5.js en mode Canvas 2D.**
+    Ajoutez cette ligne tout en haut de votre fichier de jeu principal (`main.js`).
+    ```javascript
+    // Force le mode de rendu 2D, compatible partout.
+    q5.mode = '2d';
+    ```
+
+2.  **Limiter la cadence de rendu à 60 FPS.**
+    Ajoutez cette ligne dans votre fonction `q5.setup`.
+    ```javascript
+    q5.setup = () => {
+        new Canvas(windowWidth, windowHeight);
+        frameRate(60); // Stabilise l'expérience sur tous les écrans.
+        // ...
+    };
+    ```
+
+## 4. L'API `GameSystem` et la Boucle de Jeu
 
 Une fois le système chargé, tu as accès à l'objet global `window.GameSystem`.
-
-### Boucle de Jeu (q5.js)
-La boucle de jeu est désormais définie par `q5.setup` et `q5.draw`.
-
-```javascript
-// main.js
-q5.setup = () => {
-    // Crée la zone de dessin (Canvas)
-    new Canvas(windowWidth, windowHeight); 
-    // Initialisation des sprites et groupes
-    // ...
-};
-
-q5.draw = () => {
-    clear(); // Nettoie l'écran
-    // La logique de p5play (mouvement, collisions) est gérée automatiquement
-};
-```
 
 ### 🏆 Gestion des Scores
 
@@ -108,12 +110,3 @@ Permet de basculer le jeu en plein écran sans code complexe.
 
 ```javascript
 window.GameSystem.Display.toggleFullscreen();
-```
-
----
-
-## ⚠️ Règles Importantes
-1.  **Librairies :** Utiliser **q5.js** et **p5play**. Oubliez l'utilisation de `p5.js` seul.
-2.  **Pas de Backend Custom :** Ton jeu doit être 100% statique (JS/HTML/CSS).
-3.  **Chemins Relatifs :** Utilise toujours `./assets/image.png`, jamais `/games/mon-jeu/...`.
-4.  **Propreté :** N'utilise pas `localStorage` pour les données critiques. Utilise `GameSystem.Score`.
