@@ -62,96 +62,6 @@
       "height": 600
     },
     {
-      "id": "p5-learn-etape1",
-      "name": "P5.js Apprentissage - Étape 1",
-      "description": "Bases p5.js : Canvas, Formes, Couleurs, Suivi Souris.",
-      "path": "learn/etape1",
-      "version": "etape1",
-      "createdAt": "2025-12-17T12:00:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape2",
-      "name": "P5.js Apprentissage - Étape 2",
-      "description": "Variables et États : Animation, Score, Game Over.",
-      "path": "learn/etape2",
-      "version": "etape2",
-      "createdAt": "2025-12-17T12:30:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape3",
-      "name": "P5.js Apprentissage - Étape 3",
-      "description": "Inputs utilisateur : Clavier, Souris, Touch et Collecte.",
-      "path": "learn/etape3",
-      "version": "etape3",
-      "createdAt": "2025-12-17T13:00:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape4",
-      "name": "P5.js Apprentissage - Étape 4",
-      "description": "Organisation du code : Fonctions, Mini-shooter.",
-      "path": "learn/etape4",
-      "version": "etape4",
-      "createdAt": "2025-12-17T13:30:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape5",
-      "name": "P5.js Apprentissage - Étape 5",
-      "description": "Tableaux et Collisions : Gestion de multiples entités.",
-      "path": "learn/etape5",
-      "version": "etape5",
-      "createdAt": "2025-12-17T14:00:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape6",
-      "name": "P5.js Apprentissage - Étape 6",
-      "description": "p5.play Sprites : Sprites de base et mouvement.",
-      "path": "learn/etape6",
-      "version": "etape6",
-      "createdAt": "2025-12-17T14:30:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape7",
-      "name": "P5.js Apprentissage - Étape 7",
-      "description": "Physique p5.play : Gravité, sauts, collisions multiples.",
-      "path": "learn/etape7",
-      "version": "etape7",
-      "createdAt": "2025-12-17T15:00:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape8",
-      "name": "P5.js Apprentissage - Étape 8",
-      "description": "Groupes et Interactions : Gestion de multiples entités via Groupes p5.play.",
-      "path": "learn/etape8",
-      "version": "etape8",
-      "createdAt": "2025-12-17T15:30:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
-      "id": "p5-learn-etape9",
-      "name": "P5.js Apprentissage - Étape 9",
-      "description": "Caméra et HUD : Monde étendu et interface fixe.",
-      "path": "learn/etape9",
-      "version": "etape9",
-      "createdAt": "2025-12-17T16:00:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
       "id": "p5-learn-etape10",
       "name": "P5.js Apprentissage - Étape 10",
       "description": "Architecture Complète : États, Classes, Config.",
@@ -162,14 +72,5 @@
       "height": 600
     }
   ],
-  "scores": [
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 60,
-      "date": "2025-12-17T13:19:48.503Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    }
-  ]
+  "scores": []
 }
