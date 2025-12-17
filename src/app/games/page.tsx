@@ -1,4 +1,3 @@
-
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardFooter } from "@/components/ui/card"
@@ -6,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Play } from "lucide-react"
 import Link from "next/link"
 import { getDb } from "@/lib/database"
+
+export const dynamic = 'force-dynamic'; // Ajout de cette ligne
 
 export default async function GamesPage() {
     const supabase = await createClient()

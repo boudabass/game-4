@@ -1,4 +1,3 @@
-
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,6 +5,8 @@ import { Trophy, Gamepad2 } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { getDb, Score } from "@/lib/database"
+
+export const dynamic = 'force-dynamic'; // Ajout de cette ligne
 
 export default async function ScoresPage() {
     const supabase = await createClient()
