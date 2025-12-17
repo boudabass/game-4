@@ -114,13 +114,22 @@
     {
       "id": "p5-learn-etape6",
       "name": "P5.js Apprentissage - Étape 6",
-      "description": "Passage à p5.play : Sprites, Colliders et Rendu automatique.",
+      "description": "p5.play Sprites : Sprites de base et mouvement.",
       "path": "learn/etape6",
       "version": "etape6",
       "createdAt": "2025-12-17T14:30:00.000Z",
       "width": 800,
       "height": 600
+    },
+    {
+      "id": "p5-learn-etape7",
+      "name": "P5.js Apprentissage - Étape 7",
+      "description": "Physique p5.play : Gravité, sauts, collisions multiples.",
+      "path": "learn/etape7",
+      "version": "etape7",
+      "createdAt": "2025-12-17T15:00:00.000Z",
+      "width": 800,
+      "height": 600
     }
-  ],
-  "scores": []
+  ]
 }
