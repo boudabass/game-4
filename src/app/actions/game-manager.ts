@@ -7,6 +7,7 @@ import { getDb, GameMetadata } from '@/lib/database';
 import { revalidatePath } from 'next/cache'; // Importation nécessaire
 
 const GAMES_DIR = path.join(process.cwd(), 'public', 'games');
+const EXCLUDED_FOLDERS = ['system']; // Dossiers à ignorer
 
 // S'assurer que le dossier games existe
 async function ensureGamesDir() {
@@ -72,7 +73,7 @@ export async function listGamesFolders(): Promise<GameFolder[]> {
   const entries = await readdir(GAMES_DIR, { withFileTypes: true });
 
   const gameFoldersPromises = entries
-    .filter(entry => entry.isDirectory())
+    .filter(entry => entry.isDirectory() && !EXCLUDED_FOLDERS.includes(entry.name))
     .map(async (entry) => {
       const gamePath = path.join(GAMES_DIR, entry.name);
       const stats = await stat(gamePath);
