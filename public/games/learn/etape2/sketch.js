@@ -3,6 +3,7 @@ let y;
 let speedX;
 let speedY;
 const size = 50;
+let score = 0; // Nouvelle variable pour le score
 
 function setup() {
     createCanvas(800, 600);
@@ -13,6 +14,9 @@ function setup() {
     y = height / 2;
     speedX = 3;
     speedY = 2;
+    
+    // Initialisation du score
+    score = 0;
 }
 
 function draw() {
@@ -34,4 +38,13 @@ function draw() {
     fill(255, 100, 0); // Orange
     rectMode(CENTER);
     rect(x, y, size, size);
+    
+    // --- NOUVEAU : Affichage du score ---
+    score = floor(frameCount / 60); // Compte les secondes (si frameRate est 60)
+    
+    fill(255); // Texte blanc
+    textSize(24);
+    textAlign(LEFT, TOP);
+    text("Score: " + score, 20, 20);
+    // ------------------------------------
 }
