@@ -60,6 +60,16 @@
       "createdAt": "2025-12-17T10:00:00.000Z",
       "width": 800,
       "height": 600
+    },
+    {
+      "id": "p5-learn-etape1",
+      "name": "P5.js Apprentissage - Étape 1",
+      "description": "Bases p5.js : Canvas, Formes, Couleurs, Suivi Souris.",
+      "path": "learn/etape1",
+      "version": "etape1",
+      "createdAt": "2025-12-17T12:00:00.000Z",
+      "width": 800,
+      "height": 600
     }
   ],
   "scores": [
