@@ -1,73 +1,67 @@
-# 🚀 Patterns : Physique & Mouvement
+# 🚀 Patterns : Physique & Mouvement (Standard Q5/P5Play)
 
-La plupart des jeux interactifs (Asteroids, Forest) nécessitent une simulation physique, même basique.
+La simulation physique est désormais gérée par **P5Play** (basé sur Box2D), ce qui simplifie grandement le code.
 
-## 1. La Puissance des Vecteurs (`p5.Vector`)
+## 1. La Puissance des Sprites
 
-Au lieu de gérer `x`, `y`, `speedX`, `speedY` séparément, utilisez `p5.Vector`. C'est le standard utilisé dans **Asteroids**.
+Au lieu de gérer manuellement les vecteurs, nous manipulons les propriétés des objets `Sprite` de P5Play.
 
-### Le Trio Sacré :
-1.  **Position (`pos`)** : Où je suis.
-2.  **Vitesse (`vel`)** : De combien je bouge à chaque frame.
-3.  **Accélération (`acc`)** : La force du moteur / gravité.
+### Le Trio Sacré (Propriétés de Sprite) :
+1.  **Position (`sprite.x`, `sprite.y`)** : Où je suis.
+2.  **Vitesse (`sprite.vel.x`, `sprite.vel.y`)** : De combien je bouge à chaque frame.
+3.  **Accélération (`sprite.acc.x`, `sprite.acc.y`)** : La force du moteur / gravité.
 
 ```javascript
-/* Dans votre classe (ex: Ship.js) */
-constructor() {
-    this.pos = createVector(width/2, height/2);
-    this.vel = createVector(0, 0);
-    this.acc = createVector(0, 0);
+/* Dans votre logique de jeu (ex: Ship.js) */
+
+// Création d'un sprite
+let ship = new Sprite(width/2, height/2, 50);
+
+// Appliquer une force (ex: moteur)
+function applyThrust() {
+    // P5Play gère l'application de la force et la mise à jour de la vitesse/position
+    ship.applyForce(0.5, ship.rotation); 
 }
 
-applyForce(force) {
-    this.acc.add(force); // F = ma (si m=1)
-}
-
-update() {
-    this.vel.add(this.acc); // La vitesse change selon l'accélération
-    this.pos.add(this.vel); // La position change selon la vitesse
-    this.acc.mult(0);       // On remet l'accélération à 0 pour la prochaine frame
-}
+// Mise à jour (Automatique)
+// P5Play met à jour la position du sprite automatiquement dans la boucle draw().
+// Vous n'avez plus besoin d'une fonction update() manuelle pour la physique.
 ```
 
 ## 2. Le Mouvement de Caméra ("Scrolling")
 
-Pour un jeu plus grand que l'écran (comme **Forest**), on ne bouge pas la "caméra" (qui n'existe pas en 2D), on bouge **tout le monde** dans le sens inverse du joueur.
+Pour un jeu plus grand que l'écran (comme l'ancien Forest), P5Play offre une gestion de caméra intégrée.
 
-### Technique : `translate()`
-Utilisez `push()` et `pop()` pour isoler ce mouvement du HUD (score, vies).
+### Technique : `camera`
+Utilisez l'objet `camera` global pour suivre un sprite.
 
 ```javascript
-/* Dans draw() */
+/* Dans q5.setup() */
+let player = new Sprite(0, 0, 20);
+camera.x = player.x;
+camera.y = player.y;
 
-// 1. Calcul du décalage (Le joueur doit rester au centre)
-let camX = -player.x + width / 2;
-let camY = -player.y + height / 2;
+/* Dans q5.draw() */
+// La caméra suit automatiquement le joueur
+camera.x = player.x;
+camera.y = player.y;
 
-push(); 
-    // Appliquer le décalage à tout ce qui est dessiné ensuite
-    translate(camX, camY); 
-    
-    // Dessiner le monde
-    ground.show();
-    enemies.forEach(e => e.show());
-    player.show(); 
-pop();
-
-// 2. Dessiner le HUD (Sans translate, donc fixe à l'écran)
-fill(255);
-text("Score: " + score, 20, 20);
+// Le HUD (Score) doit être dessiné en utilisant camera.off()
+camera.off();
+    fill(255);
+    text("Score: " + score, 20, 20);
+camera.on();
 ```
 
 ## 3. L'Espace Infini ("Wrap Around")
 
 Utilisé dans **Asteroids**. Si on sort à droite, on rentre à gauche.
 
+### Technique : `sprite.wrap()`
+C'est désormais une méthode intégrée à chaque sprite.
+
 ```javascript
-function wrapEdges(obj) {
-    if (obj.pos.x > width)  obj.pos.x = 0;
-    if (obj.pos.x < 0)      obj.pos.x = width;
-    if (obj.pos.y > height) obj.pos.y = 0;
-    if (obj.pos.y < 0)      obj.pos.y = height;
+function q5.draw() {
+    // Le sprite réapparaît de l'autre côté de l'écran
+    ship.wrap(); 
 }
-```

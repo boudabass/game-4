@@ -1,4 +1,6 @@
-# Analyse Pédagogique : The Healing Forest
+# Analyse Pédagogique : The Healing Forest (Architecture Héritée - LEGACY p5.js)
+
+**⚠️ ATTENTION :** Ce document décrit l'architecture du jeu Forest, qui utilisait l'ancienne librairie **p5.js**. Pour tout nouveau développement, vous devez utiliser le standard **Q5.js + P5Play**. Cette analyse est conservée à titre historique et pédagogique pour comprendre les problèmes que P5Play résout.
 
 Ce document décompose le jeu **Forest** pour comprendre comment un jeu **p5.js** est structuré.
 

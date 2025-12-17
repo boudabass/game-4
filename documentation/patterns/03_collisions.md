@@ -1,56 +1,63 @@
-# 💥 Patterns : Collisions & Interactions
+# 💥 Patterns : Collisions & Interactions (Standard Q5/P5Play)
 
-Détecter quand deux objets se touchent est crucial. Voici les méthodes du simple au complexe.
+La détection de collision est désormais gérée par le moteur de physique de **P5Play**, ce qui élimine le besoin de calculs manuels.
 
-## 1. Cercle vs Cercle (Le plus simple)
-Utilisé pour les balles, astéroïdes, ou personnages ronds.
-Très rapide à calculer (distance).
+## 1. Collision entre Sprites ou Groupes
+
+P5Play utilise des méthodes simples pour gérer les interactions.
+
+### Collision avec Callback (Le plus courant)
+Détecte la collision et exécute une fonction immédiatement.
 
 ```javascript
-// p5.js offre la fonction dist()
-let d = dist(obj1.x, obj1.y, obj2.x, obj2.y);
+// Si le joueur touche un powerup (qui est dans le groupe 'powerups')
+player.collides(powerups, (playerSprite, powerupSprite) => {
+    powerupSprite.remove(); // Le powerup disparaît
+    playerSprite.score += 100;
+});
+```
 
-// Si la distance est plus petite que la somme des rayons -> BOOM
-if (d < obj1.radius + obj2.radius) {
-    return true; // Collision !
+### Overlap (Chevauchement)
+Vérifie si deux sprites se chevauchent sans appliquer de force de rebond (utile pour les zones de déclenchement ou la nourriture).
+
+```javascript
+if (player.overlaps(foodGroup)) {
+    let eaten = player.overlapping(foodGroup);
+    eaten.remove();
 }
 ```
 
-## 2. Rectangle vs Rectangle (AABB)
-Utilisé dans **Breakout** ou les platformers classiques (Mario).
-On vérifie si les boîtes se chevauchent.
+## 2. Hitbox et Formes
+
+P5Play gère les formes de collision automatiquement (cercle, rectangle, polygone).
+
+*   **Cercle vs Cercle :** Par défaut pour les sprites créés sans forme spécifique.
+*   **Rectangle vs Rectangle (AABB) :** Spécifiez la forme lors de la création du sprite.
 
 ```javascript
-if (
-    rect1.x < rect2.x + rect2.w &&
-    rect1.x + rect1.w > rect2.x &&
-    rect1.y < rect2.y + rect2.h &&
-    rect1.y + rect1.h > rect2.y
-) {
-    return true; // Collision !
-}
+// Création d'un sprite rectangulaire
+let block = new Sprite(100, 100, 50, 50, 'box'); 
 ```
 
-## 3. Optimisation : Le Quadtree (Pour beaucoup d'objets)
-Si vous avez 100 astéroïdes et 50 balles, faire 5000 vérifications par frame va faire laguer le jeu.
-**Solution :** Le Quadtree (utilisé dans **Asteroids**).
+## 3. Optimisation : Le Moteur de Physique
 
-*   **Principe :** Diviser l'écran en 4 zones, récursivement.
-*   **Logique :** "Si je suis en haut à gauche, je ne teste la collision qu'avec les objets en haut à gauche."
-
-*Note : Une librairie `Quadtree.js` est souvent utilisée plutôt que de le recoder soi-même.*
+L'optimisation des collisions (comme l'ancien Quadtree) est gérée en interne par le moteur de physique (Box2D) utilisé par P5Play. Vous n'avez plus besoin de vous en soucier.
 
 ## 4. Gestion des "Hitbox"
-Souvent, l'image (sprite) est carrée mais l'objet est rond.
-**Conseil :** Découplez l'affichage de la logique.
+La hitbox est définie par la taille du sprite.
+
+**Conseil :** Si vous utilisez une image (sprite.img), vous pouvez ajuster la taille de la hitbox indépendamment de la taille de l'image affichée.
 
 ```javascript
 class Enemy {
-    show() {
-        image(this.sprite, this.x, this.y); // Affiche l'image
+    constructor(x, y) {
+        // Crée un sprite de 50x50
+        this.sprite = new Sprite(x, y, 50, 50); 
+        this.sprite.img = 'assets/monster.png';
         
-        // Debug : voir la hitbox réelle
-        // noFill(); stroke(255, 0, 0); ellipse(this.x, this.y, this.radius * 2); 
+        // Réduit la hitbox à 30x30 pour un jeu plus indulgent
+        this.sprite.collider = 'box';
+        this.sprite.w = 30;
+        this.sprite.h = 30;
     }
 }
-```

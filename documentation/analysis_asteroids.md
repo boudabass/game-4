@@ -1,4 +1,6 @@
-# Analyse Pédagogique : Asteroids
+# Analyse Pédagogique : Asteroids (Architecture Héritée - LEGACY p5.js)
+
+**⚠️ ATTENTION :** Ce document décrit l'architecture du jeu Asteroids, qui utilisait l'ancienne librairie **p5.js**. Pour tout nouveau développement, vous devez utiliser le standard **Q5.js + P5Play**. Cette analyse est conservée à titre historique et pédagogique pour comprendre les problèmes que P5Play résout.
 
 Ce document décompose le jeu **Asteroids** pour comprendre une approche plus "Orientée Objet" et mathématique.
 
