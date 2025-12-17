@@ -1,43 +1,49 @@
-# Roadmap & État du Projet : Game Center Seniors
+# Roadmap & État du Projet : Game Center
 
-## 🏁 État Actuel (v1.4 - Automatisation & Robustesse)
+## 🏁 État Actuel (v2.0 - Standardisation p5play & GameSystem)
 
-L'architecture est **hybride, robuste et flexible**. L'interface d'administration permet une gestion complète du cycle de vie des jeux. L'importation est désormais intelligente et préserve l'intégrité des jeux originaux.
+L'architecture est désormais **standardisée** autour de la stack **p5.js + p5play v3** et du **GameSystem Hub**. L'approche "le jeu s'adapte au système" a été adoptée pour plus de robustesse et de simplicité de développement.
 
 ### 🏗️ Architecture Validée
 
-1.  **Données (Source Unique) :**
+1.  **Stack de Jeu :**
+    *   **Moteur :** p5.js + p5play v3.
+    *   **Communication :** `GameSystem Hub` (`system.js`) pour les scores, l'UI et le cycle de vie.
+
+2.  **Données (Source Unique) :**
     *   **Moteur :** Lowdb (JSON pur).
     *   **Fichier :** `data/db.json` (Persistant via volume Docker).
-    *   **Contenu :** Métadonnées des jeux (`games` avec résolution) + Scores globaux (`scores`).
+    *   **Contenu :** Métadonnées des jeux (`games`) + Scores globaux (`scores`) liés aux utilisateurs Supabase.
 
-2.  **Fichiers de Jeux (Statique) :**
+3.  **Fichiers de Jeux (Statique) :**
     *   **Stockage :** Dossier physique `/public/games/{jeu}/{version}/`.
     *   **Accès :** Servis statiquement par Next.js.
 
 ### ✅ Fonctionnalités Implémentées
 
 #### 1. Authentification & Admin
+*   [x] Authentification complète des joueurs via Supabase.
 *   [x] Page de Login (`/login`) & Protection `/admin`.
-*   [x] Détection, Création, Versioning et Upload de jeux.
-*   [x] Gestion complète via l'onglet "Gérer" (Liste, Suppression, Édition).
-*   [x] Upload de Thumbnails et mise à jour des Métadonnées (Titre/Description).
-*   [x] **Nouveau :** Ajout et gestion de la **résolution native (largeur/hauteur)** pour chaque version de jeu.
-*   [x] **Nouveau :** Injection intelligente de l'API dans les `index.html` existants lors de l'import.
+*   [x] Gestion complète du cycle de vie des jeux (Création, Versioning, Upload, Suppression).
+*   [x] Mise à jour des métadonnées (Titre, Description, Résolution).
+*   [x] **Nouveau :** L'admin panel ne fait plus d'injection "magique". Il crée des squelettes de jeux standards et attend des jeux conformes au `Developer Guide`.
 
 #### 2. API & Scores
-*   [x] **POST /api/scores** : Sauvegarde dans Lowdb.
-*   [x] **GET /api/scores** : Récupération du Top 10.
+*   [x] **POST /api/scores** : Sauvegarde sécurisée dans Lowdb, liée à l'utilisateur authentifié.
+*   [x] **GET /api/scores** : Récupération du Top 10 par jeu.
+*   [x] **GET /api/my-scores** : API pour le profil utilisateur.
 
-#### 3. Frontend Public ("Senior First")
-*   [x] **Accueil (`/`)** : Grille de jeux lisible, affichage des meilleurs scores et des images de couverture.
-*   [x] **Zone de Jeu (`/play/[id]`)** : Lecteur dynamique avec scaling intelligent et gestion robuste du chargement (timeout de sécurité).
+#### 3. Frontend Joueur
+*   [x] **Dashboard (`/dashboard`)** : Hub central pour les joueurs connectés.
+*   [x] **Catalogue de jeux (`/games`)** : Grille de jeux lisible.
+*   [x] **Zone de Jeu (`/play/[id]`)** : Lecteur de jeu avec UI système (`GameSystem`) injectée automatiquement (Menu ☰, Plein écran).
+*   [x] **Profil (`/profile`)** : Historique des scores personnels.
+*   [x] **Classements (`/scores`)** : Temple de la renommée global.
 
-#### 4. Stabilisation & Corrections
-*   [x] **Correction Critique :** Fiabilisation de la sauvegarde des métadonnées.
-*   [x] **Correction Affichage :** Scaling pixel-perfect et gestion des bordures.
-*   [x] **Correction Import :** Support des chemins relatifs pour les jeux à structure plate (ex: Forest).
-*   [x] **Fiabilité TypeScript :** Refactoring complet du backend.
+#### 4. Stabilisation & Standardisation
+*   [x] **Refactoring Complet :** Passage à une architecture de jeu standardisée avec p5play.
+*   [x] **Documentation :** Création d'un guide développeur et de patterns de développement (`documentation/patterns/`).
+*   [x] **Fiabilité TypeScript :** Typage strict sur tout le backend.
 
 ### 🐳 Infrastructure Docker
 *   **Volumes :** `data` (JSON) et `games` (Fichiers) sont persistants.
@@ -46,8 +52,13 @@ L'architecture est **hybride, robuste et flexible**. L'interface d'administratio
 
 ## 📅 Prochaines Étapes (Backlog)
 
-1.  **Amélioration UI (Mineur) :**
-    *   Ajouter un feedback visuel lors du chargement des fichiers volumineux.
+1.  **Amélioration UI Admin :**
+    *   Ajouter un feedback visuel lors de l'upload de fichiers volumineux.
+    *   Prévisualisation des jeux directement depuis l'admin panel.
 
-2.  **Mode Hors-ligne (PWA) :**
-    *   Rendre l'application installable sur tablette.
+2.  **Fonctionnalités Joueur :**
+    *   Statistiques de jeu avancées sur la page de profil.
+    *   Système de "favoris" pour les jeux.
+
+3.  **Mode Hors-ligne (PWA) :**
+    *   Rendre l'application installable sur tablette pour un accès rapide.

@@ -1,9 +1,18 @@
 # 📘 Guide Développeur - Création de Jeux pour la Plateforme
 
 Bienvenue ! Ce guide explique comment rendre ton jeu compatible avec notre plateforme (Game Center).
-Nous utilisons un système standardisé appelé **GameSystem**.
+Nous utilisons un système standardisé appelé **GameSystem** et nous recommandons fortement la stack **p5.js + p5play v3**.
 
-## 1. Structure Requise
+## 1. Stack Technique Recommandée
+
+Pour une intégration rapide et robuste, nous recommandons :
+*   **Moteur de rendu :** p5.js
+*   **Moteur physique & sprites :** p5play v3
+*   **Communication :** GameSystem Hub (`system.js`)
+
+Consultez les `documentation/patterns/` pour des exemples de code et des bonnes pratiques avec p5play.
+
+## 2. Structure Requise
 
 Chaque jeu doit être autonome dans son dossier. La structure minimale est :
 
@@ -16,7 +25,7 @@ mon-jeu/v1/
 └── assets/             (Tes images, sons, etc.)
 ```
 
-## 2. Configuration (`index.html`)
+## 3. Configuration (`index.html`)
 
 Ton fichier `index.html` **doit** inclure le script de configuration ET le script système **avant** tes propres scripts.
 
@@ -28,12 +37,13 @@ Ton fichier `index.html` **doit** inclure le script de configuration ET le scrip
     <title>Mon Jeu</title>
     <style> body { margin: 0; overflow: hidden; background: #000; } </style>
     
-    <!-- Bibliothèques (ex: p5.js) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <!-- 1️⃣ Bibliothèques (p5.js + p5play) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+    <script src="https://unpkg.com/p5play@3/build/p5play.min.js"></script>
 </head>
 <body>
 
-    <!-- 1️⃣ CONFIGURATION OBLIGATOIRE -->
+    <!-- 2️⃣ CONFIGURATION OBLIGATOIRE -->
     <script>
         window.DyadGame = { 
             id: 'mon-jeu-v1',   // Doit être unique (minuscules, tirets)
@@ -41,16 +51,16 @@ Ton fichier `index.html` **doit** inclure le script de configuration ET le scrip
         };
     </script>
 
-    <!-- 2️⃣ CHARGEMENT DU SYSTÈME (Ne pas modifier ce chemin) -->
+    <!-- 3️⃣ CHARGEMENT DU SYSTÈME (Ne pas modifier ce chemin) -->
     <script src="../../system/system.js"></script>
 
-    <!-- 3️⃣ TON JEU -->
+    <!-- 4️⃣ TON JEU -->
     <script src="main.js"></script>
 </body>
 </html>
 ```
 
-## 3. L'API `GameSystem`
+## 4. L'API `GameSystem`
 
 Une fois le système chargé, tu as accès à l'objet global `window.GameSystem`.
 
@@ -65,11 +75,11 @@ Appelle cette méthode quand le joueur perd ou termine une partie.
 // async submit(score: number, playerName?: string)
 await window.GameSystem.Score.submit(1500); 
 
-// Exemple dans une boucle de jeu p5.js
-function gameOver() {
+// Exemple dans une boucle de jeu p5play
+snake.collides = function() {
     window.GameSystem.Score.submit(score);
-    noLoop();
-}
+    states.next('gameover'); // Change de scène
+};
 ```
 
 #### Récupérer les meilleurs scores (Leaderboard)
@@ -82,9 +92,10 @@ console.log(highScores[0]); // Affiche le meilleur score
 
 ### 🖥️ Affichage & Outils
 
-#### Mode Plein Écran
-Permet de basculer le jeu en plein écran sans code complexe.
+Le `GameSystem` injecte une UI par-dessus ton jeu avec un menu ☰ et un bouton plein écran. Tu n'as pas besoin de les recréer.
 
+#### Mode Plein Écran
+Tu peux toujours le déclencher par code si voulu :
 ```javascript
 window.GameSystem.Display.toggleFullscreen();
 ```

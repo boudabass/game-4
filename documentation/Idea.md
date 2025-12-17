@@ -1,84 +1,58 @@
-# Cahier des Charges - Game Center Seniors (Architecture 100% Lowdb)
+# Cahier des Charges - Game Center Seniors (Architecture Standardisée)
 
 ## 🎯 Objectif
-Plateforme ludique pour seniors avec une architecture centralisée.
+Plateforme ludique pour seniors avec une architecture centralisée et standardisée.
 **Règle d'Or : TOUTES les données (Métadonnées des jeux + Scores des joueurs) sont stockées EXCLUSIVEMENT dans Lowdb (`data/db.json`).**
 
 ## 🏗️ Architecture Technique
+
+### Stack de Jeu
+*   **Moteur de rendu :** p5.js
+*   **Moteur physique & sprites :** p5play v3
+*   **Communication :** GameSystem Hub (`system.js`)
 
 ### Stockage (Source de Vérité Unique)
 *   **Base de données :** Lowdb (JSON local).
 *   **Fichier :** `data/db.json` (Persistant via Docker Volume).
 *   **Contenu :**
-    *   `games`: Liste des jeux installés, versions, chemins, descriptions.
-    *   `scores`: Historique complet des scores de tous les joueurs.
+    *   `games`: Liste des jeux (releases) installés, versions, chemins, descriptions.
+    *   `scores`: Historique complet des scores de tous les joueurs, lié à un `userId` Supabase.
 
 ### Flux de Données (Le "Pont")
-1.  **Jeu (Client/Iframe)** : Le jeu p5.js tourne dans le navigateur.
-2.  **Pont (window.GameAPI)** : `index.html` injecte un script qui expose `saveScore()` et `getHighScores()`.
-3.  **Transport** : `fetch('/api/scores')` envoie les données au serveur Next.js.
-4.  **Serveur (API)** : Next.js reçoit la requête, ouvre Lowdb, et écrit dans `data/db.json`.
+1.  **Jeu (Client/Iframe)** : Le jeu p5.js + p5play tourne dans le navigateur.
+2.  **Pont (window.GameSystem)** : `index.html` charge `system.js` qui expose l'API `GameSystem`.
+3.  **Logique du jeu** : Appelle `window.GameSystem.Score.submit(score)`.
+4.  **Transport** : `system.js` fait un `fetch('/api/scores')` sécurisé (avec cookie d'authentification) vers le serveur Next.js.
+5.  **Serveur (API)** : Next.js reçoit la requête, valide l'utilisateur via Supabase, ouvre Lowdb, et écrit dans `data/db.json`.
 
 **Il n'y a PAS de LocalStorage pour les données persistantes.**
 
-## 📂 Structure des Fichiers (Statique + Logique)
+## 📂 Structure des Fichiers Standard
 
 Le serveur sert les fichiers, la DB gère les données.
 
 ```text
 public/games/tetris/v1/
-├── index.html     ← GÉNÉRÉ PAR ADMIN. Contient le script de liaison vers Lowdb.
-├── sketch.js      ← Logique du jeu (p5.js). Appelle GameAPI.saveScore().
-├── data.js        ← Données statiques du jeu.
-└── hud.js         ← Interface. Affiche les scores récupérés via GameAPI.getHighScores().
+├── index.html     ← Fichier standard qui charge p5play et system.js.
+├── main.js        ← Logique du jeu (p5play). Appelle GameSystem.Score.submit().
+└── assets/        ← (Optionnel) images, sons.
 ```
 
 ## 🔐 Fonctionnalités & Routes
 
-### /games (Public)
-*   Lit **Lowdb** pour afficher la grille des jeux disponibles.
+### / (Public)
+*   Landing page. Redirige vers `/dashboard` si connecté.
+
+### /dashboard (Privé)
+*   Affiche la grille des jeux disponibles depuis **Lowdb**.
 *   Affiche le "Meilleur Score Global" pour chaque jeu (depuis **Lowdb**).
 
-### /games/[id] (Joueur)
+### /play/[id] (Joueur)
 *   Charge l'iframe du jeu.
-*   L'iframe charge les High Scores depuis **Lowdb** via l'API pour les afficher dans le HUD.
-*   À la fin de la partie, le score est envoyé dans **Lowdb**.
+*   Le jeu charge `system.js` qui injecte le menu ☰ et gère les scores.
+*   À la fin de la partie, le score est envoyé dans **Lowdb** via `GameSystem`.
 
-### /admin (Privé)
+### /admin (Privé - Rôle Admin)
 *   **Création** : Créer un dossier physique ET une entrée dans **Lowdb** (`games`).
-*   **Upload** : Ajoute les fichiers `.js` dans le dossier.
-*   **Génération** : Crée le `index.html` qui contient l'ID unique du jeu pour faire le lien avec **Lowdb**.
-
-## 💾 Schéma Lowdb (`data/db.json`)
-
-```json
-{
-  "games": [
-    {
-      "id": "tetris-v1",
-      "name": "Tetris",
-      "path": "tetris/v1",
-      "version": "v1",
-      "createdAt": "2024-01-01T12:00:00Z"
-    }
-  ],
-  "scores": [
-    {
-      "gameId": "tetris-v1",
-      "playerName": "Mamie Lucette",
-      "score": 1500,
-      "date": "2024-01-02T14:30:00Z"
-    }
-  ]
-}
-```
-
-## 🚀 Résumé du Workflow Admin
-
-1.  Admin clique "Nouveau Jeu : Snake".
-    *   -> Création dossier `public/games/snake/v1`.
-    *   -> Ajout entrée `{ id: "snake-v1", ... }` dans **Lowdb**.
-2.  Admin upload `sketch.js`, `hud.js`.
-3.  Admin clique "Générer".
-    *   -> Création `index.html` avec `<script>window.gameId = "snake-v1"</script>`.
-4.  Jeu prêt. Quand un joueur joue, le score part dans **Lowdb** avec l'ID "snake-v1".
+*   **Upload** : Ajoute les fichiers `.js`, assets, etc. dans le dossier.
+*   **Génération** : Peut créer un `index.html` standard pour démarrer un nouveau projet.

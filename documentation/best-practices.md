@@ -1,31 +1,27 @@
-# Bonnes Pratiques & Leçons Apprises - Intégration de Jeux
+# Bonnes Pratiques & Leçons Apprises - Développement de Jeux p5play
 
-Ce document recense les problèmes rencontrés et les solutions standardisées pour l'intégration de nouveaux jeux (notamment p5.js) sur la plateforme.
+Ce document résume les standards à suivre pour développer des jeux robustes et performants pour la plateforme. Pour des détails techniques, consultez le dossier `documentation/patterns/`.
 
-## 1. Structure des Fichiers & Chemins
-Lors de l'importation de jeux existants (ex: depuis GitHub), nous "aplatissons" souvent la structure dans un dossier unique (ex: `V1`).
-*   **Problème fréquentes :** Les liens vers les assets (`<script src="./js/app.js">`, `loadImage('assets/img.png')`) cassent si les sous-dossiers sont supprimés.
-*   **Bonne Pratique :**
-    *   Vérifier systématiquement `index.html` pour les balises `<script>` et `<link>`.
-    *   Scanner le code JS (`main.js`, `sketch.js`) pour les fonctions de chargement (`loadSound`, `loadImage`, `loadFont`).
-    *   Retirer les préfixes de chemins obsolètes (ex: changer `data/sound.wav` en `sound.wav`).
+## 1. Stack Technique Standard
+*   **Moteur :** p5.js + **p5play v3**. L'utilisation de p5play est **fortement recommandée** pour la gestion des sprites, de la physique et des scènes.
+*   **Communication :** Le `GameSystem Hub` (`system.js`) est le seul point de contact avec la plateforme.
 
-## 2. Automatisation & Injection (GameAPI)
-La plateforme nécessite l'objet `window.GameAPI` pour la sauvegarde des scores.
-*   **Problème :** Les jeux importés écrasent souvent cet objet ou ne le contiennent pas.
-*   **Solution Automatisée :** Le backend (`game-manager.ts`) est désormais capable d'injecter automatiquement ce script dans un `index.html` existant sans le détruire.
-*   **Bonne Pratique :** Ne jamais écraser manuellement un `index.html` complexe. Laisser le système d'import injecter l'API.
+## 2. Structure de Projet
+*   **Autonomie :** Chaque jeu doit être dans son propre dossier (`public/games/{nom-jeu}/{version}/`).
+*   **Point d'entrée :** Un `index.html` est obligatoire et doit suivre le template standard (voir `patterns/00_environment.md`).
+*   **Assets :** Les assets (images, sons) doivent être dans un sous-dossier `assets/` et appelés avec des chemins relatifs (`'assets/player.png'`).
 
-## 3. Gestion des Assets Lourds (Audio/Vidéo)
-Certains jeux (ex: "Forest") chargent plusieurs dizaines de méga-octets de données au démarrage.
-*   **Problème :** L'écran de chargement de la plateforme ("Lancement de...") peut rester bloqué si le navigateur met en cache les fichiers ou si l'événement `load` de l'iframe est retardé.
-*   **Bonne Pratique (Composant Client) :**
-    *   Vérifier `iframe.contentDocument.readyState === 'complete'` immédiatement au montage.
-    *   Toujours implémenter un **timeout de secours** (ex: 5 secondes) pour désactiver le loader plateforme et laisser la main au jeu (qui possède souvent son propre loader visuel).
+## 3. Logique de Jeu (Patterns p5play)
+*   **Sprites, pas de classes manuelles :** Utilisez `new Sprite()` pour tous les objets du jeu. Évitez de recréer des classes `Player` ou `Enemy` manuelles.
+*   **Groupes pour la performance :** Utilisez `new Group()` pour gérer les collections d'objets (ennemis, tirs, nourriture). C'est plus performant et plus simple pour les collisions.
+*   **Collisions intégrées :** Utilisez les méthodes `.overlaps()` et `.collides()` de p5play. N'utilisez plus `dist()` pour les vérifications manuelles.
+*   **Gestion de scènes :** Utilisez le système `states.add()` de p5play pour gérer les écrans (Menu, Jeu, Game Over). C'est plus propre que des variables `let state`.
 
-## 4. Exclusion Git (Gitignore)
-Le dossier `public/games` est généralement ignoré pour ne pas alourdir le repo.
-*   **Bonne Pratique :** Pour travailler sur le code source d'un jeu spécifique (ex: debugging), ajouter une exception temporaire ou permanente dans `.gitignore` :
-    ```gitignore
-    !public/games/mon-jeu-bugge
-    ```
+## 4. Intégration avec le GameSystem Hub
+*   **Scores :** La soumission des scores se fait **uniquement** via `window.GameSystem.Score.submit(score)`. Typiquement, cela se fait dans un callback de collision ou à la transition vers l'état "Game Over".
+*   **Cycle de vie :** Signalez que votre jeu est prêt en appelant `window.GameSystem.Lifecycle.notifyReady()` à la fin de votre `setup()` ou au début de votre première scène.
+*   **UI :** Le menu ☰ et le bouton plein écran sont injectés automatiquement par `system.js`. N'implémentez pas les vôtres.
+
+## 5. Gestion des Assets Lourds
+*   **`preload()` est votre ami :** Chargez tous les sons et images dans la fonction `preload()` de p5.js pour garantir qu'ils sont disponibles avant le début du jeu.
+*   **Timeout de sécurité :** Le lecteur de jeu de la plateforme a un timeout de 5 secondes. Si votre jeu met plus de temps à charger (ce qui est rare avec `preload`), l'écran de chargement de la plateforme disparaîtra pour laisser place au vôtre.
