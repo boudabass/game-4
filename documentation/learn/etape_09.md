@@ -1,11 +1,11 @@
 # Étape 9 : Caméra + HUD (2h)
 
 ## 🎯 Objectifs finaux
-- [ ] Monde > écran (niveau étendu)
-- [ ] Caméra suit joueur (lissage)
-- [ ] HUD score/temps fixe
-- [ ] Zoom et limites caméra
-- [ ] Runner à défilement
+- [x] Monde > écran (niveau étendu)
+- [x] Caméra suit joueur (lissage)
+- [x] HUD score/temps fixe
+- [x] Zoom et limites caméra
+- [x] Runner à défilement
 
 ## 📚 Concepts à maîtriser
 
@@ -61,11 +61,11 @@ Caméra suit joueur fluide
 HUD score/vies fixe
 
 ## ✅ Checklist validation
-[ ] `world.width` > `width`
-[ ] Caméra suit joueur fluide
-[ ] HUD (score) reste fixe
-[ ] Limites caméra fonctionnent
-[ ] Code < 150 lignes
+[x] `world.width` > `width`
+[x] Caméra suit joueur fluide
+[x] HUD (score) reste fixe
+[x] Limites caméra fonctionnent
+[x] Code < 150 lignes
 
 ## 🚨 Erreurs fréquentes
 ❌ Dessiner HUD avant `allSprites.draw()` → caché

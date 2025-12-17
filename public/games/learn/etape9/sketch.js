@@ -32,26 +32,25 @@ function setup() {
     platforms.color = PLATFORM_COLOR;
     
     coins = new Group();
-    coins.collider = 'static'; // Static pour ne pas tomber, mais on utilisera overlap
+    coins.collider = 'static'; 
     coins.color = COIN_COLOR;
     
     // --- CRÉATION DU NIVEAU ---
-    // Sol
-    new platforms.Sprite(WORLD_WIDTH / 2, WORLD_HEIGHT - 20, WORLD_WIDTH, 40);
+    // Sol (avec des trous pour pouvoir tomber et tester le respawn)
+    // On fait deux bouts de sol au lieu d'un seul continu
+    new platforms.Sprite(WORLD_WIDTH * 0.25, WORLD_HEIGHT - 20, WORLD_WIDTH * 0.4, 40);
+    new platforms.Sprite(WORLD_WIDTH * 0.75, WORLD_HEIGHT - 20, WORLD_WIDTH * 0.4, 40);
     
     // Plateforme de départ
     new platforms.Sprite(400, 500, 200, 20); 
     
-    // Génération procédurale de plateformes et pièces
+    // Génération procédurale
     for(let i = 0; i < 20; i++) {
         let w = random(150, 300);
         let x = random(100, WORLD_WIDTH - 100);
         let y = random(200, WORLD_HEIGHT - 150);
-        
-        // Créer une plateforme
         new platforms.Sprite(x, y, w, 20);
         
-        // Ajouter une pièce au dessus (1 chance sur 2)
         if (random() > 0.5) {
             let coin = new coins.Sprite(x, y - 40, 20, 20);
             coin.shape = 'circle';
@@ -94,6 +93,12 @@ function draw() {
         player.vel.x = lerp(player.vel.x, targetSpeed, 0.05);
     }
     
+    // --- RESPAWN ---
+    // Si le joueur tombe sous le bas du monde
+    if (player.y > WORLD_HEIGHT + 100) {
+        resetPlayer();
+    }
+    
     // Interaction Pièces
     player.overlaps(coins, collectCoin);
     
@@ -121,27 +126,37 @@ function draw() {
     drawHUD();
 }
 
+function resetPlayer() {
+    lives--; // Punition optionnelle
+    
+    // Téléportation au début (Attention aux coordonnées selon votre setup)
+    player.x = 400;
+    player.y = 400;
+    player.vel.x = 0;
+    player.vel.y = 0;
+    
+    // On force la caméra à revenir instantanément pour ne pas donner le mal de mer
+    // ou on la laisse lerp (revenir doucement). Ici le lerp va le faire revenir vite.
+}
+
 function collectCoin(player, coin) {
     coin.remove();
     score += 10;
 }
 
 function drawHUD() {
-    push(); // Isole les changements de style
-    rectMode(CORNER); // Force le mode coin pour le HUD
+    push(); 
+    rectMode(CORNER); 
     
-    // Fond semi-transparent (x, y, w, h, radius)
     fill(0, 150); 
     noStroke();
     rect(10, 10, 200, 70, 10); 
     
-    // Texte Score
     fill(255);
     textSize(20);
     textAlign(LEFT, TOP);
     text(`Score: ${score}`, 30, 25);
     
-    // Vies (Coeurs)
     fill(255, 50, 50);
     noStroke();
     for(let i = 0; i < lives; i++) {

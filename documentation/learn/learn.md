@@ -105,7 +105,7 @@
 - Caméra suit joueur  
 - HUD score/temps fixe  
 
-**Checklist :** [ ] Caméra fluide [ ] HUD stable [ ] Monde étendu
+**Checklist :** [x] Caméra fluide [x] HUD stable [x] Monde étendu **(VALIDÉE)**
 
 ---
 
