@@ -9,7 +9,10 @@
         window.DyadGame = { id: 'q5-validator-v1', version: 'v1' };
     </script>
 
-    <!-- On ne charge QUE q5.js -->
+    <!-- LA CORRECTION CRUCIALE : Forcer le mode AVANT le chargement de q5.js -->
+    <script>
+      window.Q5_DEFAULT_MODE = '2d';
+    </script>
     <script src="https://unpkg.com/q5@3/q5.min.js"></script>
     
     <script src="/system/system.js"></script>
