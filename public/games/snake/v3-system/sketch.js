@@ -1,65 +1,184 @@
 let snake;
 let scl = 20;
 let nFood = 25;
-let food = [];
+let foodGroup;
+let tailGroup;
+let score = 0;
 
-function setup() {
-    createCanvas(windowWidth, windowHeight);
-    frameRate(10); // Un peu plus rapide pour le plaisir
+// --- Fonctions utilitaires ---
 
-    snake = new Snake(parseInt((width / 2) / scl) * scl, parseInt((height / 2) / scl) * scl);
+function createFood() {
+    // Crée un sprite de nourriture à une position aléatoire sur la grille
+    let x = floor(random(width) / scl) * scl;
+    let y = floor(random(height) / scl) * scl;
+    
+    let f = new Sprite(x, y, scl, scl, 'static');
+    f.color = color(255, 0, 100);
+    f.layer = 0; // Rendu sous le serpent
+    foodGroup.add(f);
+}
 
+function resetGame() {
+    // Nettoyage des sprites existants
+    allSprites.clear();
+    
+    // Initialisation des groupes
+    foodGroup = new Group();
+    tailGroup = new Group();
+    
+    // Création du serpent (tête)
+    snake = new Sprite(
+        parseInt((width / 2) / scl) * scl, 
+        parseInt((height / 2) / scl) * scl, 
+        scl, scl, 
+        'dynamic'
+    );
+    snake.color = color(255);
+    snake.layer = 1;
+    snake.vel.set(scl, 0); // Démarre vers la droite
+    snake.maxSpeed = scl;
+    snake.friction = 0;
+    snake.bounciness = 0;
+    snake.rotationLock = true;
+    
+    // Création de la nourriture
     for (let i = 0; i < nFood; i++) {
-        food[i] = createVector(floor(random(width) / scl) * scl, floor(random(height) / scl) * scl);
+        createFood();
+    }
+    
+    score = 0;
+}
+
+// --- Callbacks de P5Play ---
+
+q5.setup = () => {
+    new Canvas(windowWidth, windowHeight);
+    frameRate(10);
+    
+    // Configuration du monde
+    World.gravity.y = 0;
+    
+    // Définition des états de jeu
+    states.add('menu', {
+        start: () => {
+            // Notifie le wrapper que le jeu est prêt
+            if (window.GameSystem) {
+                window.GameSystem.Lifecycle.notifyReady();
+            }
+        },
+        draw: drawMenu,
+        update: updateMenu
+    });
+    
+    states.add('game', {
+        start: resetGame,
+        update: updateGame,
+        draw: drawGame
+    });
+    
+    states.add('gameover', {
+        draw: drawGameOver,
+        update: updateGameOver
+    });
+    
+    states.enable = true;
+    states.load('menu');
+};
+
+q5.draw = () => {
+    clear();
+    allSprites.draw();
+    
+    // Affichage du score en mode jeu
+    if (states.current.name === 'game') {
+        drawScore();
+    }
+};
+
+// --- Logique des États ---
+
+function drawMenu() {
+    textAlign(CENTER, CENTER);
+    textSize(40);
+    fill(255);
+    text('SNAKE P5PLAY', width / 2, height / 2 - 50);
+    textSize(20);
+    text('Appuyez sur ESPACE pour commencer', width / 2, height / 2 + 20);
+}
+
+function updateMenu() {
+    if (q5.keyIsDown('space')) {
+        states.load('game');
     }
 }
 
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+function updateGame() {
+    // 1. Mouvement de la queue (doit se faire avant la mise à jour de la tête)
+    if (tailGroup.length > 0) {
+        // Déplace chaque segment de queue vers la position du segment précédent
+        for (let i = tailGroup.length - 1; i > 0; i--) {
+            tailGroup[i].pos.set(tailGroup[i - 1].pos.x, tailGroup[i - 1].pos.y);
+        }
+        // Le premier segment suit la tête
+        tailGroup[0].pos.set(snake.oldPos.x, snake.oldPos.y);
+    }
+    
+    // 2. Vérification des collisions
+    
+    // Collision Tête vs Nourriture
+    snake.overlaps(foodGroup, (snake, food) => {
+        food.remove();
+        score += 100;
+        
+        // Ajout d'un segment de queue
+        let newSegment = new Sprite(snake.oldPos.x, snake.oldPos.y, scl, scl, 'static');
+        newSegment.color = color(255);
+        newSegment.layer = 1;
+        tailGroup.add(newSegment);
+        
+        createFood(); // Nouvelle nourriture
+    });
+    
+    // Collision Tête vs Queue (Mort)
+    snake.overlaps(tailGroup, () => {
+        states.load('gameover', score);
+    });
+    
+    // Collision Tête vs Bords (Wrap around)
+    snake.wrap();
 }
 
-function draw() {
-    background(20);
-
-    //            stroke(255);
-    //            for (let i = 0; i < width; i += scl) {
-    //                line(i, 0, i, height);
-    //            }
-    //
-    //            for (let j = 0; j < height; j += scl) {
-    //                line(0, j, width, j);
-    //            }
-
-    fill(255, 0, 100);
-    for (let i = 0; i < nFood; i++) {
-        if (snake.eat(food[i])) {
-            food[i] = createVector(floor(random(width) / scl) * scl, floor(random(height) / scl) * scl);
-        }
-        rect(food[i].x, food[i].y, scl);
-    }
-
-    snake.death();
-    snake.update();
-    snake.edges();
-    snake.show();
+function drawGame() {
+    // Le rendu est géré par q5.draw() -> allSprites.draw()
 }
 
-function keyPressed() {
-    if (keyCode === UP_ARROW) {
-        if (snake.vel.y != scl) {
-            snake.dir(0, -1);
-        }
-    } else if (keyCode === DOWN_ARROW) {
-        if (snake.vel.y != -scl) {
-            snake.dir(0, 1);
-        }
-    } else if (keyCode === LEFT_ARROW) {
-        if (snake.vel.x != scl) {
-            snake.dir(-1, 0);
-        }
-    } else if (keyCode === RIGHT_ARROW) {
-        if (snake.vel.x != -scl) {
-            snake.dir(1, 0);
-        }
+function drawScore() {
+    textSize(24);
+    fill(255);
+    textAlign(LEFT, TOP);
+    text(`Score: ${score}`, 20, 20);
+}
+
+function drawGameOver() {
+    textAlign(CENTER, CENTER);
+    textSize(50);
+    fill(255, 0, 0);
+    text('GAME OVER', width / 2, height / 2 - 80);
+    textSize(30);
+    fill(255);
+    text(`Score Final: ${states.gameover.props.args[0]}`, width / 2, height / 2);
+    textSize(20);
+    text('Appuyez sur R pour rejouer', width / 2, height / 2 + 50);
+}
+
+function updateGameOver() {
+    if (q5.keyIsDown('r')) {
+        states.load('game');
     }
+}
+
+// --- Gestion des Inputs (sera complétée en Phase 3) ---
+
+q5.keyPress = () => {
+    // Logique de direction du serpent (sera implémentée en Phase 3)
 }
