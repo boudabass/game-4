@@ -30,12 +30,21 @@ export interface Score {
   userEmail?: string;
 }
 
+// Structure générique pour sauvegarder l'état complet d'un jeu
+export interface GameSave {
+  gameId: string;       // ID du jeu (ex: elsass-farm-v1)
+  userId: string;       // ID du joueur (Supabase)
+  updatedAt: string;    // Date de dernière save
+  data: any;            // Payload JSON libre (inventaire, positions, etc.)
+}
+
 export interface DatabaseData {
   games: GameRelease[];
   scores: Score[];
+  saves: GameSave[];    // Nouvelle table
 }
 
-const defaultData: DatabaseData = { games: [], scores: [] };
+const defaultData: DatabaseData = { games: [], scores: [], saves: [] };
 
 // Singleton pour la connexion DB
 export const getDb = async () => {
