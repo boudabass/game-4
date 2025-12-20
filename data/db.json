@@ -9,16 +9,6 @@
       "createdAt": "2025-12-17T16:30:00.000Z",
       "width": 800,
       "height": 600
-    },
-    {
-      "id": "elsass-farm-v1",
-      "name": "Elsass Farm",
-      "description": "Jeu de simulation agricole basé sur l'architecture p5.js/p5.play.",
-      "path": "elsass-farm/v1",
-      "version": "v1",
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "width": 1000,
-      "height": 800
     }
   ],
   "scores": [
@@ -43,38 +33,6 @@
       "playerName": "lacolleacervelle+admin",
       "score": 40,
       "date": "2025-12-17T14:52:19.459Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    },
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 70,
-      "date": "2025-12-17T23:58:01.024Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    },
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 100,
-      "date": "2025-12-20T03:46:44.939Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    },
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 20,
-      "date": "2025-12-20T03:47:52.390Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    },
-    {
-      "gameId": "elsass-farm-v1",
-      "playerName": "lacolleacervelle+admin",
-      "score": 0,
-      "date": "2024-01-01T00:00:00.000Z",
       "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
       "userEmail": "lacolleacervelle+admin@gmail.com"
     }
