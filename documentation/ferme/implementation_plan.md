@@ -1,63 +1,48 @@
-# Implementation Plan — Elsass Farm (Pure JS)
-Objectif : Prototype jouable respectant le standard "Etape 10".
+# Implementation Plan — Elsass Farm (Sim)
+Objectif : Prototype "God-View" sur grille interactive.
 
 ## 📂 Structure de Fichiers (Cible)
-Tout réside dans `public/games/elsass-farm/v1/`.
+`public/games/elsass-farm/v1/`
 
 ```text
-public/games/elsass-farm/v1/
-├── index.html          # Point d'entrée + Chargement Libs & CSS
-├── style.css           # Styles HUD & Modales (Overlay)
-├── config.js           # Constantes (Couleurs, Balance, Timers)
-├── main.js             # Entry point (window.onload, GameSystem init)
-├── sketch.js           # Boucle p5.js (setup, draw, touchStarted)
+├── index.html          # UI Layer & Loader
+├── style.css           # Styling HUD
+├── config.js           # Taille Monde, Couleurs
+├── main.js             # Init Managers
+├── sketch.js           # Loop p5.js (Draw & Camera)
 │
 ├── core/
-│   ├── GameState.js    # Machine à états (MENU, FARM, CITY...)
-│   ├── TimeManager.js  # Horloge, Saisons, Énergie
-│   └── SaveManager.js  # Bridge vers window.GameSystem
+│   ├── GameState.js    # Data centrale (Or, XP, Unlocks)
+│   ├── TimeManager.js  # Horloge Saisonnière
+│   └── SaveManager.js  # I/O Hub
 │
 ├── systems/
-│   ├── GridSystem.js   # Logique Tiles (Nord/Sud)
-│   ├── Inventory.js    # Données & Logique items
-│   └── UIManager.js    # Manipulation DOM (Afficher/Cacher Divs)
+│   ├── GridSystem.js   # Logique Tiles (State : Arrosé/Poussé)
+│   ├── InputManager.js # Gestion Clics Monde vs UI + Caméra
+│   ├── Inventory.js    # Stocks (Graines, Produits)
+│   └── UIManager.js    # Update DOM
 │
 └── entities/
-    ├── Player.js       # Sprite Joueur (si visible)
-    └── Crop.js         # Logique culture individuelle
+    ├── Crop.js         # Sprite Culture (Statique)
+    └── Building.js     # Sprite Bâtiment (Statique)
+    // PAS DE PLAYER.JS
 ```
 
-## 📅 Roadmap (3 Phases)
+## 📅 Roadmap
 
-### Phase 1 : Core Engine & UI (Semaine 1)
-*   [ ] **Setup :** `index.html` avec chargement p5.play + `system.js`.
-*   [ ] **Grid :** Affichage grille 10x10 p5.play (Sprites statiques).
-*   [ ] **Interaction :** Tap tile → Changement couleur/état.
-*   [ ] **UI Overlay :** HUD HTML par-dessus le canvas (Énergie, Or).
-*   [ ] **Save :** Connexion basique `window.GameSystem`.
+### Phase 1 : Caméra & Grille (Semaine 1)
+*   [x] **Setup :** Canvas Fullscreen + Hub.
+*   [ ] **Camera :** Drag & Pan fluide (toucher/glisser).
+*   [ ] **Grid System :** Afficher une grille infinie ou délimitée.
+*   [ ] **Selection :** Convertir Clic Souris → Index Case (Col, Row).
+*   [ ] **UI Debug :** Afficher les coordonnées de la case cliquée.
 
-### Phase 2 : Farming Loop (Semaine 2)
-*   [ ] **Inventory :** Structure de données JS (Array fixe).
-*   [ ] **Logique cultures :** Arroser → Pousser (Changement jour).
-*   [ ] **Time System :** Cycle Jour/Nuit simulé (Changement luminosité).
-*   [ ] **Modales :** Fenêtres HTML pour Inventaire/Shop.
+### Phase 2 : Actions de Ferme (Semaine 2)
+*   [ ] **Outils :** Sélecteur d'action dans l'UI (Main, Houe, Arrosoir, Graines).
+*   [ ] **Modification :** Changer l'état d'une case (Terre → Labourée → Plantée).
+*   [ ] **Growth :** Logique de pousse (Timer ou Changement jour).
 
-### Phase 3 : Contenu & Polish (Semaine 3)
-*   [ ] **Ville & PNJ :** Ecrans statiques avec interaction Shop.
-*   [ ] **Mine :** Mini-jeu simple (Puzzle grille).
-*   [ ] **Assets :** Remplacement carrés de couleur par Sprites 32px.
-*   [ ] **Audio :** Intégration p5.sound.
-
-## 🛠️ Architecture Technique
-
-### UI : Le pattern "DOM Overlay"
-Au lieu de dessiner du texte complexe dans le Canvas (lent/moche), on utilise des `<div>` HTML positionnés en absolu.
-
-*   `sketch.js` gère le **Monde** (Grille, Perso, Particules).
-*   `UIManager.js` manipule le **DOM** (Barres de vie, Inventaire, Dialogues).
-*   Communication via Events ou appels directs (`UIManager.updateEnergy(val)`).
-
-### Sauvegarde
-Le jeu maintient un objet `State` global.
-Au sommeil : `window.GameSystem.Save.save('elsass-farm', State)`.
-Au chargement : `State = window.GameSystem.Save.load('elsass-farm')`.
+### Phase 3 : Économie (Semaine 3)
+*   [ ] **Shop UI :** Acheter graines.
+*   [ ] **Vente :** Panier de vente.
+*   [ ] **Save :** Persistance de la grille complète.

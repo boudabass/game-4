@@ -1,6 +1,6 @@
-🎮 Overview — Elsass Farm (Architecture Validée)
-Farming sim mobile-first optimisé pour l'écosystème Game Center.
-Architecture : **p5.play v3** (Rendu Jeu) + **HTML/CSS Overlays** (UI) + **GameSystem Hub** (Persistance).
+🎮 Overview — Elsass Farm (Mode Simulation)
+Farming sim mobile-first type "FarmVille" / "God-Game".
+Pas d'avatar visible. Le joueur est une caméra omnisciente qui interagit directement avec la grille.
 
 🗺️ Architecture Systèmes
 text
@@ -8,40 +8,35 @@ text
           ↕
 ┌─────────────────────────────┐
 │   Core Engine (sketch.js)   │
-│  Boucle Jeu / États / Time  │
+│  Caméra / Input / États     │
 └──────────────┬──────────────┘
                │
    ┌───────────┴───────────┐
    ▼                       ▼
 Rendering (p5.js)      UI Layer (DOM)
-- Grille 10x10         - HUD CSS (Flexbox)
-- Sprites / Anim       - Modales HTML
-- Caméra               - Notifications
+- Grille Monde         - HUD (Énergie/Or)
+- Sprites Cultures     - Modales (Shop/Inv)
+- Particules           - Menus
 
-🔄 Game Loop Journalier (16min réelles)
-text
-6h  🏠 Réveil (100 énergie)
-8h  🌾 Farm Nord (40 tiles)
-12h 🏙️ Ville (vente + graines)
-14h ⛏️ Mine (2-3 étages)
-16h 🏭 Ferme Sud (crafts)
-20h 🍺 Taverne (quête + repos)
-2h  🛌 Sleep (+8h / Save via Hub)
+🔄 Game Loop
+*   **Navigation :** Drag & Pan (Doigt/Souris) pour bouger la caméra.
+*   **Action :** Tap sur une tuile → Action immédiate (Arroser/Planter/Récolter).
+*   **Coût :** Chaque action coûte de l'Énergie ⚡.
+*   **Temps :** Le temps avance par "Tours" ou par horloge simulée, pas par déplacement.
 
 🎯 Progression
-Découpage strict en phases de jeu pour ne pas surcharger le joueur.
-HUD fixe : Énergie ⚡ | Or 💰 | Temps 🌅 | INV/MAP/MENU
+1.  **Gestion :** Optimiser l'espace (Grille) et les ressources (Eau/Or).
+2.  **Expansion :** Acheter de nouvelles parcelles (Débloquer zones de la caméra).
+3.  **Automatisation :** Placer des structures qui travaillent seules.
 
-🛠️ Tech Stack (Standard Etape 10)
-*   **Moteur :** p5.play v3 + planck.js (Physique/Sprites)
-*   **Langage :** JavaScript ES6 Modules (Pas de transpileur/Bundler)
-*   **UI :** HTML/CSS natif par-dessus le canvas (position: absolute)
-*   **Données :** `window.GameSystem` pour I/O (Save/Load)
-*   **Assets :** 32x32px pixel-art
+🛠️ Tech Stack
+*   **Moteur :** p5.play v3 (Utilisé pour le rendu des sprites statiques et la caméra).
+*   **Vue :** Top-Down 2D (Vue de dessus stricte).
+*   **Input :** Raycasting simple (Screen X/Y → Grid Col/Row).
+*   **UI :** HTML/CSS Overlays.
 
-✅ Règles Absolues (Game Design)
-1.  **Tap uniquement** (0 drag&drop, 0 clavier).
-2.  **Énergie limitée** (Gestion de ressource critique).
-3.  **Slots fixes** (Pas de gestion d'inventaire "Tetris").
-4.  **Sauvegarde via Hub** (Jamais d'appel API direct).
-5.  **Fichiers statiques** (Tout dans `public/games/elsass-farm/v1/`).
+✅ Règles Absolues
+1.  **Caméra Libre :** Le monde est plus grand que l'écran.
+2.  **Tap = Action :** Pas de sélection de perso, on clique directement sur la terre.
+3.  **Énergie limitante :** Le frein principal est l'énergie, pas le temps de trajet.
+4.  **Sauvegarde Hub :** Persistance JSON via `window.GameSystem`.
