@@ -74,7 +74,7 @@ function draw() {
     
     // Dessin du monde réel (la zone active)
     noFill();
-    stroke(255);
+    stroke(0); // Bordure du monde en noir
     strokeWeight(2);
     rect(0, 0, Config.zoneWidth, Config.zoneHeight);
     
@@ -148,7 +148,7 @@ function mouseWheel(event) {
 }
 
 function drawSimpleGrid() {
-    stroke(Config.colors.gridLines);
+    stroke(0); // Lignes de grille en noir
     strokeWeight(1 / camera.zoom);
     
     for (let x = 0; x <= Config.zoneWidth; x += 64) {
