@@ -96,42 +96,14 @@ function draw() {
 }
 
 function mouseClicked() {
-    // La logique de clic pour les portails est conservée ici, 
-    // mais elle est désormais invisible et redondante si la minimap est utilisée.
+    // Ignorer les clics sur le HUD
     if (mouseY < 60) return;
     
     const worldX = camera.mouse.x;
     const worldY = camera.mouse.y;
     
-    const zone = getCurrentZone();
-    const { zoneWidth, zoneHeight, portal } = Config;
-    const { size, margin } = portal;
-    
-    // Vérification des portails (logique conservée pour la robustesse, mais non visible)
-    
-    // Nord
-    if (zone.neighbors.N && worldX > zoneWidth / 2 - size / 2 && worldX < zoneWidth / 2 + size / 2 && worldY < margin) {
-        window.changeZone(zone.neighbors.N, 'S');
-        return;
-    }
-    
-    // Sud
-    if (zone.neighbors.S && worldX > zoneWidth / 2 - size / 2 && worldX < zoneWidth / 2 + size / 2 && worldY > zoneHeight - margin) {
-        window.changeZone(zone.neighbors.S, 'N');
-        return;
-    }
-    
-    // Ouest
-    if (zone.neighbors.W && worldY > zoneHeight / 2 - size / 2 && worldY < zoneHeight / 2 + size / 2 && worldX < margin) {
-        window.changeZone(zone.neighbors.W, 'E');
-        return;
-    }
-    
-    // Est
-    if (zone.neighbors.E && worldY > zoneHeight / 2 - size / 2 && worldY < zoneHeight / 2 + size / 2 && worldX > zoneWidth - margin) {
-        window.changeZone(zone.neighbors.E, 'W');
-        return;
-    }
+    // Logique de clic pour les portails SUPPRIMÉE.
+    // Seule l'interaction de jeu (clic sur une tuile) reste.
     
     console.log(`Clic Monde: ${Math.round(worldX)}, ${Math.round(worldY)}`);
 }
@@ -148,7 +120,7 @@ function mouseWheel(event) {
 }
 
 function drawSimpleGrid() {
-    stroke(0); // Lignes de grille en noir
+    stroke(Config.colors.gridLines);
     strokeWeight(1 / camera.zoom);
     
     for (let x = 0; x <= Config.zoneWidth; x += 64) {
