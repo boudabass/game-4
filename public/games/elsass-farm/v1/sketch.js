@@ -99,8 +99,7 @@ function draw() {
 // Fonction de rappel p5.js pour le drag
 function mouseDragged() {
     InputManager.handleDrag();
-    // Empêcher le drag de sélectionner du texte ou de bouger l'iframe
-    return false; 
+    // return false; <-- SUPPRIMÉ
 }
 
 function mouseClicked() {
@@ -120,7 +119,7 @@ function mouseWheel(event) {
     
     camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
     
-    return false;
+    // return false; <-- SUPPRIMÉ
 }
 
 function drawSimpleGrid() {
