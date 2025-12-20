@@ -9,6 +9,17 @@
       "createdAt": "2025-12-17T16:30:00.000Z",
       "width": 800,
       "height": 600
+    },
+    {
+      "id": "elsass-farm-v1",
+      "name": "Elsass Farm",
+      "description": "Simulation agricole isométrique. Gestion de ressources, craft et exploration.",
+      "path": "elsass-farm/v1",
+      "version": "v1",
+      "createdAt": "2025-05-20T10:00:00.000Z",
+      "width": 800,
+      "height": 600,
+      "thumbnail": "thumbnail.png"
     }
   ],
   "scores": [
@@ -36,5 +47,6 @@
       "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
       "userEmail": "lacolleacervelle+admin@gmail.com"
     }
-  ]
+  ],
+  "saves": []
 }
