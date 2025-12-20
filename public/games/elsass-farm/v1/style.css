@@ -104,7 +104,86 @@ canvas {
     margin-top: 20px;
 }
 
-/* Mini-Map Grid */
+/* Debug Section */
+.debug-section {
+    margin-top: 15px;
+    border-top: 1px solid #444;
+    padding-top: 10px;
+    text-align: left;
+}
+
+.debug-header {
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 0;
+    color: #70a1ff; /* Bleu pour le debug */
+}
+
+.debug-options {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    padding-left: 10px;
+}
+
+.debug-options.active {
+    display: flex;
+}
+
+.debug-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+/* Toggle Switch (Simple CSS) */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #55efc4;
+}
+
+input:checked + .slider:before {
+    transform: translateX(14px);
+}
+
+/* Mini-Map Grid (inchangé) */
 .minimap-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -121,9 +200,9 @@ canvas {
     border-radius: 4px;
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s;
-    font-size: 18px; /* Augmenté de 50% (12px -> 18px) */
+    font-size: 18px;
     font-weight: bold;
-    color: black; /* Texte noir */
+    color: black;
     border: 2px solid transparent;
 }
 
@@ -133,7 +212,7 @@ canvas {
 }
 
 .minimap-tile.current {
-    border: 3px solid #f39c12; /* Bordure jaune pour zone actuelle */
+    border: 3px solid #f39c12;
 }
 
 .minimap-icon {

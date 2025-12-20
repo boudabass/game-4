@@ -21,26 +21,21 @@ window.changeZone = function(newZoneId, entryPoint) {
     else if (entryPoint === 'W') camera.x = Config.zoneWidth - 100;
     else if (entryPoint === 'E') camera.x = 100;
     else {
-        // Si transition par minimap ('C'), centrer la caméra
         camera.x = Config.zoneWidth / 2;
         camera.y = Config.zoneHeight / 2;
     }
     
-    // Forcer le redessinage
     window.redraw();
 }
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     
-    // Rendre redraw accessible globalement pour le HTML
     window.redraw = () => { loop(); };
-    noLoop(); // Démarrer en mode pause pour le premier chargement
+    noLoop(); 
     
-    // Config Physique
     world.gravity.y = 0; 
     
-    // Init Caméra au centre de la zone 3000x3000
     camera.x = Config.zoneWidth / 2;
     camera.y = Config.zoneHeight / 2;
     camera.zoom = Config.zoom.start;
@@ -49,7 +44,6 @@ function setup() {
         window.GameSystem.Lifecycle.notifyReady();
     }
     
-    // Démarrer la boucle de jeu après l'initialisation
     loop();
 }
 
@@ -63,6 +57,11 @@ function draw() {
     if (mouseIsPressed && mouseY > 60) {
         camera.x -= (mouseX - pmouseX) / camera.zoom;
         camera.y -= (mouseY - pmouseY) / camera.zoom;
+    }
+    
+    // Mise à jour des coordonnées de debug
+    if (Config.debug && window.ElsassFarm.systems.ui) {
+        window.ElsassFarm.systems.ui.updateDebugCoords(camera.mouse.x, camera.mouse.y);
     }
     
     // 3. Contraintes Caméra
@@ -85,25 +84,16 @@ function draw() {
     strokeWeight(2);
     rect(0, 0, Config.zoneWidth, Config.zoneHeight);
     
-    if (Config.debug) {
+    // Affichage conditionnel de la grille
+    if (Config.debug && window.ElsassFarm.state.showGrid) {
         drawSimpleGrid();
     }
     
     allSprites.draw();
     camera.off();
-    
-    // Debug Info
-    if (Config.debug) {
-        fill(255);
-        noStroke();
-        textSize(12);
-        textAlign(LEFT, BOTTOM);
-        text(`Zone: ${currentZone.name} (${currentZone.id}) | Zoom: ${camera.zoom.toFixed(2)}`, 10, height - 10);
-    }
 }
 
 function mouseClicked() {
-    // La logique de clic pour les portails est conservée mais invisible.
     if (mouseY < 60) return;
     
     const worldX = camera.mouse.x;
@@ -113,7 +103,7 @@ function mouseClicked() {
     const { zoneWidth, zoneHeight, portal } = Config;
     const { size, margin } = portal;
     
-    // Vérification des portails (logique conservée pour la robustesse)
+    // Logique de transition de zone (invisible)
     if (zone.neighbors.N && worldX > zoneWidth / 2 - size / 2 && worldX < zoneWidth / 2 + size / 2 && worldY < margin) {
         window.changeZone(zone.neighbors.N, 'S');
         return;

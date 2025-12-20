@@ -39,12 +39,14 @@ const Config = {
     
     // Couleurs
     colors: {
-        gridLines: 'rgba(255, 255, 255, 0.1)'
+        gridLines: 'rgba(0, 0, 0, 0.3)' // Grille en noir transparent
     }
 };
 
 window.ElsassFarm = {
     state: {
-        currentZoneId: 'C_C'
+        currentZoneId: 'C_C',
+        // Ajout de l'état de la grille de debug
+        showGrid: true 
     }
 };

@@ -37,7 +37,6 @@
                 <span>🌅 J<span id="val-day">1</span> <span id="val-time">6:00</span></span>
             </div>
             <div class="hud-group">
-                <!-- Les fonctions sont maintenant globales via UIManager.js -->
                 <button class="hud-btn" onclick="toggleMap()">🗺️ MAP</button>
                 <button class="hud-btn" onclick="toggleMenu()">≡ MENU</button>
             </div>
@@ -52,6 +51,20 @@
                     <button class="hud-btn" onclick="console.log('Save')">💾 Sauvegarder</button>
                     <button class="hud-btn" onclick="toggleMenu()">Reprendre</button>
                 </div>
+
+                <!-- Section Debug -->
+                <div class="debug-section">
+                    <div class="debug-header" onclick="toggleDebugOptions()">⚙️ DEBUG</div>
+                    <div id="debug-options" class="debug-options">
+                        <div class="debug-option">
+                            <span>Afficher Grille</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-grid" onchange="toggleDebugGrid(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -65,5 +78,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Debug Coordonnées (Affiché en bas à gauche) -->
+    <div id="debug-coords" style="position: absolute; bottom: 10px; left: 10px; color: white; font-size: 12px; pointer-events: none; z-index: 999;"></div>
 </body>
 </html>

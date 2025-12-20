@@ -15,6 +15,7 @@ class UIManager {
     constructor() {
         this.initListeners();
         this.updateHUD();
+        this.syncDebugState();
     }
 
     initListeners() {
@@ -22,18 +23,33 @@ class UIManager {
         window.toggleMenu = this.toggleMenu.bind(this);
         window.toggleMap = this.toggleMap.bind(this);
         window.toggleFullscreen = this.toggleFullscreen.bind(this);
+        window.toggleDebugOptions = this.toggleDebugOptions.bind(this);
+        window.toggleDebugGrid = this.toggleDebugGrid.bind(this);
+    }
+    
+    syncDebugState() {
+        // Synchroniser l'état du switch au chargement
+        const gridToggle = document.getElementById('toggle-grid');
+        if (gridToggle) {
+            gridToggle.checked = window.ElsassFarm.state.showGrid;
+        }
     }
 
     updateHUD() {
-        // Mise à jour des valeurs du HUD (Énergie, Or, Temps)
-        // Cette fonction sera appelée par TimeManager et GameState
         const state = window.ElsassFarm.state;
         
-        // Placeholder pour l'instant
         document.getElementById('val-energy').innerText = state.energy || 100;
         document.getElementById('val-gold').innerText = state.gold || 0;
         document.getElementById('val-day').innerText = state.day || 1;
         document.getElementById('val-time').innerText = state.time || '6:00';
+    }
+    
+    updateDebugCoords(worldX, worldY) {
+        const el = document.getElementById('debug-coords');
+        if (el && Config.debug) {
+            // Afficher les coordonnées du monde (non zoomées)
+            el.innerText = `X: ${Math.round(worldX)}, Y: ${Math.round(worldY)}`;
+        }
     }
 
     // --- Gestion des Modals ---
@@ -57,6 +73,18 @@ class UIManager {
         }
         this.toggleMenu();
     }
+    
+    // --- Gestion Debug ---
+    
+    toggleDebugOptions() {
+        const el = document.getElementById('debug-options');
+        el.classList.toggle('active');
+    }
+    
+    toggleDebugGrid(checked) {
+        window.ElsassFarm.state.showGrid = checked;
+        if (window.redraw) window.redraw();
+    }
 
     renderMinimap() {
         const grid = document.getElementById('minimap-grid');
@@ -78,22 +106,18 @@ class UIManager {
                 <span>${zone.name}</span>
             `;
 
-            // Logique de clic (Téléportation)
             tile.onclick = () => {
                 if (zone.id !== currentZoneId) {
-                    // Transition visuelle
                     document.body.style.transition = 'background-color 0.2s';
                     document.body.style.backgroundColor = 'black';
                     
                     setTimeout(() => {
-                        // Appel à la fonction globale du moteur (sketch.js)
                         if (window.changeZone) {
-                            window.changeZone(zone.id, 'C'); // 'C' pour Centre (spawn par défaut)
+                            window.changeZone(zone.id, 'C');
                         }
                         
                         this.toggleMap();
                         
-                        // Réinitialiser la couleur de fond du body
                         document.body.style.backgroundColor = '#111';
                         document.body.style.transition = 'none';
                         
@@ -106,5 +130,4 @@ class UIManager {
     }
 }
 
-// Rendre la classe accessible pour l'instanciation dans main.js
 window.UIManager = UIManager;
