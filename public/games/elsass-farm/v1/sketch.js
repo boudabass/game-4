@@ -137,7 +137,8 @@ function mouseWheel(event) {
 
 function drawSimpleGrid() {
     stroke(Config.colors.gridLines);
-    strokeWeight(1 / camera.zoom);
+    // Assurer une épaisseur minimale de 0.5 pixel
+    strokeWeight(max(0.5, 1 / camera.zoom)); 
     
     for (let x = 0; x <= Config.zoneWidth; x += 64) {
         line(x, 0, x, Config.zoneHeight);

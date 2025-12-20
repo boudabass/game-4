@@ -6,7 +6,8 @@ window.ElsassFarm.state = {
     energy: 100,
     gold: 0,
     day: 1,
-    time: '6:00'
+    time: '6:00',
+    showGrid: true // Doit correspondre à la valeur par défaut dans config.js
 };
 
 // Instanciation des systèmes
