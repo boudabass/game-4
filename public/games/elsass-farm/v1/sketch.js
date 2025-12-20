@@ -53,17 +53,9 @@ function draw() {
     // 1. Fond de la zone
     background(currentZone.bgColor);
     
-    // 2. Contraintes Caméra (Appliquées à chaque frame)
-    const margin = Config.worldMargin;
+    // 2. Mise à jour de la caméra (Déplacement et Contraintes)
+    InputManager.updateCamera(); // Appel du nouveau contrôleur
     
-    const minX = (width / 2) / camera.zoom - margin;
-    const maxX = Config.zoneWidth + margin - (width / 2) / camera.zoom;
-    const minY = (height / 2) / camera.zoom - margin;
-    const maxY = Config.zoneHeight + margin - (height / 2) / camera.zoom;
-
-    camera.x = constrain(camera.x, minX, maxX);
-    camera.y = constrain(camera.y, minY, maxY);
-
     // 3. Rendu Monde
     camera.on();
     
@@ -96,11 +88,7 @@ function draw() {
     }
 }
 
-// Fonction de rappel p5.js pour le drag
-function mouseDragged() {
-    InputManager.handleDrag();
-    // return false; <-- SUPPRIMÉ
-}
+// mouseDragged est supprimé car nous utilisons la boucle draw()
 
 function mouseClicked() {
     if (mouseY < 60) return;
@@ -118,8 +106,6 @@ function mouseWheel(event) {
     camera.zoom -= zoomAmount;
     
     camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
-    
-    // return false; <-- SUPPRIMÉ
 }
 
 function drawSimpleGrid() {

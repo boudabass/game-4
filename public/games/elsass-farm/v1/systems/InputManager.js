@@ -2,22 +2,30 @@
 // Gère les interactions de la souris/touch pour le mouvement de la caméra.
 
 window.InputManager = {
-    // Initialisation (non nécessaire pour l'instant)
     init: function() {
         console.log("InputManager initialized.");
     },
 
-    // Logique de Drag (appelée par p5.js mouseDragged)
-    handleDrag: function() {
-        // 1. Vérification du HUD (Zone morte)
-        // Si la souris est sur le HUD (hauteur < 60px), on ignore le drag.
-        if (mouseY < 60) {
-            return;
+    // Fonction appelée à chaque frame par sketch.js
+    updateCamera: function() {
+        // 1. Déplacement Caméra (Drag & Pan)
+        // Si mouseIsPressed est TRUE et que la souris est en dessous du HUD (60px)
+        if (mouseIsPressed && mouseY > 60) {
+            camera.x -= (mouseX - pmouseX) / camera.zoom;
+            camera.y -= (mouseY - pmouseY) / camera.zoom;
         }
+        
+        // 2. Contraintes Caméra (Limitation du mouvement)
+        const margin = Config.worldMargin;
+        const zoneWidth = Config.zoneWidth;
+        const zoneHeight = Config.zoneHeight;
+        
+        const minX = (width / 2) / camera.zoom - margin;
+        const maxX = zoneWidth + margin - (width / 2) / camera.zoom;
+        const minY = (height / 2) / camera.zoom - margin;
+        const maxY = zoneHeight + margin - (height / 2) / camera.zoom;
 
-        // 2. Calcul du déplacement
-        // Déplacement dans le sens opposé du mouvement de la souris, ajusté par le zoom.
-        camera.x -= (mouseX - pmouseX) / camera.zoom;
-        camera.y -= (mouseY - pmouseY) / camera.zoom;
+        camera.x = constrain(camera.x, minX, maxX);
+        camera.y = constrain(camera.y, minY, maxY);
     }
 };
