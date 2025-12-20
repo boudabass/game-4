@@ -31,6 +31,7 @@
         function toggleMap() { UIManager.toggleMap(); }
         function toggleDebug() { UIManager.toggleDebug(); }
         function toggleFullscreen() { UIManager.toggleFullscreen(); }
+        function toggleGrid() { UIManager.toggleGrid(); } // Nouvelle fonction
     </script>
 </head>
 <body>
@@ -77,6 +78,9 @@
         <div id="debug-modal" class="modal-overlay" onclick="if(event.target.id === 'debug-modal') toggleDebug()">
             <div class="modal-content" style="max-width: 400px; text-align: left;">
                 <h3 style="color: white; text-align: center;">🐛 Debug Console</h3>
+                <div class="menu-list" style="margin-top: 0;">
+                    <button class="hud-btn" id="toggle-grid-btn" onclick="toggleGrid()">Toggle Grid (ON)</button>
+                </div>
                 <div id="debug-content" style="font-family: monospace; font-size: 14px; background: #000; padding: 10px; border-radius: 4px; overflow-y: auto;">
                     <!-- Contenu généré par UIManager -->
                 </div>

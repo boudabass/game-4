@@ -76,7 +76,7 @@ function draw() {
     strokeWeight(2);
     rect(0, 0, Config.zoneWidth, Config.zoneHeight);
     
-    if (Config.debug) {
+    if (Config.debug && Config.showGrid) { // Condition ajoutée
         drawSimpleGrid();
     }
     

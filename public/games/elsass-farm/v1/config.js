@@ -1,5 +1,6 @@
 const Config = {
     debug: true,
+    showGrid: true, // Nouvel état
     
     // Taille de la zone de jeu (chaque zone est un grand monde)
     zoneWidth: 3000,
@@ -39,7 +40,7 @@ const Config = {
     
     // Couleurs
     colors: {
-        gridLines: 'rgba(255, 255, 255, 0.1)'
+        gridLines: 'rgba(0, 0, 0, 0.3)' // Noir semi-transparent
     }
 };
 

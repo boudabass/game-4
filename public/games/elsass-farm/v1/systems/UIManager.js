@@ -42,6 +42,18 @@ window.UIManager = {
         }
         this.toggleMenu();
     },
+    
+    toggleGrid: function() {
+        Config.showGrid = !Config.showGrid;
+        
+        const btn = document.getElementById('toggle-grid-btn');
+        if (btn) {
+            btn.innerText = `Toggle Grid (${Config.showGrid ? 'ON' : 'OFF'})`;
+        }
+        
+        // Forcer le moteur p5.js à redessiner
+        if (window.redraw) window.redraw();
+    },
 
     renderMinimap: function() {
         const grid = document.getElementById('minimap-grid');
