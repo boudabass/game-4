@@ -4,13 +4,14 @@ const Config = {
     // Monde
     worldWidth: 3000,
     worldHeight: 3000,
+    worldMargin: 100, // Marge de vide visible autour du monde
     
     // Caméra
     zoom: {
-        min: 0.5,  // Dézoom max (voir large)
-        max: 3.0,  // Zoom max (pixel art détaillé)
+        min: 0.5,
+        max: 3.0,
         start: 1.0,
-        sensitivity: 0.001 // Vitesse du zoom molette
+        sensitivity: 0.001
     },
     
     // Couleurs
