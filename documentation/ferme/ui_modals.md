@@ -1,9 +1,8 @@
 🪟 UI Modals — Système d’Interfaces Unifiées
 Le UI Modal System définit les règles visuelles et tactiles de toutes les fenêtres contextuelles du jeu.
-Son but est de créer une cohérence d’interaction à travers l’ensemble du gameplay,
-qu’il s’agisse d’acheter un objet, ouvrir un coffre, résoudre une énigme, accepter une quête, ou voir une carte.
+Son but est de créer une cohérence d’interaction à travers l’ensemble du gameplay.
 
-Ce document fixe les dimensions, animations, comportements et typologies des modals, pour une implémentation standardisée (p5.js + React iframe).
+Ce document fixe les dimensions, animations, comportements et typologies des modals, pour une implémentation standardisée (**p5.js + HTML/CSS Overlay**).
 
 1. 🧭 Philosophie
 Un style unique, reconnaissable par son ombrage et sa transparence.
@@ -18,7 +17,9 @@ Animation standardisée : fade-in 0.2 s / fade-out 0.2 s.
 
 Hiérarchie : 1 modal actif à la fois (le reste du HUD est désactivé).
 
-2. 🖼️ Structure Visuelle Commune
+2. 🖼️ Structure Visuelle Commune (DOM)
+Les modals sont des `<div>` HTML positionnés en absolu par-dessus le canvas p5.js.
+
 text
 ┌─────────────── MODAL FRAME ───────────────┐
 │ [ Titre / Icône ]                        │
@@ -30,11 +31,11 @@ text
 Caractéristiques globales
 Élément	Valeur	Détail
 Largeur	80 % écran (mobile)	Centrée horizontalement
-Hauteur max	70 % écran	Scroll auto interne
+Hauteur max	70 % écran	Scroll auto interne (`overflow-y: auto`)
 Rayon bordure	8 px	Uniforme partout
 Fond	rgba(30, 30, 30, 0.85)	Transparence harmonisée
 Police	Sans-serif pixelisée 14 px	Légère pour lisibilité mobile
-Animation	Fade 0.2 s + scale 0.05	Sensation dynamique douce
+Animation	CSS Transition	`opacity 0.2s`, `transform 0.2s`
 3. ⚙️ Types de Modals Standardisés
 Type	Contexte	Boutons	Spécificité
 InventoryModal	Inventaire / Coffre	Fermer	Double panneau (Perso ↔ Coffre)
@@ -54,21 +55,20 @@ Danger / alerte	#fbbf24 (jaune/ambre)	“Attention”, “Énergie faible”
 Des animations d’intensité (glow léger) assurent un retour visuel quand le bouton est tapé.
 
 5. 🎚️ Hiérarchie et Superposition
-Niveau	Élément	Profondeur
-Z‑Index 1	HUD fixe	visible mais grisé
-Z‑Index 2	Modal actif	focus utilisateur
-Z‑Index 3	Overlay alerte / message rapide	notifications
-Z‑Index 4	Réservé système	Debug ou UI GameSystem Hub
-Jamais plus d’un modal interactif en Z‑Index 2 à la fois.
+Niveau	Élément	Profondeur CSS
+Z-Index 10	Canvas p5.js	Jeu
+Z-Index 20	HUD	Interface fixe
+Z-Index 30	Modal Overlay	Fond sombre cliquable
+Z-Index 40	Modal Content	Fenêtre active
+Z-Index 50	Toasts / Notifs	Messages temporaires
+Jamais plus d’un modal interactif à la fois.
 
 6. 🔄 Transitions et Interaction
-Action utilisateur	Effet	Durée
-Ouverture	Fade‑in + zoom 5 %	0.2 s
-Fermeture	Fade‑out	0.2 s
-Tap extérieur	Fermeture immédiate	0.1 s
-Bouton cliqué	Feedback coloré (glow 0.1 s)	0.1 s
-Scroll intérieur	Limitée à 50 px/s	tactile naturel
-Les transitions CSS sont calculées sur le canvas HUD pour ne jamais bloquer le jeu p5.js.
+Action utilisateur	Effet CSS	Durée
+Ouverture	Opacité 0→1 + Scale 0.95→1	0.2 s
+Fermeture	Opacité 1→0	0.2 s
+Tap extérieur	Event JS `click` sur Overlay	Immédiat
+Bouton cliqué	Class `.active` (brightness)	0.1 s
 
 7. 📱 Adaptation Mobile
 Taille dynamique selon densité d’écran (vw/vh).
@@ -77,9 +77,7 @@ Gestes exclus : tap uniquement.
 
 Orientation : vertical > horizontal.
 
-Touch events désactivés hors zone modale (pointer-events:none).
-
-Effet esthétique de flou d’arrière‑plan (blur 4 px) au focus modal.
+Touch events désactivés hors zone modale (`pointer-events: none` sur le jeu en dessous).
 
 8. 🧭 Liens inter‑systèmes
 Module	Usage du modal
@@ -107,7 +105,7 @@ Ces éléments ne perturbent jamais la logique HUD.
 
 ✅ Transparence + blur ≈ 15 %.
 
-✅ Animation standard : fade 0.2 s, scale 5 %.
+✅ Animation standard : CSS Transitions.
 
 ✅ Tap‑to‑close universel.
 
@@ -117,10 +115,10 @@ Ces éléments ne perturbent jamais la logique HUD.
 
 ✅ Overlays légers séparés du contenu.
 
-✅ Compatibilité mobile p5.js + React.
+✅ Compatibilité mobile HTML/CSS natif.
+
+❌ Pas de React.
 
 ❌ Pas de glisser‑déposer.
 
-❌ Pas de positionnement manuel.
-
-❌ Pas de sous‑modals superposés.
+❌ Pas de positionnement manuel (Flexbox center).
