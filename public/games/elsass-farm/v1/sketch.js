@@ -10,7 +10,7 @@ function setup() {
     // Config Physique
     world.gravity.y = 0; 
     
-    // Init Caméra au centre de la zone
+    // Init Caméra au centre de la zone 3000x3000
     camera.x = Config.zoneWidth / 2;
     camera.y = Config.zoneHeight / 2;
     camera.zoom = Config.zoom.start;
@@ -32,8 +32,8 @@ function draw() {
         camera.y -= (mouseY - pmouseY) / camera.zoom;
     }
     
-    // 3. Contraintes Caméra (Limitation au bord de la zone + 100px de vide)
-    const margin = 100;
+    // 3. Contraintes Caméra (Limitation au bord de la zone 3000x3000 + 100px de vide)
+    const margin = Config.worldMargin;
     
     // Limites X
     const minX = (width / 2) / camera.zoom - margin;
@@ -88,7 +88,7 @@ function drawSimpleGrid() {
     stroke(Config.colors.gridLines);
     strokeWeight(1 / camera.zoom);
     
-    // La grille est dessinée sur la taille de la zone
+    // La grille est dessinée sur la taille de la zone (3000x3000)
     for (let x = 0; x <= Config.zoneWidth; x += 64) {
         line(x, 0, x, Config.zoneHeight);
     }

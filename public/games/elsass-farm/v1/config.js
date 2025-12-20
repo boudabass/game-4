@@ -1,9 +1,10 @@
 const Config = {
     debug: true,
     
-    // Taille de la zone de jeu (fixe pour chaque vue)
-    zoneWidth: 800,
-    zoneHeight: 600,
+    // Taille de la zone de jeu (chaque zone est un grand monde)
+    zoneWidth: 3000,
+    zoneHeight: 3000,
+    worldMargin: 100, // Marge de vide visible autour du monde
     
     // Caméra
     zoom: {
