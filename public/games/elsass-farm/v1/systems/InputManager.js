@@ -7,7 +7,7 @@ window.InputManager = {
     },
 
     // Fonction appelée à chaque frame par sketch.js
-    updateCamera: function() {
+    updateCamera: function(camera, mouseIsPressed, mouseX, pmouseX, mouseY, pmouseY, width, height) {
         // 1. Déplacement Caméra (Drag & Pan)
         // Si mouseIsPressed est TRUE et que la souris est en dessous du HUD (60px)
         if (mouseIsPressed && mouseY > 60) {

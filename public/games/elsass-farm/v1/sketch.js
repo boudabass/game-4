@@ -29,13 +29,10 @@ window.changeZone = function(newZoneId, entryPoint) {
 }
 
 function setup() {
-    // CRITICAL FIX: Utiliser new Canvas() pour initialiser correctement p5.play
     new Canvas(windowWidth, windowHeight);
     
-    // Config Physique
     world.gravity.y = 0; 
     
-    // Init Caméra au centre de la zone 3000x3000
     camera.x = Config.zoneWidth / 2;
     camera.y = Config.zoneHeight / 2;
     camera.zoom = Config.zoom.start;
@@ -44,7 +41,6 @@ function setup() {
         window.GameSystem.Lifecycle.notifyReady();
     }
     
-    // Initialisation des systèmes
     InputManager.init();
 }
 
@@ -54,10 +50,7 @@ function draw() {
     // 1. Fond de la zone
     background(currentZone.bgColor);
     
-    // 2. Mise à jour de la caméra (Déplacement et Contraintes)
-    InputManager.updateCamera();
-    
-    // 3. Rendu Monde
+    // 2. Rendu Monde (Active la transformation de la caméra)
     camera.on();
     
     // Dessin du monde réel (la zone active)
@@ -71,7 +64,20 @@ function draw() {
     }
     
     allSprites.draw();
-    camera.off();
+    camera.off(); // Désactive la transformation
+    
+    // 3. Mise à jour de la caméra (Déplacement et Contraintes)
+    // Appel après camera.off() pour utiliser les coordonnées écran (mouseX, mouseY)
+    InputManager.updateCamera(
+        camera, 
+        mouseIsPressed, 
+        mouseX, 
+        pmouseX, 
+        mouseY, 
+        pmouseY, 
+        width, 
+        height
+    );
     
     // 4. Mise à jour des infos de debug dans le UIManager
     if (Config.debug && window.UIManager) {
@@ -88,8 +94,6 @@ function draw() {
         });
     }
 }
-
-// mouseDragged est supprimé car nous utilisons la boucle draw()
 
 function mouseClicked() {
     if (mouseY < 60) return;
@@ -120,5 +124,3 @@ function drawSimpleGrid() {
         line(0, y, Config.zoneWidth, y);
     }
 }
-
-// windowResized est supprimé car new Canvas() gère le redimensionnement
