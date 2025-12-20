@@ -16,13 +16,11 @@ window.changeZone = function(newZoneId, entryPoint) {
     window.ElsassFarm.state.currentZoneId = newZoneId;
     
     // Réinitialiser la position de la caméra dans la nouvelle zone
-    // Si la transition vient de la minimap (entryPoint est null), on centre la caméra.
     if (entryPoint === 'N') camera.y = Config.zoneHeight - 100;
     else if (entryPoint === 'S') camera.y = 100;
     else if (entryPoint === 'W') camera.x = Config.zoneWidth - 100;
     else if (entryPoint === 'E') camera.x = 100;
     else {
-        // Spawn par défaut au centre (utilisé par la minimap)
         camera.x = Config.zoneWidth / 2;
         camera.y = Config.zoneHeight / 2;
     }
@@ -74,7 +72,7 @@ function draw() {
     
     // Dessin du monde réel (la zone active)
     noFill();
-    stroke(0); // Bordure du monde en noir
+    stroke(0);
     strokeWeight(2);
     rect(0, 0, Config.zoneWidth, Config.zoneHeight);
     
@@ -85,25 +83,25 @@ function draw() {
     allSprites.draw();
     camera.off();
     
-    // Debug Info
-    if (Config.debug) {
-        fill(255);
-        noStroke();
-        textSize(12);
-        textAlign(LEFT, BOTTOM);
-        text(`Zone: ${currentZone.name} (${currentZone.id}) | Zoom: ${camera.zoom.toFixed(2)}`, 10, height - 10);
+    // 5. Mise à jour des infos de debug dans le UIManager
+    if (Config.debug && window.UIManager) {
+        UIManager.updateDebugInfo({
+            zoneId: currentZone.id,
+            zoneName: currentZone.name,
+            zoom: camera.zoom,
+            camX: camera.x,
+            camY: camera.y,
+            worldX: camera.mouse.x,
+            worldY: camera.mouse.y
+        });
     }
 }
 
 function mouseClicked() {
-    // Ignorer les clics sur le HUD
     if (mouseY < 60) return;
     
     const worldX = camera.mouse.x;
     const worldY = camera.mouse.y;
-    
-    // Logique de clic pour les portails SUPPRIMÉE.
-    // Seule l'interaction de jeu (clic sur une tuile) reste.
     
     console.log(`Clic Monde: ${Math.round(worldX)}, ${Math.round(worldY)}`);
 }

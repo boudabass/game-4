@@ -26,6 +26,15 @@ window.UIManager = {
             this.renderMinimap();
         }
     },
+    
+    toggleDebug: function() {
+        const el = document.getElementById('debug-modal');
+        el.classList.toggle('active');
+        // Si on ouvre le debug, on ferme le menu
+        if (el.classList.contains('active')) {
+            document.getElementById('menu-modal').classList.remove('active');
+        }
+    },
 
     toggleFullscreen: function() {
         if(window.GameSystem && window.GameSystem.Display) {
@@ -63,11 +72,9 @@ window.UIManager = {
                     document.body.style.backgroundColor = 'black';
                     
                     setTimeout(() => {
-                        // Appel à la fonction globale changeZone (définie dans sketch.js)
                         if (window.changeZone) {
                             window.changeZone(zone.id, null); 
                         } else {
-                            // Fallback
                             window.ElsassFarm.state.currentZoneId = zone.id;
                             if (window.redraw) window.redraw();
                         }
@@ -92,5 +99,26 @@ window.UIManager = {
         document.getElementById('val-gold').innerText = data.gold || 0;
         document.getElementById('val-day').innerText = data.day || 1;
         document.getElementById('val-time').innerText = data.time || '6:00';
+    },
+    
+    // Nouvelle fonction pour mettre à jour les infos de debug
+    updateDebugInfo: function(info) {
+        const debugContent = document.getElementById('debug-content');
+        if (debugContent) {
+            debugContent.innerHTML = `
+                <strong>--- GAME STATE ---</strong><br>
+                Zone ID: ${info.zoneId}<br>
+                Zone Name: ${info.zoneName}<br>
+                <br>
+                <strong>--- CAMERA ---</strong><br>
+                Zoom: ${info.zoom.toFixed(2)}<br>
+                Cam X: ${Math.round(info.camX)}<br>
+                Cam Y: ${Math.round(info.camY)}<br>
+                <br>
+                <strong>--- MOUSE (WORLD) ---</strong><br>
+                World X: ${Math.round(info.worldX)}<br>
+                World Y: ${Math.round(info.worldY)}<br>
+            `;
+        }
     }
 };

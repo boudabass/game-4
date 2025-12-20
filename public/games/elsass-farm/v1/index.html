@@ -24,6 +24,14 @@
     <script src="systems/UIManager.js"></script>
     <script src="main.js"></script>
     <script src="sketch.js"></script>
+
+    <script>
+        // Rendre les fonctions de bascule globales pour les appels onclick
+        function toggleMenu() { UIManager.toggleMenu(); }
+        function toggleMap() { UIManager.toggleMap(); }
+        function toggleDebug() { UIManager.toggleDebug(); }
+        function toggleFullscreen() { UIManager.toggleFullscreen(); }
+    </script>
 </head>
 <body>
     <!-- UI Layer -->
@@ -37,30 +45,42 @@
                 <span>🌅 J<span id="val-day">1</span> <span id="val-time">6:00</span></span>
             </div>
             <div class="hud-group">
-                <button class="hud-btn" onclick="UIManager.toggleMap()">🗺️ MAP</button>
-                <button class="hud-btn" onclick="UIManager.toggleMenu()">≡ MENU</button>
+                <button class="hud-btn" onclick="toggleMap()">🗺️ MAP</button>
+                <button class="hud-btn" onclick="toggleMenu()">≡ MENU</button>
             </div>
         </div>
         
         <!-- Menu Principal Modal -->
-        <div id="menu-modal" class="modal-overlay" onclick="if(event.target.id === 'menu-modal') UIManager.toggleMenu()">
+        <div id="menu-modal" class="modal-overlay" onclick="if(event.target.id === 'menu-modal') toggleMenu()">
             <div class="modal-content">
                 <h3>PAUSE</h3>
                 <div class="menu-list">
-                    <button class="hud-btn" onclick="UIManager.toggleFullscreen()">⛶ Plein Écran</button>
+                    <button class="hud-btn" onclick="toggleFullscreen()">⛶ Plein Écran</button>
                     <button class="hud-btn" onclick="console.log('Save')">💾 Sauvegarder</button>
-                    <button class="hud-btn" onclick="UIManager.toggleMenu()">Reprendre</button>
+                    <button class="hud-btn" onclick="toggleDebug()">🐛 Debug Info</button>
+                    <button class="hud-btn" onclick="toggleMenu()">Reprendre</button>
                 </div>
             </div>
         </div>
 
         <!-- Mini-Map Modal -->
-        <div id="map-modal" class="modal-overlay" onclick="if(event.target.id === 'map-modal') UIManager.toggleMap()">
+        <div id="map-modal" class="modal-overlay" onclick="if(event.target.id === 'map-modal') toggleMap()">
             <div class="modal-content">
                 <h3 style="color: white;">Carte de Elsas Farm</h3>
                 <div id="minimap-grid" class="minimap-grid">
                     <!-- Tiles générées par JS -->
                 </div>
+            </div>
+        </div>
+
+        <!-- Debug Modal -->
+        <div id="debug-modal" class="modal-overlay" onclick="if(event.target.id === 'debug-modal') toggleDebug()">
+            <div class="modal-content" style="max-width: 400px; text-align: left;">
+                <h3 style="color: white; text-align: center;">🐛 Debug Console</h3>
+                <div id="debug-content" style="font-family: monospace; font-size: 14px; background: #000; padding: 10px; border-radius: 4px; overflow-y: auto;">
+                    <!-- Contenu généré par UIManager -->
+                </div>
+                <button class="hud-btn" onclick="toggleDebug()" style="margin-top: 15px; width: 100%;">Fermer</button>
             </div>
         </div>
     </div>
