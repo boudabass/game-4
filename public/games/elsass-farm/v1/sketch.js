@@ -29,7 +29,8 @@ window.changeZone = function(newZoneId, entryPoint) {
 }
 
 function setup() {
-    createCanvas(windowWidth, windowHeight);
+    // CRITICAL FIX: Utiliser new Canvas() pour initialiser correctement p5.play
+    new Canvas(windowWidth, windowHeight);
     
     // Config Physique
     world.gravity.y = 0; 
@@ -54,7 +55,7 @@ function draw() {
     background(currentZone.bgColor);
     
     // 2. Mise à jour de la caméra (Déplacement et Contraintes)
-    InputManager.updateCamera(); // Appel du nouveau contrôleur
+    InputManager.updateCamera();
     
     // 3. Rendu Monde
     camera.on();
@@ -120,6 +121,4 @@ function drawSimpleGrid() {
     }
 }
 
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-}
+// windowResized est supprimé car new Canvas() gère le redimensionnement
