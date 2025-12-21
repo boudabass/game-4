@@ -2,9 +2,9 @@
 // Système de grille pour le farming - Gestion des tuiles et cultures
 
 window.GridSystem = {
-    // Constantes
-    GRID_SIZE: 10,           // 10x10 = 100 tuiles
-    TILE_SIZE: 64,           // Taille en pixels
+    // Constantes v1.3
+    GRID_SIZE: 4,            // 4x4 = 16 tuiles (Optimisation DB)
+    TILE_SIZE: 160,          // 160px (Gros tap mobile)
     GROWTH_DURATION: 10,     // 10 Jours pour maturité
 
     // États possibles d'une tuile
@@ -36,7 +36,7 @@ window.GridSystem = {
                     state: this.STATES.EMPTY,
                     watered: false,
                     seedType: null,
-                    growthStage: 0, // NEW: Compteur précis (0 à 10)
+                    growthStage: 0, // Compteur précis (0 à 10)
                     season: null
                 });
             }
@@ -102,7 +102,6 @@ window.GridSystem = {
         }
 
         // Vérifier Compatibilité Saison
-        // On cherche la graine dans l'inventaire pour vérifier sa saison
         let seedSeason = null;
         if (window.Inventory && Inventory.player && Inventory.player.seeds) {
             for (let s in Inventory.player.seeds) {
@@ -114,7 +113,6 @@ window.GridSystem = {
             }
         }
 
-        // Si la graine a une saison définie et qu'elle ne correspond pas à la saison actuelle
         if (seedSeason && seedSeason !== GameState.season) {
             return { success: false, message: "Mauvaise saison !" };
         }
@@ -189,7 +187,6 @@ window.GridSystem = {
         tile.season = null;
 
         // Ajouter au stock UNIFIÉ
-        // Rendement x2 : On récupère la semence + 1 fruit (Gain net +1)
         if (window.Inventory) {
             Inventory.addLoot(harvestedType, 2);
         }
@@ -202,113 +199,110 @@ window.GridSystem = {
 
     // --- Cycle journalier ---
 
-    // Appelé à la fin de chaque jour pour faire pousser les cultures
     processNightCycle: function () {
         let growthCount = 0;
         let readyCount = 0;
 
-        // Traiter toutes les grilles
         for (const zoneId in this.grids) {
             const grid = this.grids[zoneId];
 
             for (const tile of grid) {
                 const wasWatered = tile.watered;
-                tile.watered = false; // Reset arrosage quotidien
+                tile.watered = false; // Reset arrosage
 
-                // LOGIQUE DE POUSSE (10 Jours)
+                // LOGIQUE DE POUSSE
                 if (wasWatered && tile.state !== this.STATES.EMPTY && tile.state !== this.STATES.READY) {
-
-                    // Incrémenter l'étape de croissance
                     if (!tile.growthStage) tile.growthStage = 0;
                     tile.growthStage++;
                     growthCount++;
 
-                    // Mise à jour de l'état visuel et logique
                     if (tile.growthStage >= this.GROWTH_DURATION) {
                         tile.state = this.STATES.READY;
                         readyCount++;
                     } else if (tile.growthStage > 0) {
-                        // Reste ou devient GROWING (visuel plante verte)
                         tile.state = this.STATES.GROWING;
                     }
                 }
-                // Si pas arrosé : Ne rien faire (Pause, le growthStage n'augmente pas)
             }
         }
-
         console.log(`🌙 Cycle nuit: ${growthCount} cultures ont poussé, ${readyCount} prêtes.`);
     },
 
     // --- Rendu ---
 
-    // Dessine la grille sur le canvas p5.js
     draw: function () {
         const offsetX = (Config.zoneWidth - this.GRID_SIZE * this.TILE_SIZE) / 2;
         const offsetY = (Config.zoneHeight - this.GRID_SIZE * this.TILE_SIZE) / 2;
         const grid = this.getActiveGrid();
 
         push();
-
-        // Dessiner chaque tuile
         for (const tile of grid) {
             const x = offsetX + tile.col * this.TILE_SIZE;
             const y = offsetY + tile.row * this.TILE_SIZE;
-
-            // Couleur de fond selon l'état
             this.drawTile(x, y, tile);
         }
-
         pop();
     },
 
     // Dessine une tuile individuelle
     drawTile: function (x, y, tile) {
-        // Couleur de base (terre)
-        let fillColor = color(139, 90, 43);  // Marron terre
+        // --- LOGIQUE VISUELLE v1.3 ---
+        // Sol = État du terrain (Sec/Mouillé), Pas Maturité
+        
+        let fillColor = color(139, 90, 43); // Marron Clair (Terre sèche vide)
 
-        // Modifier selon l'état
         switch (tile.state) {
             case this.STATES.PLANTED:
-                fillColor = color(101, 67, 33);  // Marron foncé
+                fillColor = color(101, 67, 33);  // Marron foncé (Terre retournée)
                 break;
             case this.STATES.GROWING:
-                fillColor = color(85, 107, 47);  // Vert olive
+                fillColor = color(101, 67, 33);  // Marron foncé (RESTE DE LA TERRE !)
                 break;
             case this.STATES.READY:
-                fillColor = color(34, 139, 34);  // Vert forêt
+                fillColor = color(34, 139, 34);  // Vert forêt (Seulement quand prêt)
                 break;
         }
 
-        // Effet arrosage (teinte bleue)
-        if (tile.watered) {
-            fillColor = lerpColor(fillColor, color(70, 130, 180), 0.3);
+        // Effet Arrosage (Filtre Bleu)
+        // Visible si arrosé ET pas encore prêt (le prêt est vert)
+        if (tile.watered && tile.state !== this.STATES.READY) {
+            fillColor = lerpColor(fillColor, color(50, 50, 200), 0.4); 
         }
 
-        // Dessiner la tuile
+        // Dessin du Sol
         fill(fillColor);
         stroke(60, 40, 20);
-        strokeWeight(1);
-        rect(x, y, this.TILE_SIZE, this.TILE_SIZE, 4);
+        strokeWeight(2);
+        rect(x, y, this.TILE_SIZE, this.TILE_SIZE, 8);
 
-        // Icône centrale selon l'état
+        // Dessin de la Plante (Taille Dynamique)
         if (tile.state !== this.STATES.EMPTY) {
             textAlign(CENTER, CENTER);
-            textSize(24);
             noStroke();
             fill(255);
 
-            // Afficher l'icône de la graine spécifique si disponible
+            // Calcul Taille Dynamique
+            // J0 = 30px -> J10 = 100px
+            let size = 30;
+            if (tile.state === this.STATES.READY) {
+                size = 100;
+            } else {
+                let stage = tile.growthStage || 0;
+                if(stage > 10) stage = 10;
+                size = 30 + (70 * (stage / this.GROWTH_DURATION));
+            }
+            
+            textSize(size);
+
             let icon = this.getSeedIcon(tile.seedType, tile.state);
             text(icon, x + this.TILE_SIZE / 2, y + this.TILE_SIZE / 2);
         }
     },
 
-    // Récupère l'icône appropriée pour une graine
     getSeedIcon: function (seedType, state) {
-        // Icônes par type de graine
         const seedIcons = {
-            'potato': { planted: '🥔', growing: '🥔', ready: '🥔' },
-            'leek': { planted: '🧅', growing: '🧅', ready: '🧅' },
+            'potato': { planted: '🥔', growing: '🌿', ready: '🥔' },
+            'leek': { planted: '🧅', growing: '🌱', ready: '🧅' },
             'cabbage': { planted: '🥬', growing: '🥬', ready: '🥬' },
             'radish': { planted: '🌱', growing: '🌿', ready: '🥗' },
             'blueberry': { planted: '🫐', growing: '🫐', ready: '🫐' },
@@ -328,7 +322,6 @@ window.GridSystem = {
             return seedIcons[seedType][stateKey];
         }
 
-        // Fallback générique
         switch (state) {
             case this.STATES.PLANTED: return '🌱';
             case this.STATES.GROWING: return '🌿';
@@ -339,16 +332,21 @@ window.GridSystem = {
 
     // --- Sauvegarde ---
 
-    // Exporte toutes les grilles pour sauvegarde
     export: function () {
         return JSON.parse(JSON.stringify(this.grids));
     },
 
-    // Importe les grilles depuis une sauvegarde
     import: function (data) {
         if (data && typeof data === 'object') {
-            this.grids = data;
-            console.log("📦 Grilles importées");
+            // SÉCURITÉ v1.3 : Détection d'incompatibilité
+            const firstKey = Object.keys(data)[0];
+            if(firstKey && data[firstKey].length !== (this.GRID_SIZE * this.GRID_SIZE)) {
+                console.warn("⚠️ Ancienne grille 10x10 détectée. Réinitialisation forcée en 4x4.");
+                this.grids = {}; 
+            } else {
+                this.grids = data;
+                console.log("📦 Grilles importées");
+            }
         }
     }
 };
