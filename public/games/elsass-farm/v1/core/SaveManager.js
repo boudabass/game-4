@@ -61,32 +61,40 @@ window.SaveManager = {
 
         // Étape 1-B : Si pas de local, Synchro avec la DB
         if (!localJson) {
-            console.log("⚠️ Aucune sauvegarde locale trouvée. Tentative de récupération Cloud...");
+            console.log("⚠️ Aucune sauvegarde locale. Recherche Cloud...");
             const cloudData = await this._fetchFromCloud();
             
             if (cloudData) {
-                console.log("☁️ Sauvegarde Cloud trouvée. Création de la copie locale...");
+                console.log("☁️ Sauvegarde Cloud trouvée. Restauration...");
                 // Création de la save en local (Synchro)
                 localJson = JSON.stringify(cloudData);
                 localStorage.setItem(this.SAVE_KEY, localJson);
-            } else {
-                console.log("📂 Aucune sauvegarde Cloud. Nouveau jeu.");
-                return false;
             }
         }
 
-        // Étape 2 : Chargement de la save (qui est maintenant forcément en local ou fraîchement synchronisée)
+        // Étape 2 : Chargement effectif (si données trouvées)
         if (localJson) {
             try {
                 const saveData = JSON.parse(localJson);
                 this.applyData(saveData);
-                console.log("✅ Jeu chargé avec succès.");
+                console.log("✅ Jeu chargé avec succès (Progression existante).");
                 return true;
             } catch (e) {
                 console.error("❌ Erreur lecture sauvegarde locale:", e);
-                return false;
             }
         }
+
+        // Étape 3 : CAS NOUVEAU JOUEUR (Rien nul part)
+        // Si on arrive ici, c'est que c'est la toute première partie.
+        console.log("🆕 Nouveau Joueur détecté. Initialisation de la sauvegarde...");
+        
+        // On force une première sauvegarde des valeurs par défaut
+        // 1. En local pour que le jeu fonctionne tout de suite
+        this.save();
+        // 2. En cloud pour que le joueur existe en base (sécurité crash)
+        this.saveToCloud();
+
+        return true;
     },
 
     // --- Utilitaires Internes ---

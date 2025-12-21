@@ -52,13 +52,13 @@
     {
       "gameId": "elsass-farm-v1",
       "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "updatedAt": "2025-12-21T16:50:23.697Z",
+      "updatedAt": "2025-12-21T18:34:25.546Z",
       "data": {
-        "energy": 80,
-        "gold": 0,
-        "day": 1,
-        "hour": 7,
-        "minute": 18,
+        "energy": 82,
+        "gold": 100,
+        "day": 6,
+        "hour": 6,
+        "minute": 42,
         "season": "SPRING",
         "currentZoneId": "C_C",
         "grids": {
@@ -67,41 +67,41 @@
               "id": 0,
               "row": 0,
               "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
+              "state": "PLANTED",
+              "watered": true,
+              "seedType": "potato",
               "growthStage": 0,
-              "season": null
+              "season": "SPRING"
             },
             {
               "id": 1,
               "row": 0,
               "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
+              "state": "PLANTED",
+              "watered": true,
+              "seedType": "leek",
               "growthStage": 0,
-              "season": null
+              "season": "SPRING"
             },
             {
               "id": 2,
               "row": 0,
               "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
+              "state": "GROWING",
+              "watered": true,
+              "seedType": "cabbage",
+              "growthStage": 1,
+              "season": "SPRING"
             },
             {
               "id": 3,
               "row": 0,
               "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
+              "state": "GROWING",
+              "watered": true,
+              "seedType": "radish",
+              "growthStage": 1,
+              "season": "SPRING"
             },
             {
               "id": 4,
@@ -337,11 +337,11 @@
               "id": 27,
               "row": 2,
               "col": 7,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
+              "state": "GROWING",
+              "watered": true,
+              "seedType": "radish",
+              "growthStage": 1,
+              "season": "SPRING"
             },
             {
               "id": 28,
@@ -387,10 +387,10 @@
               "id": 32,
               "row": 3,
               "col": 2,
-              "state": "PLANTED",
+              "state": "GROWING",
               "watered": true,
               "seedType": "potato",
-              "growthStage": 0,
+              "growthStage": 3,
               "season": "SPRING"
             },
             {
@@ -487,10 +487,10 @@
               "id": 42,
               "row": 4,
               "col": 2,
-              "state": "PLANTED",
+              "state": "GROWING",
               "watered": true,
               "seedType": "potato",
-              "growthStage": 0,
+              "growthStage": 3,
               "season": "SPRING"
             },
             {
@@ -507,10 +507,10 @@
               "id": 44,
               "row": 4,
               "col": 4,
-              "state": "PLANTED",
-              "watered": false,
+              "state": "GROWING",
+              "watered": true,
               "seedType": "potato",
-              "growthStage": 0,
+              "growthStage": 2,
               "season": "SPRING"
             },
             {
@@ -607,10 +607,10 @@
               "id": 54,
               "row": 5,
               "col": 4,
-              "state": "PLANTED",
-              "watered": false,
+              "state": "GROWING",
+              "watered": true,
               "seedType": "potato",
-              "growthStage": 0,
+              "growthStage": 2,
               "season": "SPRING"
             },
             {
@@ -7084,25 +7084,25 @@
                 "id": "potato",
                 "name": "Pomme de terre",
                 "icon": "🥔",
-                "qty": 6
+                "qty": 15
               },
               {
                 "id": "leek",
                 "name": "Poireau",
                 "icon": "🧅",
-                "qty": 5
+                "qty": 14
               },
               {
                 "id": "cabbage",
                 "name": "Chou",
                 "icon": "🥬",
-                "qty": 5
+                "qty": 14
               },
               {
                 "id": "radish",
                 "name": "Radis",
                 "icon": "🌱",
-                "qty": 8
+                "qty": 16
               }
             ],
             "SUMMER": [
@@ -7381,10 +7381,10 @@
             ]
           },
           "selectedToolIndex": 0,
-          "selectedSeedIndex": 0
+          "selectedSeedIndex": -1
         },
-        "savedAt": "2025-12-21T16:50:23.534Z",
-        "version": "1.1"
+        "savedAt": "2025-12-21T18:34:25.083Z",
+        "version": "1.2"
       }
     }
   ]
