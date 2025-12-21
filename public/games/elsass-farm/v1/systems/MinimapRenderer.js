@@ -14,10 +14,10 @@ const ZONE_ICONS = {
 };
 
 window.MinimapRenderer = {
-    render: function(toggleMapCallback) {
+    render: function (toggleMapCallback) {
         const grid = document.getElementById('minimap-grid');
         grid.innerHTML = ''; // Nettoyage
-        const currentZoneId = window.ElsassFarm.state.currentZoneId;
+        const currentZoneId = GameState.currentZoneId;
 
         Config.zones.forEach(zone => {
             const tile = document.createElement('div');
@@ -41,21 +41,21 @@ window.MinimapRenderer = {
                     // Simuler la transition (Fondu noir 0.2s)
                     document.body.style.transition = 'background-color 0.2s';
                     document.body.style.backgroundColor = 'black';
-                    
+
                     setTimeout(() => {
                         if (window.changeZone) {
-                            window.changeZone(zone.id, null); 
+                            window.changeZone(zone.id, null);
                         } else {
-                            window.ElsassFarm.state.currentZoneId = zone.id;
+                            GameState.currentZoneId = zone.id;
                             if (window.redraw) window.redraw();
                         }
-                        
+
                         toggleMapCallback(); // Fermer la map via le callback UIManager
-                        
+
                         // Réinitialiser la couleur de fond du body après la transition
                         document.body.style.backgroundColor = '#111';
                         document.body.style.transition = 'none';
-                        
+
                     }, 200);
                 }
             };

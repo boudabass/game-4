@@ -32,14 +32,14 @@ Objectif : Prototype "God-View" sur grille interactive.
 
 ### Phase 1 : Caméra & Grille (Semaine 1)
 *   [x] **Setup :** Canvas Fullscreen + Hub.
-*   [ ] **Camera :** Drag & Pan fluide (toucher/glisser).
-*   [ ] **Grid System :** Afficher une grille infinie ou délimitée.
-*   [ ] **Selection :** Convertir Clic Souris → Index Case (Col, Row).
-*   [ ] **UI Debug :** Afficher les coordonnées de la case cliquée.
+*   [x] **Camera :** Drag & Pan fluide (toucher/glisser).
+*   [x] **Grid System :** Afficher une grille infinie ou délimitée.
+*   [x] **Selection :** Convertir Clic Souris → Index Case (Col, Row).
+*   [x] **UI Debug :** Afficher les coordonnées de la case cliquée.
 
 ### Phase 2 : Actions de Ferme (Semaine 2)
-*   [ ] **Outils :** Sélecteur d'action dans l'UI (Main, Houe, Arrosoir, Graines).
-*   [ ] **Modification :** Changer l'état d'une case (Terre → Labourée → Plantée).
+*   [x] **Outils :** Sélecteur d'action dans l'UI (Main, Houe, Arrosoir, Graines).
+*   [x] **Modification :** Changer l'état d'une case (Terre → Labourée → Plantée).
 *   [ ] **Growth :** Logique de pousse (Timer ou Changement jour).
 
 ### Phase 3 : Économie (Semaine 3)

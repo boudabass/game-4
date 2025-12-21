@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Elsass Farm</title>
-    
+
     <link rel="stylesheet" href="style.css">
-    
+
     <!-- 1. LIBRAIRIES -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/addons/p5.sound.min.js"></script>
@@ -21,22 +22,252 @@
 
     <!-- 3. JEU -->
     <script src="config.js"></script>
+    <script src="core/GameState.js"></script>
+    <script src="core/TimeManager.js"></script>
+    <script src="core/SaveManager.js"></script>
     <script src="systems/MinimapRenderer.js"></script>
     <script src="systems/DebugManager.js"></script>
     <script src="systems/UIManager.js"></script>
     <script src="systems/InputManager.js"></script>
+    <script src="systems/GridSystem.js"></script>
+    <script src="systems/Inventory.js"></script>
+    <script src="systems/QuickAction.js"></script>
     <script src="main.js"></script>
     <script src="sketch.js"></script>
 
     <script>
-        // Rendre les fonctions de bascule globales pour les appels onclick
+        // Ponts vers UIManager (nécessaires pour les onclick)
         function toggleMenu() { UIManager.toggleMenu(); }
         function toggleMap() { UIManager.toggleMap(); }
         function toggleDebug() { UIManager.toggleDebug(); }
         function toggleFullscreen() { UIManager.toggleFullscreen(); }
         function toggleGrid() { UIManager.toggleGrid(); }
+        function toggleInventory() { UIManager.toggleInventory(); }
+
+        function switchInvTab(tab, event) {
+            if (event) event.stopPropagation();
+            // Mettre à jour les onglets actifs
+            document.querySelectorAll('.inv-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+
+            // Générer le contenu
+            const content = document.getElementById('inv-content');
+            let html = '';
+
+            if (tab === 'seeds' && window.Inventory) {
+                html += '<div class="inv-grid-seeds">';
+                const seasons = {
+                    'SPRING': '🪵 Printemps',
+                    'SUMMER': '☀️ Été',
+                    'AUTUMN': '🍂 Automne',
+                    'WINTER': '❄️ Hiver'
+                };
+
+                for (const seasonId in seasons) {
+                    html += `<div class="inv-section-title">${seasons[seasonId]}</div>`;
+                    const seeds = Inventory.player.seeds[seasonId] || [];
+                    const isCurrentSeason = GameState.season === seasonId;
+
+                    seeds.forEach((seed, idx) => {
+                        const isSelected = isCurrentSeason && idx === Inventory.selectedSeedIndex;
+                        const isDisabled = !isCurrentSeason;
+
+                        html += `
+                        <div class="inv-slot-horizontal ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" 
+                            onclick="${isCurrentSeason ? `selectSeed(${idx}, event)` : 'event.stopPropagation()'}"
+                        >
+                            <div class="item-icon-small">${seed.icon || '?'}</div>
+                            <div class="item-details">
+                                <div class="item-name-text">${seed.name || ''}</div>
+                                <div class="item-qty-text">x${seed.qty}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
+                html += '</div>';
+            } else if (tab === 'tools' && window.Inventory) {
+                html += '<div class="inv-tools-container">';
+                Inventory.player.tools.forEach((tool, idx) => {
+                    const isSelected = idx === Inventory.selectedToolIndex;
+                    html += `
+                    <div class="inv-tool-row">
+                        <div class="inv-tool-icon-box ${isSelected ? 'selected' : ''}" onclick="selectTool(${idx}, event)">
+                            ${tool.icon}
+                        </div>
+                        <div class="inv-tool-info-box">
+                            <div class="inv-tool-name">${tool.name}</div>
+                            <div class="inv-tool-level">${tool.level > 0 ? `Niveau ${tool.level}` : 'Non débloqué'}</div>
+                        </div>
+                    </div>`;
+                });
+                html += '</div>';
+            } else if (tab === 'loot' && window.Inventory) {
+                html += '<div class="inv-grid-loot">';
+                const categories = {
+                    'WOOD': '🪵 Bois',
+                    'STONE': '⛏️ Pierre',
+                    'METAL': '⚔️ Métal',
+                    'MACHINES': '🏭 Machines',
+                    'NATURE': '🌿 Nature',
+                    'POTIONS': '🧪 Potions'
+                };
+
+                for (const catId in categories) {
+                    html += `<div class="inv-section-title">${categories[catId]}</div>`;
+                    const items = Inventory.player.loot[catId] || [];
+                    items.forEach(item => {
+                        html += `
+                        <div class="inv-slot-horizontal" onclick="event.stopPropagation()">
+                            <div class="item-icon-small">${item.icon}</div>
+                            <div class="item-details">
+                                <div class="item-name-text">${item.name}</div>
+                                <div class="item-qty-text">x${item.qty}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
+                html += '</div>';
+            }
+
+            content.innerHTML = html || '<p style="text-align: center; color: #888;">Vide</p>';
+        }
+
+        function selectSeed(idx, event) {
+            if (event) event.stopPropagation();
+            if (Inventory) Inventory.selectSeed(idx);
+            switchInvTab('seeds');
+        }
+
+        function selectTool(idx, event) {
+            if (event) event.stopPropagation();
+            if (Inventory) Inventory.selectTool(idx);
+            switchInvTab('tools');
+        }
+
+        // Sauvegarde/Chargement
+        function saveGame() {
+            if (SaveManager) {
+                SaveManager.save();
+                alert('✅ Partie sauvegardée !');
+            }
+        }
+
+        function loadGame() {
+            if (SaveManager) {
+                SaveManager.load();
+            }
+        }
+
+        // Quitter le jeu avec sauvegarde et animation
+        function quitGame(event) {
+            if (event) event.stopPropagation();
+
+            // 1. Masquer les boutons pour forcer l'attente
+            const menuList = document.querySelector('#menu-modal .menu-list');
+            if (menuList) menuList.style.display = 'none';
+
+            // 2. Afficher la barre de chargement
+            const container = document.getElementById('save-loading-container');
+            const bar = document.getElementById('save-progress-fill');
+            const text = document.getElementById('save-status-text');
+
+            if (container && bar) {
+                container.style.display = 'block';
+
+                // 3. Lancer la sauvegarde réelle
+                if (typeof SaveManager !== 'undefined') {
+                    SaveManager.save();
+                    console.log("💾 Sauvegarde effectuée avant fermeture.");
+                }
+
+                // 4. Animation fictive (2.5 secondes)
+                let progress = 0;
+                const duration = 2500;
+                const intervalTime = 50;
+                const increment = 100 / (duration / intervalTime);
+
+                const timer = setInterval(() => {
+                    progress += increment;
+                    if (progress >= 100) progress = 100;
+
+                    bar.style.width = progress + '%';
+
+                    if (progress >= 100) {
+                        clearInterval(timer);
+                        if (text) text.innerText = "Fermeture...";
+
+                        setTimeout(() => {
+                            // Remplacer l'écran pour confirmer la fin
+                            document.body.innerHTML = `
+                                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#111;color:white;flex-direction:column;font-family:sans-serif;">
+                                    <h1>À bientôt !</h1>
+                                    <p>Votre partie a été sauvegardée.</p>
+                                    <p style="color:#777;font-size:12px;margin-top:20px;">Vous pouvez fermer cet onglet.</p>
+                                </div>
+                            `;
+                            // Tentative de fermeture (souvent bloqué par le navigateur)
+                            try { window.close(); } catch (e) { }
+                        }, 500);
+                    }
+                }, intervalTime);
+            }
+        }
+
+        // Charger automatiquement au démarrage
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                if (SaveManager && SaveManager.hasSave()) {
+                    SaveManager.load();
+                    console.log("🎮 Sauvegarde chargée automatiquement");
+                }
+            }, 500);
+        });
+
+        // --- Fonctions de Triche (Debug) ---
+        function cheatEnergy() {
+            if (window.GameState) {
+                GameState.restoreEnergy(50);
+                if (window.refreshHUD) window.refreshHUD();
+                console.log("⚡ Cheat: +50 Énergie");
+            }
+        }
+
+        function cheatFullEnergy() {
+            if (window.GameState) {
+                GameState.energy = GameState.maxEnergy;
+                if (window.refreshHUD) window.refreshHUD();
+                console.log("⚡ Cheat: Énergie Max");
+            }
+        }
+
+        function cheatGold() {
+            if (window.GameState) {
+                GameState.addGold(100);
+                if (window.refreshHUD) window.refreshHUD();
+                console.log("💰 Cheat: +100 Or");
+            }
+        }
+
+        function cheatSeeds() {
+            if (window.Inventory) {
+                const seeds = Inventory.getCurrentSeasonSeeds();
+                seeds.forEach(seed => {
+                    if (seed.id.indexOf('empty') === -1) {
+                        seed.qty += 10;
+                    }
+                });
+                console.log("🌱 Cheat: +10 de chaque graine de saison");
+                // Rafraîchir l'affichage de l'inventaire s'il est ouvert
+                const invModal = document.getElementById('inventory-modal');
+                if (invModal.classList.contains('active')) {
+                    switchInvTab('seeds');
+                }
+            }
+        }
     </script>
 </head>
+
 <body>
     <!-- UI Layer -->
     <div id="ui-layer">
@@ -49,20 +280,29 @@
                 <span>🌅 J<span id="val-day">1</span> <span id="val-time">6:00</span></span>
             </div>
             <div class="hud-group">
-                <button class="hud-btn" onclick="toggleMap()">🗺️ MAP</button>
-                <button class="hud-btn" onclick="toggleMenu()">≡ MENU</button>
+                <button class="hud-btn" onclick="event.stopPropagation(); toggleInventory()">📦 INV</button>
+                <button class="hud-btn" onclick="event.stopPropagation(); toggleMap()">🗺️ MAP</button>
+                <button class="hud-btn" onclick="event.stopPropagation(); toggleMenu()">≡ MENU</button>
             </div>
         </div>
-        
+
         <!-- Menu Principal Modal -->
         <div id="menu-modal" class="modal-overlay" onclick="if(event.target.id === 'menu-modal') toggleMenu()">
             <div class="modal-content">
                 <h3>PAUSE</h3>
                 <div class="menu-list">
                     <button class="hud-btn" onclick="toggleFullscreen()">⛶ Plein Écran</button>
-                    <button class="hud-btn" onclick="console.log('Save')">💾 Sauvegarder</button>
+                    <button class="hud-btn" onclick="quitGame(event)">💾 Quitter</button>
                     <button class="hud-btn" onclick="toggleDebug()">🐛 Debug Info</button>
                     <button class="hud-btn" onclick="toggleMenu()">Reprendre</button>
+                </div>
+
+                <!-- Barre de chargement sauvegarde -->
+                <div id="save-loading-container">
+                    <div class="save-status-text" id="save-status-text">Sauvegarde en cours...</div>
+                    <div class="save-progress-track">
+                        <div class="save-progress-fill" id="save-progress-fill"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -79,17 +319,131 @@
 
         <!-- Debug Modal -->
         <div id="debug-modal" class="modal-overlay" onclick="if(event.target.id === 'debug-modal') toggleDebug()">
-            <div class="modal-content" style="max-width: 400px; text-align: left;">
-                <h3 style="color: white; text-align: center;">🐛 Debug Console</h3>
-                <div class="menu-list" style="margin-top: 0;">
-                    <button class="hud-btn" id="toggle-grid-btn" onclick="toggleGrid()">Toggle Grid (ON)</button>
+            <div class="modal-content"
+                style="max-width: 500px; text-align: left; height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+
+                <!-- ENTETE DEBUG -->
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #7f8c8d; padding-bottom: 10px; margin-bottom: 10px;">
+                    <h3 style="margin: 0; color: #e74c3c;">🐛 Debug Console</h3>
+                    <button class="hud-btn hud-btn-red" onclick="toggleDebug()"
+                        style="padding: 4px 8px; font-size: 12px;">X</button>
                 </div>
-                <div id="debug-content" style="font-family: monospace; font-size: 14px; background: #000; padding: 10px; border-radius: 4px; overflow-y: auto;">
-                    <!-- Contenu généré par UIManager -->
+
+                <!-- ONGLETS -->
+                <div class="debug-tabs" style="display: flex; gap: 5px; margin-bottom: 10px;">
+                    <button class="hud-btn active" id="tab-general"
+                        onclick="DebugManager.switchTab('general')">Général</button>
+                    <button class="hud-btn" id="tab-time" onclick="DebugManager.switchTab('time')">Temps</button>
+                    <button class="hud-btn" id="tab-farming"
+                        onclick="DebugManager.switchTab('farming')">Farming</button>
+                    <button class="hud-btn" id="tab-inv" onclick="DebugManager.switchTab('inv')">Inventaire</button>
                 </div>
-                <button class="hud-btn" onclick="toggleDebug()" style="margin-top: 15px; width: 100%;">Fermer</button>
+
+                <!-- CONTENU SCROLLABLE -->
+                <div id="debug-panels" style="flex: 1; overflow-y: auto; padding-right: 5px;">
+
+                    <!-- PANNEAU GENERAL -->
+                    <div id="panel-general" class="debug-panel">
+                        <button class="hud-btn" id="toggle-grid-btn" onclick="toggleGrid()"
+                            style="width: 100%; margin-bottom: 10px;">Toggle Grid (ON)</button>
+                        <div id="debug-content"
+                            style="font-family: monospace; font-size: 12px; background: #000; padding: 10px; border-radius: 4px; color: #2ecc71;">
+                            <!-- Info temps réel -->
+                        </div>
+                    </div>
+
+                    <!-- PANNEAU TEMPS -->
+                    <div id="panel-time" class="debug-panel" style="display: none;">
+                        <h4 style="margin: 5px 0; color: #f39c12;">Temps Actuel</h4>
+                        <div style="background: #2c3e50; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                            <span id="dbg-time-display">J1 - 06:00 - SPRING</span>
+                        </div>
+
+                        <h4 style="margin: 10px 0;">Contrôles</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button class="hud-btn" onclick="DebugManager.action('addHour')">+1 Heure</button>
+                            <button class="hud-btn" onclick="DebugManager.action('nextDay')">Passer la Nuit</button>
+                            <button class="hud-btn" onclick="DebugManager.action('nextSeason')">Saison Suivante</button>
+                        </div>
+                    </div>
+
+                    <!-- PANNEAU FARMING -->
+                    <div id="panel-farming" class="debug-panel" style="display: none;">
+                        <h4 style="margin: 5px 0; color: #2ecc71;">Zone Active</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button class="hud-btn" onclick="DebugManager.action('waterAll')">💧 Arroser Tout</button>
+                            <button class="hud-btn" onclick="DebugManager.action('growAll')">🌱 Croissance +1</button>
+                            <button class="hud-btn" onclick="DebugManager.action('instantReady')">🚜 Tout Prêt</button>
+                            <button class="hud-btn hud-btn-red" onclick="DebugManager.action('clearField')">🔥 Tout
+                                Raser</button>
+                        </div>
+                    </div>
+
+                    <!-- PANNEAU INVENTAIRE -->
+                    <div id="panel-inv" class="debug-panel" style="display: none;">
+                        <h4 style="margin: 5px 0; color: #3498db;">Ressources</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button class="hud-btn" onclick="DebugManager.action('addSeeds')">📦 +10 Graines</button>
+                            <button class="hud-btn" onclick="DebugManager.action('addGold')">💰 +1000 Or</button>
+                            <button class="hud-btn" onclick="DebugManager.action('maxEnergy')">⚡ Max Énergie</button>
+                            <button class="hud-btn hud-btn-red" onclick="DebugManager.action('clearInv')">🗑️ Vider
+                                Tout</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Modal -->
+        <div id="inventory-modal" class="modal-overlay"
+            onclick="if(event.target.id === 'inventory-modal') toggleInventory()">
+            <div class="modal-content" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+
+                <!-- En-tête : Titre + Onglets sur la même ligne -->
+                <div class="inv-header">
+                    <div class="inv-header-title">📦 Inventaire</div>
+                    <div class="inv-tabs">
+                        <button class="hud-btn inv-tab active" data-tab="seeds"
+                            onclick="switchInvTab('seeds', event)">🌱 Graines</button>
+                        <button class="hud-btn inv-tab" data-tab="tools" onclick="switchInvTab('tools', event)">⚙️
+                            Outils</button>
+                        <button class="hud-btn inv-tab" data-tab="loot" onclick="switchInvTab('loot', event)">🧺
+                            Loot</button>
+                    </div>
+                </div>
+
+                <!-- Contenu onglets -->
+                <div id="inv-content"
+                    style="min-height: 200px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; padding-bottom: 20px;">
+                    <!-- Généré par JS -->
+                </div>
+
+                <button class="hud-btn hud-btn-red" onclick="toggleInventory()"
+                    style="margin-top: 15px; width: 100%; padding: 10px;">Fermer</button>
+            </div>
+        </div>
+
+        <!-- Raccourcis UI (Étape 3 - Refactorisé) -->
+        <div id="sc-seeds" class="shortcut-zone sc-left sc-empty">
+            <div class="sc-circle" id="sc-seed-circle" onclick="QuickAction.handleMainClick('seeds')">
+                <span class="sc-icon" id="sc-seed-icon">🌱</span>
+                <div class="sc-dot sc-info" id="sc-seed-qty">0</div>
+                <div class="sc-dot sc-cross" id="sc-seed-deselect"
+                    onclick="event.stopPropagation(); QuickAction.deselect('seed')">❌</div>
+            </div>
+        </div>
+
+        <div id="sc-tools" class="shortcut-zone sc-right sc-empty">
+            <div class="sc-circle" id="sc-tool-circle" onclick="QuickAction.handleMainClick('tools')">
+                <span class="sc-icon" id="sc-tool-icon">⛏️</span>
+                <div class="sc-dot sc-info" id="sc-tool-lv">Lv1</div>
+                <div class="sc-dot sc-cross" id="sc-tool-deselect"
+                    onclick="event.stopPropagation(); QuickAction.deselect('tool')">❌</div>
             </div>
         </div>
     </div>
 </body>
+
 </html>

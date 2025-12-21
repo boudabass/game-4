@@ -1,42 +1,44 @@
-🪟 UI Modals — Système d’Interfaces Unifiées
-Le UI Modal System définit les règles visuelles et tactiles de toutes les fenêtres contextuelles du jeu.
-Son but est de créer une cohérence d’interaction à travers l’ensemble du gameplay.
+# 🪟 UI Modals — Système d’Interfaces Unifiées
 
-Ce document fixe les dimensions, animations, comportements et typologies des modals, pour une implémentation standardisée (**p5.js + HTML/CSS Overlay**).
+Le UI Modal System définit les règles visuelles et tactiles de toutes les fenêtres contextuelles du jeu. Il repose sur un mélange de **HTML/CSS Overlay** et de logique de blocage pour le moteur **p5.js**.
 
-1. 🧭 Philosophie
-Un style unique, reconnaissable par son ombrage et sa transparence.
+## 1. 🧭 Philosophie (v2.0)
 
-Aucune fenêtre flottante opaque : tout modal laisse 15 % de transparence sur le jeu.
+- **Isolation Radicale** : Toute interface fermée est en `display: none`. Elle n'intercepte aucun clic et n'existe pas pour le flux de rendu interactif.
+- **Réactivité Immédiate** : Pas d'animations de transition de type "fade" sur l'inventaire principal. L'affichage doit être instantané.
+- **Positionnement Stratégique** : Les interfaces ne sont plus obligatoirement centrées. L'inventaire est asymétrique (gauche) pour laisser le jeu visible et cliquable à droite.
 
-Actions rapides : 2 taps max pour interagir (ou fermer).
+---
 
-Clôture instantanée : tap en dehors = fermeture fluide.
+## 2. ⚙️ Gestion de l'Affichage (CSS Standard)
 
-Animation standardisée : fade-in 0.2 s / fade-out 0.2 s.
+Pour éviter les "clics fantômes" interceptés par des conteneurs invisibles :
 
-Hiérarchie : 1 modal actif à la fois (le reste du HUD est désactivé).
+| État | Propriété CSS | Résultat |
+|---|---|---|
+| **Fermé** | `display: none` | Invisible + Inerte (clics traversants) |
+| **Ouvert** | `display: flex` | Visible + Interactif |
 
-2. 🖼️ Structure Visuelle Commune (DOM)
-Les modals sont des `<div>` HTML positionnés en absolu par-dessus le canvas p5.js.
+> [!CAUTION]
+> **NE JAMAIS** utiliser `opacity: 0` pour masquer une modale, car elle continuerait de bloquer les actions du jeu p5.js en dessous.
 
-text
-┌─────────────── MODAL FRAME ───────────────┐
-│ [ Titre / Icône ]                        │
-│──────────────────────────────────────────│
-│ [ Contenu principal ]                    │
-│                                          │
-│ [ Boutons d’action en bas alignés ]      │
-└──────────────────────────────────────────┘
-Caractéristiques globales
-Élément	Valeur	Détail
-Largeur	80 % écran (mobile)	Centrée horizontalement
-Hauteur max	70 % écran	Scroll auto interne (`overflow-y: auto`)
-Rayon bordure	8 px	Uniforme partout
-Fond	rgba(30, 30, 30, 0.85)	Transparence harmonisée
-Police	Sans-serif pixelisée 14 px	Légère pour lisibilité mobile
-Animation	CSS Transition	`opacity 0.2s`, `transform 0.2s`
-3. ⚙️ Types de Modals Standardisés
+---
+
+## 3. 🖼️ Structure & Dimensions
+
+### Panneaux Latéraux (ex: Inventaire)
+*   **Largeur** : 46% de l'écran.
+*   **Marges** : 2% (Haut, Bas, Gauche, Droite).
+*   **Overlay** : Limité à 50% de la largeur de l'écran pour libérer le champ à droite.
+
+### Modales Centrales (ex: Menu, Map, Shop)
+*   **Largeur** : 80% (mobile) / max 600px.
+*   **Position** : Centrée avec `justify-content: center`.
+*   **Overlay** : 100% de l'écran avec fond sombre `rgba(0,0,0,0.7)`.
+
+---
+
+## 4. ⚙️ Types de Modals Standardisés
 Type	Contexte	Boutons	Spécificité
 InventoryModal	Inventaire / Coffre	Fermer	Double panneau (Perso ↔ Coffre)
 ShopModal	Ville / Commerce	Payer · Annuler · Reset	Comptabilise pièces + troc
@@ -45,7 +47,8 @@ QuestModal	Taverne & Mairie	Accepter · Refuser	Description + récompense
 DialogueModal	PNJ / Cinematique	Continuer · Fermer	Texte subtilement scrollé
 PuzzleModal	Mine (énigmes)	Confirmer · Quitter	Interface full écran 90 %
 PauseModal	HUD ≡ Menu	Reprendre · Sauvegarde · Quitter	Statistiques rapides
-4. 🎨 Couleurs et Signaux
+
+## 5. 🎨 Couleurs et Signaux
 Élément	Couleur (CSS)	Rôle
 Bordure principale	#6b7280 (gris clair)	Cadre neutre
 Action positive	#34d399 (vert)	“Fabriquer”, “Payer”, “Accepter”
@@ -54,23 +57,28 @@ Info / neutre	#93c5fd (bleu)	“Fermer”, “OK”
 Danger / alerte	#fbbf24 (jaune/ambre)	“Attention”, “Énergie faible”
 Des animations d’intensité (glow léger) assurent un retour visuel quand le bouton est tapé.
 
-5. 🎚️ Hiérarchie et Superposition
-Niveau	Élément	Profondeur CSS
-Z-Index 10	Canvas p5.js	Jeu
-Z-Index 20	HUD	Interface fixe
-Z-Index 30	Modal Overlay	Fond sombre cliquable
-Z-Index 40	Modal Content	Fenêtre active
-Z-Index 50	Toasts / Notifs	Messages temporaires
-Jamais plus d’un modal interactif à la fois.
+## 6. 🎨 Hiérarchie & Superposition (Z-Index)
 
-6. 🔄 Transitions et Interaction
-Action utilisateur	Effet CSS	Durée
-Ouverture	Opacité 0→1 + Scale 0.95→1	0.2 s
-Fermeture	Opacité 1→0	0.2 s
-Tap extérieur	Event JS `click` sur Overlay	Immédiat
-Bouton cliqué	Class `.active` (brightness)	0.1 s
+| Niveau | Élément | Z-Index | Rôle |
+|---|---|---|---|
+| **P5.js** | Canvas | - | Monde de jeu |
+| **HUD** | HUD Bar | Autre | Boutons fixes haut |
+| **MODAL** | Overlay | **100** | Fond de blocage |
+| **MODAL** | Content | **100** | Fenêtre active |
+| **UI EXTRAS** | Shortcuts | **110** | Raccourcis QuickAction (prioritaires) |
 
-7. 📱 Adaptation Mobile
+---
+
+## 7. 🔄 Protection des Clics (Anti-Traversée)
+
+Pour empêcher un clic sur un bouton UI de labourer le champ en dessous :
+1.  **DOM** : `onclick="event.stopPropagation()"` sur tous les boutons et conteneurs `.modal-content`.
+2.  **Logic p5.js** : La fonction `mouseClicked()` doit systématiquement vérifier `UIManager.isAnyModalOpen()`.
+3.  **Temps Mort** : Une sécurité de 150ms (`UIManager.lastCloseTime`) empêche un clic de fermeture de se transformer accidentellement en clic monde.
+
+---
+
+## 8. 📱 Adaptation Mobile
 Taille dynamique selon densité d’écran (vw/vh).
 
 Gestes exclus : tap uniquement.
@@ -79,7 +87,7 @@ Orientation : vertical > horizontal.
 
 Touch events désactivés hors zone modale (`pointer-events: none` sur le jeu en dessous).
 
-8. 🧭 Liens inter‑systèmes
+## 9. 🧭 Liens inter‑systèmes
 Module	Usage du modal
 InventorySystem	Onglets (Graine / Outil / Loot) affichés dans InventoryModal
 CitySystem	Boutique double panneau (ShopModal)
@@ -90,7 +98,7 @@ Mine	PuzzleModal pleine surface
 EventSystem	Overlays d’annonce / notification : modaux temporaires non bloquants
 Toutes les fenêtres suivent la même charte visuelle et comportementale.
 
-9. 🔔 Overlays légers
+## 10. 🔔 Overlays légers
 L’EventSystem et le TimeSystem peuvent afficher de légers overlays temporaires,
 distingués des vrais modals :
 
@@ -100,25 +108,12 @@ Alerte fatigue	1 s	0.8	“Trop fatigué…” + vibration
 Message temps	2 s	0.5	“Jour + 1 → Été” transition douce
 Ces éléments ne perturbent jamais la logique HUD.
 
-10. ✅ Règles absolues — UI Modal System v1.0
-✅ 7 types de fenêtres harmonisés.
+## 11. ✅ Règles Absolues (v2.0)
 
-✅ Transparence + blur ≈ 15 %.
-
-✅ Animation standard : CSS Transitions.
-
-✅ Tap‑to‑close universel.
-
-✅ 1 modal actif à la fois.
-
-✅ Palette cohérente : gris/vert/rouge/bleu/ambre.
-
-✅ Overlays légers séparés du contenu.
-
-✅ Compatibilité mobile HTML/CSS natif.
-
-❌ Pas de React.
-
-❌ Pas de glisser‑déposer.
-
-❌ Pas de positionnement manuel (Flexbox center).
+*   ✅ Standard `display: none` obligatoire.
+*   ✅ Marges relatives : 2% du viewport.
+*   ✅ Pas d'overlay global pour l'inventaire (background transparent).
+*   ✅ Bouton `Fermer` large et rouge en bas de chaque fenêtre.
+*   ✅ QuickActions toujours au-dessus (Z-index 110).
+*   ❌ Pas d'animations d'opacité lentes.
+*   ❌ Pas de scroll horizontal.

@@ -119,21 +119,29 @@ Couleur selon nature :
 Tap = ouvre mini‑fenêtre “Infos Événement” :
 description, lieu, durée, effet.
 
-11. ✅ Règles absolues — Event System v1.0
-✅ Registre global EventHub actif toutes les 10 s.
+## 7. 🖱️ Cohabitation DOM & p5.js (Interactions)
 
-✅ Intégration directe TimeSystem, QuestSystem, SaveSystem.
+Le jeu superpose des interfaces HTML (DOM) sur un canvas p5.js. Pour éviter que les clics ne "traversent" l'interface vers le jeu, les règles suivantes sont appliquées :
 
-✅ Actions modulaires (overlay, musique, bonus, reward…).
+### 🛡️ Mécanisme de Bouclier (Shield)
+- **UIManager.isAnyModalOpen()** : Cette fonction est le garde-fou principal. Elle doit être appelée au début de `mouseClicked()` dans `sketch.js`. Si elle renvoie `true`, le moteur de jeu ignore le clic.
+- **Display None** : L'utilisation de `display: none` sur les overlays fermés garantit qu'ils ne captent aucun événement souris, laissant le champ libre au canvas.
 
-✅ 4 événements saisonniers fixes.
+### 🚫 Stop Propagation
+Tous les éléments interactifs du DOM (boutons, conteneurs de modales) doivent utiliser `event.stopPropagation()` pour empêcher l'événement de remonter jusqu'au canvas p5.js ou d'autres couches d'interface.
 
-✅ Événements PNJ et locaux basés sur heure/position.
+### 🕒 Sécurité Anti-Clic-Traversant
+Une latence de **150ms** est maintenue après la fermeture d'une modale (`UIManager.lastCloseTime`). Cela évite qu'un clic rapide pour fermer une fenêtre (ex: "Fermer") ne soit interprété comme une interaction avec le terrain (ex: labourer) juste après la disparition du DOM.
 
-✅ Sauvegarde horodatée + cooldown.
+---
 
-✅ Icônes HUD et notification 4 h avant début.
+## 8. ✅ Règles Absolutes (v2.0)
 
-❌ Pas de cutscenes longues (v2.0).
-
-❌ Pas d’événements aléatoires.
+*   ✅ **Scan périodique** EventHub (10s).
+*   ✅ **Bouclier UIManager** obligatoire dans p5.js.
+*   ✅ **StopPropagation** sur toute l'UI HTML.
+*   ✅ **Zéro clics fantômes** via `display: none`.
+*   ✅ 4 Événements saisonniers fixes.
+*   ✅ Sauvegarde horodatée avec cooldown.
+*   ❌ Pas d'interactions monde si une modale est en `display: flex`.
+*   ❌ Pas d'animations bloquantes supérieures à 0.2s.

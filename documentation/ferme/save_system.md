@@ -1,15 +1,15 @@
 # 💾 Save System — Elsass Farm
 Stockage de l'état de la simulation.
 
-## 1. Modèle de Données (JSON)
+## 1. Modèle de Données (JSON Unifié v2)
 
 ```javascript
 const GameSave = {
   meta: {
-    version: "1.0",
+    version: "1.1",
     timestamp: 1715620000
   },
-  // État Global Joueur (Gestionnaire)
+  // État Global
   manager: {
     gold: 500,
     energy: 100,
@@ -22,28 +22,39 @@ const GameSave = {
     season: "spring",
     year: 1
   },
-  // Stocks
+  // Stocks UNIFIÉS
   inventory: {
-    seeds: { "potato": 5, "carrot": 0 },
-    produce: { "potato_crop": 10 }
+    // Les clés sont les IDs uniques (potato, carrot...)
+    // Plus de distinction seeds/produce.
+    plants: { 
+        "potato": 5, // Sert à planter ET à vendre
+        "carrot": 0,
+        "corn": 12
+    },
+    // Matériaux de construction / Mine
+    resources: { 
+        "wood": 50, 
+        "stone": 20 
+    },
+    // Outils (avec niveau)
+    tools: {
+        "hoe": 1,
+        "watering_can": 2
+    }
   },
   // Le Monde (Grille)
-  // On ne sauvegarde QUE les tuiles modifiées pour économiser la place
   world: {
-    // Key = "x_y" (ex: "10_15")
+    // Key = "col_row" (ex: "10_15")
     tiles: {
-      "10_15": { type: "soil", state: "watered", crop: "potato", growth: 1 },
-      "10_16": { type: "soil", state: "dry", crop: null },
-      "45_12": { type: "building", id: "barn_01" }
+      "10_15": { 
+          state: "growing", 
+          plantId: "potato", // ID référence l'inventaire
+          growth: 4, 
+          watered: true 
+      }
     }
   },
   unlocks: {
     zones: ["start_zone", "forest_entry"]
   }
 };
-```
-
-## 2. Optimisation
-*   La grille peut être immense (3000px).
-*   On ne sauvegarde pas le tableau 2D entier.
-*   On utilise une `Map` ou un Objet indexé par coordonnées `"col_row"` pour ne stocker que ce qui n'est pas de l'herbe par défaut.
