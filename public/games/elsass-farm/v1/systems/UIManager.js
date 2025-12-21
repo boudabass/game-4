@@ -5,14 +5,12 @@ window.UIManager = {
     lastCloseTime: 0,
 
     // Vérifie si une modale est ouverte.
-    // Avec display: none/flex, les modales fermées ne bloquent plus les clics.
     isAnyModalOpen: function () {
         const isOpen = document.querySelectorAll('.modal-overlay.active').length > 0;
-        const justClosed = (Date.now() - this.lastCloseTime) < 150; // Protection anti-clic double
+        const justClosed = (Date.now() - this.lastCloseTime) < 150;
         return isOpen || justClosed;
     },
 
-    // --- Gestion de l'Exclusivité ---
     _closeAllModals: function (exceptId) {
         const modals = ['menu-modal', 'map-modal', 'debug-modal', 'inventory-modal'];
         modals.forEach(id => {
@@ -26,11 +24,10 @@ window.UIManager = {
         });
     },
 
-    // --- Fonctions de bascule de Modale ---
-
     toggleMenu: function () {
         this._closeAllModals('menu-modal');
         const el = document.getElementById('menu-modal');
+        if (!el) return;
         const becomingInactive = el.classList.contains('active');
         el.classList.toggle('active');
         if (becomingInactive) this.lastCloseTime = Date.now();
@@ -39,12 +36,12 @@ window.UIManager = {
     toggleMap: function () {
         this._closeAllModals('map-modal');
         const el = document.getElementById('map-modal');
+        if (!el) return;
         const becomingInactive = el.classList.contains('active');
         el.classList.toggle('active');
         if (becomingInactive) this.lastCloseTime = Date.now();
 
-        if (el.classList.contains('active')) {
-            // Délégation du rendu à MinimapRenderer
+        if (el.classList.contains('active') && window.MinimapRenderer) {
             MinimapRenderer.render(this.toggleMap.bind(this));
         }
     },
@@ -52,25 +49,27 @@ window.UIManager = {
     toggleDebug: function () {
         this._closeAllModals('debug-modal');
         const el = document.getElementById('debug-modal');
+        if (!el) return;
         const becomingInactive = el.classList.contains('active');
         el.classList.toggle('active');
         if (becomingInactive) this.lastCloseTime = Date.now();
 
-        if (el.classList.contains('active')) {
-            DebugManager.updateGridButton(); // Initialiser le texte du bouton
+        if (el.classList.contains('active') && window.DebugManager) {
+            DebugManager.updateGridButton();
         }
     },
 
     toggleInventory: function () {
         this._closeAllModals('inventory-modal');
         const el = document.getElementById('inventory-modal');
+        if (!el) return;
         const becomingInactive = el.classList.contains('active');
         el.classList.toggle('active');
         if (becomingInactive) this.lastCloseTime = Date.now();
 
         if (el.classList.contains('active')) {
             if (typeof switchInvTab === 'function') {
-                switchInvTab('seeds'); // Afficher l'onglet par défaut via la fonction globale d'index.html
+                switchInvTab('seeds');
             }
         }
     },
@@ -82,26 +81,32 @@ window.UIManager = {
         this.toggleMenu();
     },
 
-    // --- Fonctions d'action ---
-
     toggleGrid: function () {
-        Config.showGrid = !Config.showGrid;
-        DebugManager.updateGridButton();
-
-        // Forcer le moteur p5.js à redessiner
-        if (window.redraw) window.redraw();
+        if (typeof Config !== 'undefined') {
+            Config.showGrid = !Config.showGrid;
+            if (window.DebugManager) DebugManager.updateGridButton();
+            if (window.redraw) window.redraw();
+        }
     },
 
-    // --- Fonctions de mise à jour ---
+    // --- Fonctions de mise à jour (Sécurisées) ---
 
     updateHUD: function (data) {
-        document.getElementById('val-energy').innerText = data.energy || 0;
-        document.getElementById('val-gold').innerText = data.gold || 0;
-        document.getElementById('val-day').innerText = data.day || 1;
-        document.getElementById('val-time').innerText = data.time || '6:00';
+        // Sécurité : Vérifier si les éléments existent avant d'écrire
+        const elEnergy = document.getElementById('val-energy');
+        const elGold = document.getElementById('val-gold');
+        const elDay = document.getElementById('val-day');
+        const elTime = document.getElementById('val-time');
+
+        if (elEnergy) elEnergy.innerText = data.energy !== undefined ? data.energy : 0;
+        if (elGold) elGold.innerText = data.gold !== undefined ? data.gold : 0;
+        if (elDay) elDay.innerText = data.day !== undefined ? data.day : 1;
+        if (elTime) elTime.innerText = data.time || '6:00';
     },
 
     updateDebugInfo: function (info) {
-        DebugManager.updateInfo(info);
+        if (window.DebugManager) {
+            DebugManager.updateInfo(info);
+        }
     }
 };
