@@ -145,82 +145,67 @@
             switchInvTab('tools');
         }
 
-        // Sauvegarde/Chargement
+        // Sauvegarde Locale Manuelle (pour les tests)
         function saveGame() {
             if (window.SaveManager) {
                 SaveManager.save();
-                alert('✅ Partie sauvegardée !');
+                alert('✅ Partie sauvegardée en local !');
             }
         }
 
+        // Chargement Manuel
         function loadGame() {
             if (window.SaveManager) {
                 SaveManager.load();
             }
         }
 
-        // Quitter le jeu avec sauvegarde et animation
-        function quitGame(event) {
+        // --- Quitter le jeu : Sauvegarde CLOUD ---
+        async function quitGame(event) {
             if (event) event.stopPropagation();
 
-            // 1. Masquer les boutons pour forcer l'attente
+            // 1. Masquer l'UI
             const menuList = document.querySelector('#menu-modal .menu-list');
             if (menuList) menuList.style.display = 'none';
 
-            // 2. Afficher la barre de chargement
+            // 2. UI Chargement
             const container = document.getElementById('save-loading-container');
             const bar = document.getElementById('save-progress-fill');
             const text = document.getElementById('save-status-text');
 
             if (container && bar) {
                 container.style.display = 'block';
+                if (text) text.innerText = "Synchronisation Cloud...";
 
-                // 3. Lancer la sauvegarde réelle
+                // 3. Sauvegarde Locale + Cloud
                 if (typeof SaveManager !== 'undefined') {
+                    // D'abord on assure le local
                     SaveManager.save();
-                    console.log("💾 Sauvegarde effectuée avant fermeture.");
+                    // Ensuite on envoie au cloud (await pour attendre la fin)
+                    await SaveManager.saveToCloud();
                 }
 
-                // 4. Animation fictive (2.5 secondes)
-                let progress = 0;
-                const duration = 2500;
-                const intervalTime = 50;
-                const increment = 100 / (duration / intervalTime);
+                // 4. Animation de fin
+                bar.style.width = '100%';
+                if (text) text.innerText = "Terminé !";
 
-                const timer = setInterval(() => {
-                    progress += increment;
-                    if (progress >= 100) progress = 100;
-
-                    bar.style.width = progress + '%';
-
-                    if (progress >= 100) {
-                        clearInterval(timer);
-                        if (text) text.innerText = "Fermeture...";
-
-                        setTimeout(() => {
-                            // Remplacer l'écran pour confirmer la fin
-                            document.body.innerHTML = `
-                                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#111;color:white;flex-direction:column;font-family:sans-serif;">
-                                    <h1>À bientôt !</h1>
-                                    <p>Votre partie a été sauvegardée.</p>
-                                    <p style="color:#777;font-size:12px;margin-top:20px;">Vous pouvez fermer cet onglet.</p>
-                                </div>
-                            `;
-                            // Tentative de fermeture (souvent bloqué par le navigateur)
-                            try { window.close(); } catch (e) { }
-                        }, 500);
-                    }
-                }, intervalTime);
+                setTimeout(() => {
+                    document.body.innerHTML = `
+                        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#111;color:white;flex-direction:column;font-family:sans-serif;">
+                            <h1>Sauvegarde réussie</h1>
+                            <p>Vos données sont sécurisées dans le cloud.</p>
+                            <p style="color:#777;font-size:12px;margin-top:20px;">Vous pouvez fermer cet onglet.</p>
+                        </div>
+                    `;
+                    try { window.close(); } catch (e) { }
+                }, 500);
             }
         }
 
         // Charger automatiquement au démarrage
         window.addEventListener('load', function () {
             setTimeout(function () {
-                // Utilisation sécurisée de SaveManager avec typeof
                 if (typeof SaveManager !== 'undefined') {
-                    // On lance le chargement intelligent (Local puis Serveur)
-                    // Plus besoin de hasSave() ici car load() gère le fallback
                     SaveManager.load();
                 } else {
                     console.error("❌ SaveManager non chargé !");
@@ -262,7 +247,6 @@
                     }
                 });
                 console.log("🌱 Cheat: +10 de chaque graine de saison");
-                // Rafraîchir l'affichage de l'inventaire s'il est ouvert
                 const invModal = document.getElementById('inventory-modal');
                 if (invModal.classList.contains('active')) {
                     switchInvTab('seeds');
@@ -296,7 +280,7 @@
                 <h3>PAUSE</h3>
                 <div class="menu-list">
                     <button class="hud-btn" onclick="toggleFullscreen()">⛶ Plein Écran</button>
-                    <button class="hud-btn" onclick="quitGame(event)">💾 Quitter</button>
+                    <button class="hud-btn" onclick="quitGame(event)">💾 Quitter & Sauvegarder</button>
                     <button class="hud-btn" onclick="toggleDebug()">🐛 Debug Info</button>
                     <button class="hud-btn" onclick="toggleMenu()">Reprendre</button>
                 </div>
