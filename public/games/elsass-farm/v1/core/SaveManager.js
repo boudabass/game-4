@@ -1,4 +1,4 @@
-Si vide, récupération DB + Synchro locale.">
+Serveur.">
 // core/SaveManager.js
 // Gestion de la persistance (Local + Serveur/DB)
 
@@ -6,8 +6,11 @@ window.SaveManager = {
     // Clé de sauvegarde locale
     SAVE_KEY: 'elsass-farm-save',
 
-    // Sauvegarde l'état actuel (Inchangé)
-    save: async function () {
+    // Sauvegarde l'état actuel
+    // Note : Retrait du 'async' pour garantir l'exécution immédiate du localStorage
+    save: function () {
+        console.log("💾 Début procédure sauvegarde...");
+        
         const saveData = {
             // État du joueur
             energy: GameState.energy,
@@ -33,85 +36,77 @@ window.SaveManager = {
             version: '1.1'
         };
 
-        // 1. Sauvegarde Locale (Instantanée & Secours)
+        // 1. Sauvegarde Locale (PRIORITÉ ABSOLUE - SYNCHRONE)
         try {
-            localStorage.setItem(this.SAVE_KEY, JSON.stringify(saveData));
-            console.log("💾 Sauvegarde locale effectuée.");
+            const json = JSON.stringify(saveData);
+            localStorage.setItem(this.SAVE_KEY, json);
+            console.log("✅ Sauvegarde locale effectuée (LocalStorage).");
         } catch (e) {
-            console.error("Erreur sauvegarde locale:", e);
+            console.error("❌ Erreur critique sauvegarde locale:", e);
         }
 
-        // 2. Sauvegarde Serveur (Vers db.json)
+        // 2. Sauvegarde Serveur (Asynchrone - "Fire and Forget")
         const gameId = window.DyadGame ? window.DyadGame.id : null;
         if (gameId) {
-            try {
-                // On ne met pas 'await' bloquant pour ne pas figer le jeu
-                fetch('/api/storage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        gameId: gameId,
-                        data: saveData
-                    })
-                }).then(res => {
-                    if (res.ok) console.log("☁️ Sauvegarde serveur (db.json) réussie.");
-                    else console.warn("⚠️ Échec sauvegarde serveur.");
-                });
-            } catch (e) {
-                console.error("Erreur connexion serveur:", e);
-            }
+            fetch('/api/storage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId: gameId,
+                    data: saveData
+                })
+            })
+            .then(res => {
+                if (res.ok) console.log("☁️ Sauvegarde serveur (db.json) synchronisée.");
+                else console.warn("⚠️ Échec sauvegarde serveur.");
+            })
+            .catch(e => console.error("Erreur connexion serveur:", e));
         }
 
         return true;
     },
 
-    // Charge une sauvegarde existante (Logique modifiée : Local > Serveur > Synchro)
+    // Charge une sauvegarde existante
+    // Logique : 1. Local ? -> Charger. 2. Sinon Serveur ? -> Charger + Créer Local.
     load: async function () {
-        let saveData = null;
-        let source = "None";
+        console.log("📂 Tentative de chargement...");
         const gameId = window.DyadGame ? window.DyadGame.id : null;
 
-        console.log("📂 Tentative de chargement...");
-
-        // 1. Vérification LocalStorage (Priorité 1)
+        // ÉTAPE 1 : Vérification LocalStorage (Priorité Vitesse & Hors-ligne)
         try {
             const localStr = localStorage.getItem(this.SAVE_KEY);
             if (localStr) {
-                saveData = JSON.parse(localStr);
-                source = "LocalStorage";
-                console.log("💾 Sauvegarde locale trouvée.");
+                const saveData = JSON.parse(localStr);
+                console.log("💾 Sauvegarde locale trouvée et chargée.");
+                this.applyData(saveData);
+                return true; // On s'arrête là, le local fait foi
             }
         } catch (e) {
-            console.warn("⚠️ Erreur lecture LocalStorage, essai serveur...");
+            console.warn("⚠️ Erreur lecture LocalStorage:", e);
         }
 
-        // 2. Si pas de local, récupération Serveur (Priorité 2)
-        if (!saveData && gameId) {
-            console.log("☁️ Pas de local, recherche sur serveur...");
+        // ÉTAPE 2 : Si rien en local, tentative Serveur (Récupération / Synchro)
+        if (gameId) {
+            console.log("☁️ Aucune save locale, recherche sur serveur...");
             try {
                 const res = await fetch(`/api/storage?gameId=${gameId}`);
                 if (res.ok) {
                     const json = await res.json();
                     if (json.data) {
-                        saveData = json.data;
-                        source = "Serveur";
-                        console.log("☁️ Sauvegarde serveur trouvée.");
+                        console.log("☁️ Sauvegarde serveur trouvée !");
+                        
+                        // APPLICATION
+                        this.applyData(json.data);
 
-                        // 3. Synchronisation : Création de la save locale depuis le serveur
-                        localStorage.setItem(this.SAVE_KEY, JSON.stringify(saveData));
-                        console.log("🔄 Synchronisation : Sauvegarde copiée en LocalStorage.");
+                        // SYNCHRONISATION : On recrée le cache local immédiatement
+                        localStorage.setItem(this.SAVE_KEY, JSON.stringify(json.data));
+                        console.log("🔄 Synchronisation : Sauvegarde restaurée en local.");
+                        return true;
                     }
                 }
             } catch (e) {
-                console.warn("⚠️ Impossible de joindre le serveur.");
+                console.warn("⚠️ Impossible de joindre le serveur pour la récupération.");
             }
-        }
-
-        // 4. Application des données
-        if (saveData) {
-            this.applyData(saveData);
-            console.log(`✅ Jeu chargé avec succès (Source: ${source})`);
-            return true;
         }
 
         console.log("📂 Aucune sauvegarde trouvée nulle part (Nouveau jeu).");
@@ -120,14 +115,16 @@ window.SaveManager = {
 
     // Applique les données au jeu
     applyData: function (saveData) {
+        if (!saveData) return;
+
         // Restaurer l'état
-        GameState.energy = saveData.energy ?? 100;
-        GameState.gold = saveData.gold ?? 0;
-        GameState.day = saveData.day ?? 1;
-        GameState.hour = saveData.hour ?? 6;
-        GameState.minute = saveData.minute ?? 0;
-        GameState.season = saveData.season ?? 'SPRING';
-        GameState.currentZoneId = saveData.currentZoneId ?? 'C_C';
+        if (saveData.energy !== undefined) GameState.energy = saveData.energy;
+        if (saveData.gold !== undefined) GameState.gold = saveData.gold;
+        if (saveData.day !== undefined) GameState.day = saveData.day;
+        if (saveData.hour !== undefined) GameState.hour = saveData.hour;
+        if (saveData.minute !== undefined) GameState.minute = saveData.minute;
+        if (saveData.season !== undefined) GameState.season = saveData.season;
+        if (saveData.currentZoneId !== undefined) GameState.currentZoneId = saveData.currentZoneId;
 
         // Restaurer les grilles de farming
         if (saveData.grids && window.GridSystem) {
