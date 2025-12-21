@@ -52,13 +52,13 @@
     {
       "gameId": "elsass-farm-v1",
       "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "updatedAt": "2025-12-21T22:03:59.765Z",
+      "updatedAt": "2025-12-21T23:24:21.528Z",
       "data": {
-        "energy": 80,
+        "energy": 72,
         "gold": 100,
         "day": 8,
-        "hour": 7,
-        "minute": 15,
+        "hour": 9,
+        "minute": 22,
         "season": "AUTUMN",
         "currentZoneId": "N_C",
         "grids": {
@@ -178,7 +178,7 @@
               "row": 2,
               "col": 3,
               "state": "GROWING",
-              "watered": false,
+              "watered": true,
               "seedType": "pumpkin",
               "growthStage": 1,
               "season": "AUTUMN"
@@ -218,7 +218,7 @@
               "row": 3,
               "col": 3,
               "state": "PLANTED",
-              "watered": false,
+              "watered": true,
               "seedType": "pumpkin",
               "growthStage": 0,
               "season": "AUTUMN"
@@ -451,28 +451,28 @@
               "id": 6,
               "row": 1,
               "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
+              "state": "PLANTED",
+              "watered": true,
+              "seedType": "squash",
               "growthStage": 0,
-              "season": null
+              "season": "AUTUMN"
             },
             {
               "id": 7,
               "row": 1,
               "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
+              "state": "PLANTED",
+              "watered": true,
+              "seedType": "squash",
               "growthStage": 0,
-              "season": null
+              "season": "AUTUMN"
             },
             {
               "id": 8,
               "row": 2,
               "col": 0,
               "state": "PLANTED",
-              "watered": true,
+              "watered": false,
               "seedType": "eggplant",
               "growthStage": 0,
               "season": "AUTUMN"
@@ -482,7 +482,7 @@
               "row": 2,
               "col": 1,
               "state": "GROWING",
-              "watered": true,
+              "watered": false,
               "seedType": "eggplant",
               "growthStage": 1,
               "season": "AUTUMN"
@@ -491,21 +491,21 @@
               "id": 10,
               "row": 2,
               "col": 2,
-              "state": "EMPTY",
+              "state": "PLANTED",
               "watered": false,
-              "seedType": null,
+              "seedType": "squash",
               "growthStage": 0,
-              "season": null
+              "season": "AUTUMN"
             },
             {
               "id": 11,
               "row": 2,
               "col": 3,
-              "state": "EMPTY",
+              "state": "PLANTED",
               "watered": false,
-              "seedType": null,
+              "seedType": "squash",
               "growthStage": 0,
-              "season": null
+              "season": "AUTUMN"
             },
             {
               "id": 12,
@@ -531,21 +531,21 @@
               "id": 14,
               "row": 3,
               "col": 2,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "eggplant",
+              "state": "EMPTY",
+              "watered": false,
+              "seedType": null,
               "growthStage": 0,
-              "season": "AUTUMN"
+              "season": null
             },
             {
               "id": 15,
               "row": 3,
               "col": 3,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "eggplant",
+              "state": "EMPTY",
+              "watered": false,
+              "seedType": null,
               "growthStage": 0,
-              "season": "AUTUMN"
+              "season": null
             }
           ],
           "S_C": [
@@ -932,7 +932,7 @@
                 "id": "eggplant",
                 "name": "Aubergine",
                 "icon": "🍆",
-                "qty": 8
+                "qty": 10
               },
               {
                 "id": "pumpkin",
@@ -944,7 +944,7 @@
                 "id": "squash",
                 "name": "Citrouille",
                 "icon": "🎃",
-                "qty": 16
+                "qty": 12
               },
               {
                 "id": "mushroom",
@@ -1177,9 +1177,9 @@
             ]
           },
           "selectedToolIndex": 0,
-          "selectedSeedIndex": 0
+          "selectedSeedIndex": 2
         },
-        "savedAt": "2025-12-21T22:03:59.605Z",
+        "savedAt": "2025-12-21T23:24:21.199Z",
         "version": "1.2"
       }
     }

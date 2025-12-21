@@ -38,11 +38,25 @@ Les clics sur les boutons de l'interface DOM "traversaient" parfois l'interface 
 
 ---
 
-## 4. 🎨 Design & Ergonomie Seniors
+## 4. 🖱️ Règle d'Or : Unification des Inputs (Mobile/Desktop)
+
+### Problème
+Les événements p5.js (`mouseClicked`, `touchEnded`) sont incompatibles pour gérer à la fois le **Drag de Caméra** et le **Tap d'Action** sans conflit.
+
+### Solution Standard
+**Contourner les événements p5.js pour le monde.** Utiliser des écouteurs d'événements DOM (`mousedown`/`touchstart`, `mouseup`/`touchend`) attachés directement à l'élément `<canvas>`.
+
+*   **Détection :** Calculer la distance parcourue entre `start` et `end`.
+*   **Action :** Si distance < 30px (seuil mobile), exécuter `handleWorldClick()`.
+*   **Drag :** Si distance > 30px, déplacer la caméra.
+*   **Stabilité :** Utiliser `InputManager.ignoreNextDelta` pour éviter le "saut" de la caméra au début du toucher.
+
+---
+
+## 5. 🎨 Design & Ergonomie Seniors
 
 ### Principes retenus
 - **Slots Fixes** : Pas de réorganisation. Un objet a une place immuable pour favoriser la mémoire visuelle.
 - **Layout Horizontal** : Pour les listes denses (Graines, Loot), le format horizontal (Icone | Nom | Quantité) est plus lisible et compact que le format vertical.
 - **Pas de Drag & Drop** : Trop complexe pour certains utilisateurs. Le clic/tap simple est la norme.
 - **Feedback immédiat** : Utiliser `display` instantané. Les animations trop longues créent de la confusion sur la réactivité du système.
-
