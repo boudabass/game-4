@@ -1,74 +1,105 @@
-# 💾 Save System — Elsass Farm (Cloud Master)
+# 💾 Save System — Elsass Farm (Hybride Synchronisé)
 
-Architecture de persistance axée sur la portabilité (Cross-Device).
+Architecture de persistance robuste conçue pour la performance en jeu et la portabilité entre appareils.
 
-## 1. Philosophie "Cloud Master"
-Pour garantir qu'un joueur retrouve sa progression en changeant d'appareil (PC ↔ Mobile), la **Base de Données (DB)** est la source de vérité absolue.
+## 1. Philosophie "Hybride"
+Le système utilise le **LocalStorage** pour la réactivité immédiate et la **Base de Données (DB)** pour la sécurité et le cross-device.
 
 ### 🔄 Cycle de Vie des Données
 
-1.  **Démarrage (Load 1X)** :
-    *   Le jeu interroge **immédiatement** l'API `/api/storage`.
-    *   Si une sauvegarde existe en DB, elle **écrase** le cache local du navigateur.
-    *   Le jeu charge ensuite depuis ce cache local synchronisé.
+#### A. Démarrage (`load`)
+Au lancement du jeu, l'algorithme suivant est exécuté :
 
-2.  **En Jeu (Runtime Local)** :
-    *   Toutes les actions (Planter, Dormir, Changer de zone) sauvegardent **uniquement** dans le `localStorage` (Rapide, pas de latence).
-    *   Aucun appel réseau n'est fait pendant le gameplay pour garantir la fluidité.
+1.  **Vérification Locale** : Le jeu regarde si une sauvegarde existe dans le navigateur (`localStorage`).
+    *   *Si OUI* : On l'utilise immédiatement (Chargement rapide).
+    *   *Si NON* (Nouveau navigateur/Cache vidé) : On interroge l'API `/api/storage`.
+2.  **Synchronisation Cloud** :
+    *   Si le serveur renvoie une sauvegarde, on l'écrit immédiatement dans le `localStorage` pour recréer le cache local.
+3.  **Cas "Nouveau Joueur"** :
+    *   Si aucune sauvegarde n'est trouvée (ni Local, ni Cloud), le jeu initialise les valeurs par défaut.
+    *   Il force immédiatement une sauvegarde (`save()` + `saveToCloud()`) pour créer l'entrée utilisateur en base de données.
 
-3.  **Fermeture (Save 1X)** :
-    *   Lorsque le joueur appuie sur "Quitter" (ou ferme proprement), le jeu prend l'état final du `localStorage`.
-    *   Il envoie ce paquet complet vers l'API `/api/storage` pour mise à jour de la DB.
+#### B. En Jeu (`save`)
+Toutes les actions de gameplay (dormir, changer de zone) déclenchent une sauvegarde **uniquement en LocalStorage**.
+*   **Fréquence** : Haute.
+*   **Latence** : Zéro (Synchrone).
+*   **Réseau** : Aucun appel API.
 
-## 2. Modèle de Données (JSON Unifié v2)
+#### C. Fermeture (`quitGame` -> `saveToCloud`)
+Lorsque le joueur quitte proprement via le menu :
+1.  Le jeu prend l'état actuel du `localStorage`.
+2.  Il envoie ce paquet JSON vers l'API `/api/storage`.
+3.  La Base de Données est mise à jour.
+
+---
+
+## 2. Modèle de Données (JSON Unifié v1.2)
 
 ```javascript
 const GameSave = {
-  meta: {
-    version: "1.1",
-    timestamp: 1715620000
-  },
-  // État Global
-  manager: {
-    gold: 500,
-    energy: 100,
-    xp: 0,
-    level: 1
-  },
-  // Temps
-  time: {
-    day: 1,
-    season: "spring",
-    year: 1
-  },
-  // Stocks UNIFIÉS
+  // Métadonnées système
+  version: "1.2",
+  savedAt: "2023-10-27T10:00:00.000Z",
+
+  // État Joueur
+  energy: 85,
+  gold: 450,
+
+  // Temps Universel
+  day: 5,
+  hour: 14,
+  minute: 30,
+  season: "SPRING", // SPRING, SUMMER, AUTUMN, WINTER
+
+  // Position
+  currentZoneId: "C_C", // ID de la zone active
+
+  // Inventaire Unifié (Inventory.js)
   inventory: {
-    // Les clés sont les IDs uniques (potato, carrot...)
-    plants: { 
-        "potato": 5, 
-        "carrot": 0
+    // Les plantes servent de graines ET de récoltes
+    seeds: {
+        "SPRING": [
+            { "id": "potato", "qty": 12 },
+            { "id": "leek", "qty": 5 }
+            // ... 16 slots fixes
+        ],
+        // ... autres saisons
     },
-    resources: { 
-        "wood": 50, 
-        "stone": 20 
-    },
-    tools: {
-        "hoe": 1,
-        "watering_can": 2
+    // Outils avec niveaux
+    tools: [
+        { "id": "watering_can", "level": 1 }
+        // ...
+    ],
+    // Ressources brutes (Bois, Pierre...)
+    loot: {
+        "WOOD": [ ... ],
+        "STONE": [ ... ]
     }
   },
-  // Le Monde (Grille)
-  world: {
-    tiles: {
-      "10_15": { 
-          state: "growing", 
-          plantId: "potato",
-          growth: 4, 
-          watered: true 
+
+  // Monde Persistant (GridSystem.js)
+  grids: {
+    // Clé = ID de zone (ex: "C_C", "N_W")
+    "C_C": [
+      {
+        "id": 0,           // Index 0-99
+        "col": 0, "row": 0,
+        "state": "GROWING", // EMPTY, PLANTED, GROWING, READY
+        "seedType": "potato",
+        "growthStage": 4,   // Jours passés (Max 10)
+        "watered": true,    // Arrosé aujourd'hui ?
+        "season": "SPRING"
       }
-    }
-  },
-  unlocks: {
-    zones: ["start_zone", "forest_entry"]
+      // ... 100 tuiles
+    ]
   }
 };
+```
+
+---
+
+## 3. Sécurité & Robustesse
+
+*   **Initialisation** : Le `SaveManager` est chargé avant le jeu via `index.html` pour garantir sa disponibilité.
+*   **Fallback** : Si le réseau échoue lors du chargement Cloud, le jeu ne plante pas (il démarre une nouvelle partie ou utilise le local si dispo).
+*   **Protection** : `save()` est synchrone pour garantir que les données sont écrites sur le disque avant que le navigateur ne ferme le processus.
