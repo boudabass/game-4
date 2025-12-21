@@ -3,14 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Elsass Farm</title>
 
     <link rel="stylesheet" href="style.css">
 
     <!-- 1. LIBRAIRIES -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/addons/p5.sound.min.js"></script>
+    <!-- p5.sound.min.js supprimé - non utilisé et cause des avertissements AudioContext sur mobile -->
     <script src="https://p5play.org/v3/planck.min.js"></script>
     <script src="https://p5play.org/v3/p5play.js"></script>
 
@@ -432,7 +432,43 @@
                     onclick="event.stopPropagation(); QuickAction.deselect('tool')">❌</div>
             </div>
         </div>
+
+        <!-- Barre de zoom mobile (en bas) -->
+        <div id="zoom-controls" class="zoom-controls">
+            <button class="zoom-btn" onclick="event.stopPropagation(); zoomOut()" title="Dézoomer">➖</button>
+            <span class="zoom-indicator" id="zoom-value">100%</span>
+            <button class="zoom-btn" onclick="event.stopPropagation(); zoomIn()" title="Zoomer">➕</button>
+        </div>
     </div>
+
+    <script>
+        // Fonctions de zoom pour mobile
+        function zoomIn() {
+            if (typeof camera !== 'undefined') {
+                camera.zoom *= 1.2;
+                camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
+                updateZoomDisplay();
+            }
+        }
+
+        function zoomOut() {
+            if (typeof camera !== 'undefined') {
+                camera.zoom /= 1.2;
+                camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
+                updateZoomDisplay();
+            }
+        }
+
+        function updateZoomDisplay() {
+            const zoomDisplay = document.getElementById('zoom-value');
+            if (zoomDisplay && typeof camera !== 'undefined') {
+                zoomDisplay.textContent = Math.round(camera.zoom * 100) + '%';
+            }
+        }
+
+        // Mettre à jour l'affichage du zoom périodiquement
+        setInterval(updateZoomDisplay, 500);
+    </script>
 </body>
 
 </html>

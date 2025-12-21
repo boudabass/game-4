@@ -1,7 +1,7 @@
 // Fonction utilitaire pour obtenir les données de la zone actuelle
 function getCurrentZone() {
     const zoneId = GameState.currentZoneId;
-    return Config.zones.find(z => z.id === zoneId);
+    return Config.zones.find(z => z.id === zoneId) || Config.zones[0]; // Fallback sur première zone si non trouvée
 }
 
 // Fonction de changement de zone (Rendue globale)
@@ -25,13 +25,21 @@ window.changeZone = function (newZoneId, entryPoint) {
         camera.y = Config.zoneHeight / 2;
     }
 
-    redraw();
+    // Force le redraw - nécessaire pour mobile
+    if (typeof redraw === 'function') {
+        redraw();
+    }
 }
 
 function setup() {
     new Canvas(windowWidth, windowHeight);
 
     world.gravity.y = 0;
+
+    // S'assurer qu'allSprites existe
+    if (typeof allSprites === 'undefined') {
+        allSprites = new Group();
+    }
 
     camera.x = Config.zoneWidth / 2;
     camera.y = Config.zoneHeight / 2;
@@ -48,6 +56,21 @@ function setup() {
         QuickAction.refresh();
     }
 }
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    // Force un redraw après redimensionnement pour mobile
+    if (typeof redraw === 'function') {
+        redraw();
+    }
+}
+
+// Fonction globale redraw pour compatibilité (utilisée par MinimapRenderer et autres)
+window.redraw = function() {
+    if (typeof redraw === 'function') {
+        redraw();
+    }
+};
 
 function draw() {
     const currentZone = getCurrentZone();
@@ -124,8 +147,27 @@ function draw() {
 
 function mouseClicked() {
     // Ne pas traiter le clic si une modale est ouverte
-    if (UIManager && UIManager.isAnyModalOpen()) return;
-    if (mouseY < 60) return;
+    if (UIManager && UIManager.isAnyModalOpen()) {
+        InputManager.hasMoved = false; // Réinitialiser
+        return;
+    }
+    // Ignorer le clic si on clique sur la barre du HUD
+    if (mouseY < 60) {
+        InputManager.hasMoved = false; // Réinitialiser
+        return;
+    }
+    
+    // Si InputManager a détecté un mouvement significatif (drag), ignorer le clic
+    if (InputManager.hasMoved) {
+        console.log('Clic ignoré - c\'était un drag');
+        InputManager.hasMoved = false; // Réinitialiser
+        return;
+    }
+    
+    console.log('Clic détecté !');
+    
+    // Réinitialiser le flag après utilisation
+    InputManager.hasMoved = false;
 
     const worldX = mouse.x;
     const worldY = mouse.y;
@@ -156,7 +198,8 @@ function mouseClicked() {
                 // Récolter
                 result = GridSystem.harvest(gridPos.col, gridPos.row);
                 if (result.success && result.item && Inventory) {
-                    Inventory.addLoot(result.item, 1);
+                    // Inventory.addLoot ajoute +2 à la récolte, donc on ajoute 1 ici pour le +2 total
+                    Inventory.addLoot(result.item, 1); 
                 }
             } else if (tool && tool.id === 'watering_can' &&
                 (tile.state === GridSystem.STATES.PLANTED ||
@@ -179,6 +222,57 @@ function mouseWheel(event) {
     camera.zoom -= zoomAmount;
 
     camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
+}
+
+// Fonctions touch pour mobile - SIMPLIFIÉES
+// 1 doigt = drag de la caméra OU clic simple (selon mouvement)
+function touchStarted() {
+    if (touches.length === 1) {
+        // Un seul doigt : enregistrer la position pour détecter tap vs drag
+        InputManager.touchStartX = touches[0].x;
+        InputManager.touchStartY = touches[0].y;
+        InputManager.touchStartTime = millis();
+        InputManager.hasMoved = false;
+        InputManager.isDragging = true; // Commencer en mode drag
+        InputManager.lastMouseX = touches[0].x;
+        InputManager.lastMouseY = touches[0].y;
+    }
+    // Retourner true permet à p5.js de convertir le touch en mouseClicked
+    return true;
+}
+
+function touchMoved() {
+    if (touches.length === 1 && InputManager.touchStartX !== null) {
+        // Mettre à jour hasMoved si le mouvement dépasse le seuil
+        const deltaX = Math.abs(touches[0].x - InputManager.touchStartX);
+        const deltaY = Math.abs(touches[0].y - InputManager.touchStartY);
+        
+        if (deltaX > InputManager.DRAG_THRESHOLD || deltaY > InputManager.DRAG_THRESHOLD) {
+            InputManager.hasMoved = true; // C'est un drag
+        }
+        
+        // Mettre à jour la position pour le drag dans InputManager
+        InputManager.lastMouseX = touches[0].x;
+        InputManager.lastMouseY = touches[0].y;
+    }
+    return false; // Empêche le scroll
+}
+
+function touchEnded() {
+    console.log('touchEnded - hasMoved:', InputManager.hasMoved);
+    
+    // Si pas de mouvement significatif, mouseClicked sera appelé par p5.js
+    // Si mouvement, mouseClicked sera appelé mais ignoré par la garde hasMoved
+    
+    // Réinitialiser les positions de drag
+    InputManager.lastMouseX = null;
+    InputManager.lastMouseY = null;
+    InputManager.touchStartTime = null;
+    InputManager.touchStartX = null;
+    InputManager.touchStartY = null;
+    
+    // Laisser p5.js convertir en mouseClicked
+    return true;
 }
 
 function drawSimpleGrid() {
