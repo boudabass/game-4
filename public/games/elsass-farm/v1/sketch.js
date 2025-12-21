@@ -154,14 +154,18 @@ function mousePressed() {
 }
 
 // Logique de clic du monde (extraite pour être réutilisée)
-function handleWorldClick() {
+function handleWorldClick(screenX, screenY) {
+    // Utiliser les coordonnées passées (pour mobile) ou les coordonnées p5.js (pour desktop)
+    const clickX = screenX !== undefined ? screenX : mouseX;
+    const clickY = screenY !== undefined ? screenY : mouseY;
+
     // Ne pas traiter le clic si une modale est ouverte
     if (UIManager && UIManager.isAnyModalOpen()) {
         InputManager.hasMoved = false; // Réinitialiser
         return;
     }
     // Ignorer le clic si on clique sur la barre du HUD
-    if (mouseY < 60) {
+    if (clickY < 60) {
         InputManager.hasMoved = false; // Réinitialiser
         return;
     }
@@ -178,8 +182,15 @@ function handleWorldClick() {
     // Réinitialiser le flag après utilisation
     InputManager.hasMoved = false;
 
-    const worldX = mouse.x;
-    const worldY = mouse.y;
+    // Convertir les coordonnées écran en coordonnées monde
+    // Note: p5.js met à jour mouse.x/y automatiquement si mouseClicked est appelé,
+    // mais si nous appelons directement, nous devons le faire manuellement.
+    // Pour simplifier, nous allons utiliser la fonction interne de p5.js pour la conversion
+    // en utilisant les coordonnées de la caméra.
+    
+    // Calculer les coordonnées monde à partir des coordonnées écran
+    const worldX = camera.x + (clickX - width / 2) / camera.zoom;
+    const worldY = camera.y + (clickY - height / 2) / camera.zoom;
 
     console.log(`Clic Monde: ${Math.round(worldX)}, ${Math.round(worldY)}`);
 
@@ -273,10 +284,10 @@ function touchEnded() {
     console.log('touchEnded - hasMoved:', InputManager.hasMoved);
     
     // Si aucun mouvement significatif n'a eu lieu, forcer l'exécution de la logique de clic
-    if (!InputManager.hasMoved) {
-        // Nous devons simuler le clic ici car p5.js peut ne pas appeler mouseClicked
-        // si touchMoved a été appelé, même pour un mouvement minime.
-        handleWorldClick();
+    if (!InputManager.hasMoved && touches.length === 0) {
+        // Utiliser les coordonnées de fin de touch (qui sont stockées dans mouseX/Y par p5.js)
+        // Nous passons mouseX/Y explicitement pour garantir que handleWorldClick utilise les coordonnées écran
+        handleWorldClick(mouseX, mouseY);
     }
     
     // Réinitialiser les positions de départ
@@ -285,7 +296,6 @@ function touchEnded() {
     InputManager.touchStartY = null;
     
     // Laisser p5.js gérer le reste (qui peut appeler mouseClicked si le mouvement était minime)
-    // Mais notre garde dans handleWorldClick empêchera la double exécution.
     return true;
 }
 
