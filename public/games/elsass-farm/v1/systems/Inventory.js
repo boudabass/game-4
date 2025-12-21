@@ -1,10 +1,11 @@
 // systems/Inventory.js
-// Système d'inventaire - Graines, Outils et Loot
+// Système d'inventaire - Plantes (Unifié), Outils et Loot
 
 window.Inventory = {
     // Structure de l'inventaire joueur
     player: {
-        // Graines (16 slots fixes par saison)
+        // PLANTES (Unifié : Sert pour planter ET pour vendre/cuisiner)
+        // 16 slots fixes par saison
         seeds: {
             SPRING: [
                 { id: 'potato', name: 'Pomme de terre', icon: '🥔', qty: 10 },
@@ -42,7 +43,7 @@ window.Inventory = {
             { id: 'special', name: 'Spécial', icon: '🔧', level: 0 }
         ],
 
-        // Loot (24 slots : 6 catégories x 4 items)
+        // Loot (Ressources brutes non-plantables)
         loot: {
             WOOD: [
                 { id: 'log', name: 'Bûches', icon: '🪵', qty: 0 },
@@ -69,8 +70,8 @@ window.Inventory = {
                 { id: 'research', name: 'Recherche', icon: '🔬', qty: 0 }
             ],
             NATURE: [
-                { id: 'berry', name: 'Baies', icon: '🫐', qty: 0 },
-                { id: 'mushroom', name: 'Champignon', icon: '🍄', qty: 0 },
+                { id: 'wild_berry', name: 'Baies Sauvages', icon: '🫐', qty: 0 },
+                { id: 'wild_mushroom', name: 'Champi. Sauvage', icon: '🍄', qty: 0 },
                 { id: 'herb', name: 'Herbe', icon: '🌿', qty: 0 },
                 { id: 'flower', name: 'Fleur', icon: '🌸', qty: 0 }
             ],
@@ -86,22 +87,19 @@ window.Inventory = {
     // Outil actuellement sélectionné (-1 = aucun)
     selectedToolIndex: 0,
 
-    // Graine actuellement sélectionnée (-1 = aucun)
+    // Graine/Plante actuellement sélectionnée (-1 = aucun)
     selectedSeedIndex: 0,
 
     // --- Méthodes d'accès ---
 
-    // Récupère l'outil sélectionné
     getSelectedTool: function () {
         return this.player.tools[this.selectedToolIndex];
     },
 
-    // Récupère les graines de la saison actuelle
     getCurrentSeasonSeeds: function () {
         return this.player.seeds[GameState.season] || [];
     },
 
-    // Récupère la graine sélectionnée
     getSelectedSeed: function () {
         const seeds = this.getCurrentSeasonSeeds();
         return seeds[this.selectedSeedIndex] || null;
@@ -109,7 +107,6 @@ window.Inventory = {
 
     // --- Actions ---
 
-    // Sélectionner un outil
     selectTool: function (index) {
         if (index >= -1 && index < this.player.tools.length) {
             this.selectedToolIndex = index;
@@ -120,14 +117,13 @@ window.Inventory = {
         return false;
     },
 
-    // Sélectionner une graine
     selectSeed: function (index) {
         const seeds = this.getCurrentSeasonSeeds();
         if (index >= -1 && index < seeds.length) {
             this.selectedSeedIndex = index;
             const seed = this.getSelectedSeed();
             if (seed && seed.name) {
-                console.log(`🌱 Graine sélectionnée: ${seed.name}`);
+                console.log(`🌱 Plante sélectionnée: ${seed.name}`);
             }
             if (window.QuickAction && QuickAction.refresh) QuickAction.refresh();
             return true;
@@ -135,7 +131,7 @@ window.Inventory = {
         return false;
     },
 
-    // Consommer une graine (lors de la plantation)
+    // Consommer (Planter) -1
     useSeed: function (seedId) {
         for (const season in this.player.seeds) {
             const seeds = this.player.seeds[season];
@@ -150,31 +146,36 @@ window.Inventory = {
         return false;
     },
 
-    // Ajouter au loot (lors de la récolte)
+    // Ajouter (Récolter ou Looter)
+    // C'est ici que l'unification opère : on cherche d'abord dans les PLANTES.
     addLoot: function (itemId, quantity) {
+        // 1. Chercher dans les PLANTES (Unifié)
+        for (const season in this.player.seeds) {
+            const seeds = this.player.seeds[season];
+            const item = seeds.find(s => s.id === itemId);
+            if (item) {
+                item.qty += quantity;
+                console.log(`📦 +${quantity} ${item.name} (Plante stock: ${item.qty})`);
+                if (window.QuickAction && QuickAction.refresh) QuickAction.refresh();
+                return true;
+            }
+        }
+
+        // 2. Chercher dans le LOOT (Ressources)
         for (const category in this.player.loot) {
             const items = this.player.loot[category];
             const item = items.find(i => i.id === itemId);
             if (item) {
                 item.qty += quantity;
-                console.log(`📦 +${quantity} ${item.name} (total: ${item.qty})`);
+                console.log(`📦 +${quantity} ${item.name} (Ressource stock: ${item.qty})`);
                 return true;
             }
         }
-        // Si l'item n'existe pas dans le loot, essayer HARVEST
-        const harvest = this.player.loot.HARVEST;
-        const existing = harvest.find(i => i.id === itemId);
-        if (existing) {
-            existing.qty += quantity;
-            console.log(`📦 +${quantity} ${existing.name} (total: ${existing.qty})`);
-            return true;
-        }
 
-        console.warn(`Item ${itemId} non trouvé dans l'inventaire loot`);
+        console.warn(`Item ${itemId} introuvable dans aucun inventaire.`);
         return false;
     },
 
-    // Vérifier si le joueur a des graines de ce type
     hasSeed: function (seedId) {
         for (const season in this.player.seeds) {
             const seed = this.player.seeds[season].find(s => s.id === seedId);
@@ -183,9 +184,6 @@ window.Inventory = {
         return false;
     },
 
-    // --- Pour la sauvegarde ---
-
-    // Exporte l'inventaire pour sauvegarde
     export: function () {
         return {
             seeds: this.player.seeds,
@@ -196,7 +194,6 @@ window.Inventory = {
         };
     },
 
-    // Importe l'inventaire depuis une sauvegarde
     import: function (data) {
         if (data.seeds) this.player.seeds = data.seeds;
         if (data.tools) this.player.tools = data.tools;

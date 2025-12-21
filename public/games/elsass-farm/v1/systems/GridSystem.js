@@ -134,7 +134,7 @@ window.GridSystem = {
         if (window.refreshHUD) window.refreshHUD();
         console.log(`🌱 Planté ${seedType} à (${col}, ${row})`);
 
-        return { success: true, message: "Graine plantée !" };
+        return { success: true, message: "Plante plantée ! (-1 Stock)" };
     },
 
     // Arroser une tuile
@@ -188,13 +188,16 @@ window.GridSystem = {
         tile.watered = false;
         tile.season = null;
 
-        // TODO: Ajouter au loot dans Inventory
-        // Inventory.addLoot(harvestedType, 1);
+        // Ajouter au stock UNIFIÉ
+        // Rendement x2 : On récupère la semence + 1 fruit (Gain net +1)
+        if (window.Inventory) {
+            Inventory.addLoot(harvestedType, 2);
+        }
 
         if (window.refreshHUD) window.refreshHUD();
         console.log(`🌾 Récolté ${harvestedType} à (${col}, ${row})`);
 
-        return { success: true, message: `${harvestedType} récolté !`, item: harvestedType };
+        return { success: true, message: `${harvestedType} récolté ! (+2 Stock)`, item: harvestedType };
     },
 
     // --- Cycle journalier ---
