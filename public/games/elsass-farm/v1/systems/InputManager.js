@@ -7,6 +7,9 @@ window.InputManager = {
     touchStartY: null,
     hasMoved: false,
     DRAG_THRESHOLD: 15, // Seuil de pixels pour considérer un mouvement comme un drag
+    
+    // Nouveau flag pour ignorer le delta du premier frame après un clic/touch
+    ignoreNextDelta: false, 
 
     init: function () {
         console.log("InputManager initialized.");
@@ -14,6 +17,7 @@ window.InputManager = {
         this.touchStartX = null;
         this.touchStartY = null;
         this.hasMoved = false;
+        this.ignoreNextDelta = false;
     },
 
     // Fonction appelée à chaque frame par sketch.js
@@ -25,6 +29,12 @@ window.InputManager = {
             // Calculer le delta de déplacement depuis la frame précédente
             const deltaX = mouseX - pmouseX;
             const deltaY = mouseY - pmouseY;
+
+            // Si c'est le premier frame après le clic/touch, ignorer le delta
+            if (this.ignoreNextDelta) {
+                this.ignoreNextDelta = false;
+                return; // Ne pas déplacer la caméra ce frame
+            }
 
             // Si un mouvement significatif est détecté (pour différencier clic/drag)
             if (Math.abs(deltaX) > 0 || Math.abs(deltaY) > 0) {

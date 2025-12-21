@@ -145,6 +145,14 @@ function draw() {
     }
 }
 
+function mousePressed() {
+    // Définir le flag pour ignorer le delta du premier frame
+    if (InputManager) {
+        InputManager.ignoreNextDelta = true;
+    }
+    // Laisser p5.js gérer le reste
+}
+
 function mouseClicked() {
     // Ne pas traiter le clic si une modale est ouverte
     if (UIManager && UIManager.isAnyModalOpen()) {
@@ -232,6 +240,11 @@ function touchStarted() {
         InputManager.touchStartY = touches[0].y;
         InputManager.touchStartTime = millis();
         InputManager.hasMoved = false;
+        
+        // Définir le flag pour ignorer le delta du premier frame
+        if (InputManager) {
+            InputManager.ignoreNextDelta = true;
+        }
     }
     // Retourner true permet à p5.js de convertir le touch en mouseClicked
     return true;
@@ -247,7 +260,6 @@ function touchMoved() {
             InputManager.hasMoved = true; // C'est un drag
         }
     }
-    // Si c'est un drag, on laisse InputManager.updateCamera gérer le déplacement
     return false; // Empêche le scroll
 }
 
