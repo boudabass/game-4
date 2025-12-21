@@ -82,7 +82,8 @@ function handleWorldClick(worldX, worldY) {
 }
 
 function setup() {
-    new Canvas(windowWidth, windowHeight);
+    // Utiliser createCanvas() pour initialiser correctement le canvas p5.js
+    const p5Canvas = createCanvas(windowWidth, windowHeight);
 
     world.gravity.y = 0;
 
@@ -111,7 +112,8 @@ function setup() {
     }
     
     // --- GESTION DES INPUTS UNIFIÉE (DOM) ---
-    const canvasElement = canvas.elt;
+    // Utiliser p5Canvas.elt pour obtenir la référence DOM
+    const canvasElement = p5Canvas.elt;
 
     // Fonction utilitaire pour obtenir les coordonnées (souris ou touch)
     const getCoords = (e) => {
@@ -170,11 +172,12 @@ function setup() {
     canvasElement.addEventListener('mousedown', handleStart);
     canvasElement.addEventListener('touchstart', handleStart, { passive: false });
 
-    canvasElement.addEventListener('mousemove', handleMove);
-    canvasElement.addEventListener('touchmove', handleMove, { passive: false });
+    // Les écouteurs de mouvement doivent être sur la fenêtre/document pour ne pas perdre le drag si la souris sort du canvas
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('touchmove', handleMove, { passive: false });
 
-    canvasElement.addEventListener('mouseup', handleEnd);
-    canvasElement.addEventListener('touchend', handleEnd);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchend', handleEnd);
     
     // Gestion du zoom (inchangé)
     canvasElement.addEventListener('wheel', (e) => {
@@ -200,6 +203,8 @@ window.redraw = function() {
 };
 
 function draw() {
+    const currentZone = getCurrentZone();
+
     // DEBUG AVANT TOUT
     console.log('draw() - zone:', GameState?.currentZoneId);
     console.log('Config.zones:', Config?.zones?.length);
@@ -223,8 +228,8 @@ function draw() {
     // Mise à jour des infos de debug
     if (Config.debug && window.UIManager) {
         UIManager.updateDebugInfo({
-            zoneId: GameState?.currentZoneId || 'NULL',
-            zoneName: getCurrentZone()?.name || 'NULL',
+            zoneId: currentZone.id,
+            zoneName: currentZone.name,
             zoom: camera.zoom,
             camX: camera.x,
             camY: camera.y,
