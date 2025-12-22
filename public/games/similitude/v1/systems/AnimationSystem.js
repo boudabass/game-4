@@ -13,6 +13,7 @@ window.AnimationSystem = {
         const tileSize = Config.grid.tileSize;
         const halfTile = tileSize / 2;
         
+        // Les coordonnées de départ et d'arrivée sont calculées ici
         const fromX = fromCol * tileSize + this.gridOffsetX + halfTile;
         const fromY = fromRow * tileSize + this.gridOffsetY + halfTile;
         const toX = toCol * tileSize + this.gridOffsetX + halfTile;

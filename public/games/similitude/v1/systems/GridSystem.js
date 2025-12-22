@@ -10,6 +10,7 @@ window.GridSystem = {
     
     // Délai avant la suppression du combo (en millisecondes)
     COMBO_DELAY: 300, 
+    MOVE_DURATION_MS: 333, // 20 frames à 60fps
     
     // Initialisation de la grille
     init: function () {
@@ -109,16 +110,23 @@ window.GridSystem = {
         
         const itemId = fromTile.itemId;
 
-        // 1. Déplacement (Snap)
-        toTile.itemId = itemId;
+        // 1. Animation
+        if (window.AnimationSystem) {
+            AnimationSystem.addMove(fromCol, fromRow, toCol, toRow, itemId);
+        }
+        
+        // 2. Retirer l'item de la grille pendant l'animation
         fromTile.itemId = null;
         fromTile.state = 'NORMAL';
         
-        // 2. Animation (Snap est instantané, donc pas d'animation de move ici)
-        // Si on voulait une animation, il faudrait la gérer dans sketch.js et bloquer l'input.
-        
-        // 3. Vérification de fusion
-        this.checkAndProcessFusions();
+        // 3. Délai pour le swap physique et la vérification
+        setTimeout(() => {
+            // Swap physique
+            toTile.itemId = itemId;
+            
+            // Vérification de fusion
+            this.checkAndProcessFusions();
+        }, this.MOVE_DURATION_MS);
         
         return true;
     },
@@ -135,24 +143,27 @@ window.GridSystem = {
         
         // 1. Animation (avant le swap physique)
         if (window.AnimationSystem) {
-            // Animation de l'item 1 vers la position 2
             AnimationSystem.addMove(col1, row1, col2, row2, itemId1);
-            // Animation de l'item 2 vers la position 1
             AnimationSystem.addMove(col2, row2, col1, row1, itemId2);
         }
         
-        // 2. Swap physique (immédiat)
-        tile1.itemId = itemId2;
-        tile2.itemId = itemId1;
-        
-        // Réinitialiser les états de sélection
+        // 2. Retirer les items de la grille pendant l'animation
+        tile1.itemId = null;
+        tile2.itemId = null;
         tile1.state = 'NORMAL';
         tile2.state = 'NORMAL';
         
-        console.log(`🔄 Swap effectué: (${col1}, ${row1}) <-> (${col2}, ${row2})`);
+        console.log(`🔄 Swap initié: (${col1}, ${row1}) <-> (${col2}, ${row2})`);
         
-        // 3. Vérification de fusion
-        this.checkAndProcessFusions();
+        // 3. Délai pour le swap physique et la vérification
+        setTimeout(() => {
+            // Swap physique
+            tile1.itemId = itemId2;
+            tile2.itemId = itemId1;
+            
+            // Vérification de fusion
+            this.checkAndProcessFusions();
+        }, this.MOVE_DURATION_MS);
         
         return true; // Le swap est toujours réussi
     },
