@@ -39,3 +39,15 @@ Toutes les modales utilisent un overlay opaque (`z-index: 500`) qui bloque les i
 
 *   **Interaction Monde :** Gérée par les écouteurs DOM (`mousedown`/`mouseup`) pour garantir la détection du clic pur (pas de drag).
 *   **Interaction UI :** Gérée par les `onclick` HTML avec `event.stopPropagation()` pour éviter les clics fantômes.
+
+### ⏸️ Gestion de la Pause/Reprise (Critique)
+
+La gestion de la boucle de rendu p5.js (`draw()`) est synchronisée avec l'état du jeu (`GameState.currentState`).
+
+| Action | État du Jeu | Boucle p5.js | Mécanisme |
+| :--- | :--- | :--- | :--- |
+| **Ouverture Modale** | `PAUSED` | `noLoop()` | Appel à `window.toggleGameLoop(false)` dans `UIManager.toggle*`. |
+| **Fermeture Modale** | `PLAYING` | `loop()` | Appel à `startGame()` dans `UIManager.toggle*` si la modale se ferme et qu'aucune autre n'est visible. |
+| **Bouton Reprendre** | `PLAYING` | `loop()` | Appel direct à `startGame()` dans `index.html`. |
+
+> **Note de Maintenance :** La fonction `startGame()` est le point de contrôle unique pour relancer le jeu (état + boucle p5.js). Toute nouvelle modale doit appeler `window.toggleGameLoop(false)` à l'ouverture et s'assurer que `startGame()` est appelé à la fermeture pour garantir la reprise automatique.
