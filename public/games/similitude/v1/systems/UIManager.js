@@ -32,14 +32,14 @@ window.UIManager = {
             }
         });
         
-        // Si une modale a été fermée, on vérifie si le jeu doit reprendre
+        // Si une modale a été fermée et que le jeu était en pause (et n'est pas en Game Over)
         if (modalClosed && GameState.currentState === GameState.GAME_STATE.PAUSED) {
             // On utilise un petit délai pour s'assurer que le DOM a été mis à jour
             setTimeout(() => {
                 // Si aucune modale n'est visible, on reprend le jeu
                 if (!this.isAnyModalVisible()) {
                     GameState.currentState = GameState.GAME_STATE.PLAYING;
-                    // La boucle draw() sera relancée automatiquement par sketch.js
+                    window.toggleGameLoop(true); // REPRISE DE LA BOUCLE P5.JS
                     console.log("▶️ Jeu repris automatiquement.");
                 }
             }, 50); 
@@ -59,6 +59,7 @@ window.UIManager = {
             // Pause le jeu si le menu s'ouvre
             if (GameState.currentState === GameState.GAME_STATE.PLAYING) {
                 GameState.currentState = GameState.GAME_STATE.PAUSED;
+                window.toggleGameLoop(false); // PAUSE DE LA BOUCLE P5.JS
             }
         }
     },
@@ -76,6 +77,7 @@ window.UIManager = {
             // Pause le jeu et rend le contenu
             if (GameState.currentState === GameState.GAME_STATE.PLAYING) {
                 GameState.currentState = GameState.GAME_STATE.PAUSED;
+                window.toggleGameLoop(false); // PAUSE DE LA BOUCLE P5.JS
             }
             this.renderPowerUpWindow();
         }
@@ -93,6 +95,7 @@ window.UIManager = {
         } else {
             if (GameState.currentState === GameState.GAME_STATE.PLAYING) {
                 GameState.currentState = GameState.GAME_STATE.PAUSED;
+                window.toggleGameLoop(false); // PAUSE DE LA BOUCLE P5.JS
             }
             this.renderShopWindow();
         }
