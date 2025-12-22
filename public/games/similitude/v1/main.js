@@ -61,7 +61,7 @@ window.finalizeGameSetup = function () {
         if (window.LoadingManager) LoadingManager.advanceStep("Grille de puzzle initialisée.");
     }
     
-    // Initialisation de l'état de jeu
+    // Initialisation de l'état de jeu (Démarrage direct en PLAYING via GameState.reset())
     GameState.reset();
     
     // Reste des étapes de progression pour atteindre 50
@@ -81,13 +81,9 @@ window.finalizeGameSetup = function () {
 // Initialisation au chargement du DOM
 document.addEventListener('DOMContentLoaded', async function () {
     // 1. Initialisation synchrone des managers
-    initializeHUD();
+    // GameState est initialisé ici, mais les valeurs sont par défaut (0, 0, MENU)
     
-    // 2. Le jeu Similitude n'utilise pas de sauvegarde Cloud/Local pour l'instant, 
-    // donc nous passons directement à la finalisation.
-    // Si SaveManager était implémenté, il serait appelé ici.
-    
-    // 3. Finalisation après l'initialisation
+    // 2. Finalisation après l'initialisation
     finalizeGameSetup();
 });
 

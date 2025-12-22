@@ -50,7 +50,7 @@ window.GameState = {
         this.score = 0;
         this.chrono = Config.levelTime;
         this.selectedTile = null;
-        this.currentState = this.GAME_STATE.MENU;
+        this.currentState = this.GAME_STATE.PLAYING; // Démarrage direct en PLAYING
     }
 };
 
