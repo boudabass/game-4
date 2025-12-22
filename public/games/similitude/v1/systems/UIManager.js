@@ -19,7 +19,6 @@ window.UIManager = {
 
     _closeAllModals: function (exceptId) {
         const modals = ['menu-modal', 'debug-modal', 'gameover-modal', 'powerup-modal', 'shop-modal'];
-        let wasPaused = GameState.currentState === GameState.GAME_STATE.PAUSED;
         let modalClosed = false;
 
         modals.forEach(id => {
@@ -33,16 +32,17 @@ window.UIManager = {
             }
         });
         
-        // Si une modale a été fermée et que le jeu était en pause (et n'est pas en Game Over)
-        if (modalClosed && wasPaused && GameState.currentState !== GameState.GAME_STATE.GAMEOVER) {
+        // Si une modale a été fermée, on vérifie si le jeu doit reprendre
+        if (modalClosed && GameState.currentState === GameState.GAME_STATE.PAUSED) {
             // On utilise un petit délai pour s'assurer que le DOM a été mis à jour
             setTimeout(() => {
                 // Si aucune modale n'est visible, on reprend le jeu
                 if (!this.isAnyModalVisible()) {
                     GameState.currentState = GameState.GAME_STATE.PLAYING;
+                    // La boucle draw() sera relancée automatiquement par sketch.js
                     console.log("▶️ Jeu repris automatiquement.");
                 }
-            }, 50); // 50ms est suffisant pour la mise à jour du DOM
+            }, 50); 
         }
     },
 

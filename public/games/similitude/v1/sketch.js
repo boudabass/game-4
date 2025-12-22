@@ -6,7 +6,7 @@ function handleWorldClick(screenX, screenY) {
     }
     
     if (GameState.currentState !== GameState.GAME_STATE.PLAYING) {
-        console.log("Jeu non actif.");
+        // Si le jeu n'est pas en PLAYING, on ignore le clic sans afficher de message
         return;
     }
 
@@ -158,7 +158,7 @@ function setup() {
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchend', handleEnd);
     
-    // Arrêter la boucle de jeu au démarrage. Elle sera relancée par LoadingManager.finishLoading()
+    // Arrêter la boucle de jeu au démarrage. Elle sera relancée par startGame()
     if (typeof noLoop === 'function') noLoop();
 }
 
@@ -178,7 +178,21 @@ window.redraw = function() {
 function draw() {
     background(Config.colors.background);
 
-    // 1. Mise à jour de la logique de jeu
+    // 1. Gestion de la pause/reprise de la boucle p5.js
+    if (GameState.currentState === GameState.GAME_STATE.PAUSED) {
+        // Si le jeu est en pause, on arrête la boucle draw()
+        if (typeof noLoop === 'function') noLoop();
+        return;
+    }
+    
+    // Si le jeu est en PLAYING, on s'assure que la boucle tourne
+    if (GameState.currentState === GameState.GAME_STATE.PLAYING) {
+        if (typeof loop === 'function' && isLooping() === false) {
+            loop();
+        }
+    }
+
+    // 2. Mise à jour de la logique de jeu
     if (GameState.currentState === GameState.GAME_STATE.PLAYING) {
         // Vérification de l'énergie à chaque frame (si elle est déjà à 0)
         if (GameState.energy <= 0 && GameState.chrono > 0) {
@@ -191,21 +205,22 @@ function draw() {
     if (GameState.currentState === GameState.GAME_STATE.GAMEOVER) {
         // Afficher le modal Game Over
         UIManager.showGameOver();
-        noLoop(); // Arrêter la boucle
+        if (typeof noLoop === 'function') noLoop(); // Arrêter la boucle
+        return;
     }
 
-    // 2. Rendu de la grille
+    // 3. Rendu de la grille
     if (window.GridSystem) {
         GridSystem.draw();
     }
     
-    // 3. Rendu des animations (DOIT être après GridSystem.draw())
+    // 4. Rendu des animations (DOIT être après GridSystem.draw())
     if (window.AnimationSystem) {
         AnimationSystem.update();
         AnimationSystem.draw();
     }
 
-    // 4. Mise à jour des infos de debug
+    // 5. Mise à jour des infos de debug
     if (Config.debug && window.UIManager) {
         UIManager.updateDebugInfo({
             screenX: mouseX,
@@ -230,7 +245,7 @@ function keyPressed() {
     }
 }
 
-// Fonction de tick du chrono (appelée par p5.js)
+// Fonction de tick du chrono (appelée par setInterval)
 function timeTick() {
     if (GameState.currentState === GameState.GAME_STATE.PLAYING && window.ChronoManager) {
         ChronoManager.tick();
@@ -238,4 +253,6 @@ function timeTick() {
 }
 
 // Utiliser setInterval pour le tick du chrono (plus fiable que draw loop pour le temps)
-setInterval(timeTick, 1000);
+// Le chrono doit tourner même si la boucle draw est stoppée, mais seulement si l'état est PLAYING.
+// Nous allons gérer le start/stop du setInterval dans UIManager.js
+window.chronoInterval = setInterval(timeTick, 1000);
