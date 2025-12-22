@@ -48,7 +48,7 @@ window.GridSystem = {
 
     // Récupère un item aléatoire (limité par Config.grid.itemTypes)
     getRandomItem: function () {
-        const index = floor(random(Config.grid.itemTypes));
+        const index = Math.floor(Math.random() * Config.grid.itemTypes);
         return Config.seedIcons[index];
     },
 
@@ -67,7 +67,7 @@ window.GridSystem = {
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
                     const tile = this.getTile(c, r);
-                    if (tile && tile.itemId && this.checkMatch(c, r).length >= Config.grid.matchMin) {
+                    if (tile && this.checkMatch(c, r).length >= Config.grid.matchMin) {
                         tile.itemId = this.getRandomItem();
                         matched = true;
                     }
