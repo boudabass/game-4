@@ -101,16 +101,11 @@ function setup() {
     camera.y = Config.zoneHeight / 2;
     camera.zoom = Config.zoom.start;
 
-    if (window.GameSystem && window.GameSystem.Lifecycle) {
-        window.GameSystem.Lifecycle.notifyReady();
-    }
+    // Le GameSystem.Lifecycle.notifyReady() est maintenant appelé par LoadingManager.finishLoading()
+    // pour s'assurer que le jeu est prêt AVANT de masquer l'écran de chargement.
 
     InputManager.init();
 
-    if (window.QuickAction && QuickAction.refresh) {
-        QuickAction.refresh();
-    }
-    
     // --- GESTION DES INPUTS UNIFIÉE (DOM) ---
     const canvasElement = p5Canvas.elt;
 
@@ -185,6 +180,9 @@ function setup() {
         camera.zoom -= zoomAmount;
         camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
     }, { passive: false });
+    
+    // Arrêter la boucle de jeu au démarrage. Elle sera relancée par LoadingManager.finishLoading()
+    if (typeof noLoop === 'function') noLoop();
 }
 
 function windowResized() {

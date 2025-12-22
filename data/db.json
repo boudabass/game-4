@@ -52,15 +52,15 @@
     {
       "gameId": "elsass-farm-v1",
       "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "updatedAt": "2025-12-21T23:24:21.528Z",
+      "updatedAt": "2025-12-21T23:30:33.552Z",
       "data": {
-        "energy": 72,
+        "energy": 64,
         "gold": 100,
         "day": 8,
         "hour": 9,
-        "minute": 22,
+        "minute": 32,
         "season": "AUTUMN",
-        "currentZoneId": "N_C",
+        "currentZoneId": "C_C",
         "grids": {
           "C_C": [
             {
@@ -108,7 +108,7 @@
               "row": 1,
               "col": 0,
               "state": "GROWING",
-              "watered": false,
+              "watered": true,
               "seedType": "pumpkin",
               "growthStage": 2,
               "season": "AUTUMN"
@@ -118,7 +118,7 @@
               "row": 1,
               "col": 1,
               "state": "GROWING",
-              "watered": false,
+              "watered": true,
               "seedType": "melon",
               "growthStage": 9,
               "season": "SUMMER"
@@ -128,7 +128,7 @@
               "row": 1,
               "col": 2,
               "state": "GROWING",
-              "watered": false,
+              "watered": true,
               "seedType": "melon",
               "growthStage": 9,
               "season": "SUMMER"
@@ -138,7 +138,7 @@
               "row": 1,
               "col": 3,
               "state": "PLANTED",
-              "watered": false,
+              "watered": true,
               "seedType": "pumpkin",
               "growthStage": 0,
               "season": "AUTUMN"
@@ -1179,7 +1179,7 @@
           "selectedToolIndex": 0,
           "selectedSeedIndex": 2
         },
-        "savedAt": "2025-12-21T23:24:21.199Z",
+        "savedAt": "2025-12-21T23:30:33.294Z",
         "version": "1.2"
       }
     }

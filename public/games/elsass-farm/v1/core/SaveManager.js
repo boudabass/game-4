@@ -6,9 +6,8 @@ window.SaveManager = {
     SAVE_KEY: 'elsass-farm-save',
 
     // --- 1. SAUVEGARDE LOCALE (Fréquente) ---
-    // Appelé par le sommeil, le changement de zone, etc.
     save: function () {
-        console.log("💾 Sauvegarde Locale en cours...");
+        if (window.LoadingManager) LoadingManager.updateStatus("Sauvegarde locale...");
         
         const saveData = this._gatherData();
 
@@ -24,8 +23,8 @@ window.SaveManager = {
     },
 
     // --- 2. SAUVEGARDE CLOUD (Fermeture) ---
-    // Appelé uniquement quand on quitte le jeu
     saveToCloud: async function () {
+        if (window.LoadingManager) LoadingManager.updateStatus("Synchronisation Cloud...");
         console.log("☁️ Envoi vers la DB (Cloud)...");
         const gameId = window.DyadGame ? window.DyadGame.id : null;
         
@@ -54,50 +53,97 @@ window.SaveManager = {
 
     // --- 3. CHARGEMENT (Algorithme Prioritaire) ---
     load: async function () {
-        console.log("📂 Procédure de chargement...");
+        if (window.LoadingManager) LoadingManager.advanceStep("Démarrage du processus de chargement...");
         
-        // Étape 1 : Vérification Local Storage
-        let localJson = localStorage.getItem(this.SAVE_KEY);
+        const gameId = window.DyadGame ? window.DyadGame.id : null;
+        if (!gameId) {
+            console.error("ID de jeu manquant. Arrêt du chargement.");
+            return;
+        }
 
-        // Étape 1-B : Si pas de local, Synchro avec la DB
-        if (!localJson) {
-            console.log("⚠️ Aucune sauvegarde locale. Recherche Cloud...");
-            const cloudData = await this._fetchFromCloud();
+        // Étape 1 : Récupération des deux sources
+        if (window.LoadingManager) LoadingManager.advanceStep("Vérification du cache local...");
+        let localSave = this._getLocalStorageData();
+        
+        if (window.LoadingManager) LoadingManager.advanceStep("Interrogation de la sauvegarde Cloud...");
+        let cloudSave = await this._fetchFromCloud();
+        
+        if (window.LoadingManager) LoadingManager.advanceStep("Analyse des données de persistance...");
+
+        let finalSaveData = null;
+        let source = 'NEW';
+
+        // Étape 2 : Détermination de la Source de Vérité
+        const localTime = localSave ? new Date(localSave.savedAt).getTime() : 0;
+        const cloudTime = cloudSave ? new Date(cloudSave.savedAt).getTime() : 0;
+
+        if (localTime > cloudTime) {
+            // Local est plus récent ou égal (priorité au local si égal pour éviter l'écriture)
+            finalSaveData = localSave;
+            source = 'LOCAL';
+            if (window.LoadingManager) LoadingManager.advanceStep(`Cache local (${new Date(localTime).toLocaleTimeString()}) est le plus récent.`);
+        } else if (cloudTime > 0) {
+            // Cloud est plus récent
+            finalSaveData = cloudSave;
+            source = 'CLOUD';
+            if (window.LoadingManager) LoadingManager.advanceStep(`Sauvegarde Cloud (${new Date(cloudTime).toLocaleTimeString()}) est plus récente.`);
             
-            if (cloudData) {
-                console.log("☁️ Sauvegarde Cloud trouvée. Restauration...");
-                // Création de la save en local (Synchro)
-                localJson = JSON.stringify(cloudData);
-                localStorage.setItem(this.SAVE_KEY, localJson);
-            }
+            // Écraser le local avec le cloud pour synchronisation
+            if (window.LoadingManager) LoadingManager.advanceStep("Synchronisation du cache local avec le Cloud.");
+            this._setLocalStorageData(cloudSave);
+        } else if (localTime > 0) {
+            // Cloud n'existe pas, mais local existe (joueur hors ligne ou première partie)
+            finalSaveData = localSave;
+            source = 'LOCAL_FALLBACK';
+            if (window.LoadingManager) LoadingManager.advanceStep("Utilisation du cache local (Cloud non trouvé).");
+        } else {
+            // Rien n'existe
+            if (window.LoadingManager) LoadingManager.advanceStep("Nouvelle partie détectée. Initialisation des valeurs par défaut.");
+            GameState.reset(); // Assurer que GameState est aux valeurs par défaut
+            source = 'NEW';
         }
-
-        // Étape 2 : Chargement effectif (si données trouvées)
-        if (localJson) {
-            try {
-                const saveData = JSON.parse(localJson);
-                this.applyData(saveData);
-                console.log("✅ Jeu chargé avec succès (Progression existante).");
-                return true;
-            } catch (e) {
-                console.error("❌ Erreur lecture sauvegarde locale:", e);
-            }
-        }
-
-        // Étape 3 : CAS NOUVEAU JOUEUR (Rien nul part)
-        // Si on arrive ici, c'est que c'est la toute première partie.
-        console.log("🆕 Nouveau Joueur détecté. Initialisation de la sauvegarde...");
         
-        // On force une première sauvegarde des valeurs par défaut
-        // 1. En local pour que le jeu fonctionne tout de suite
-        this.save();
-        // 2. En cloud pour que le joueur existe en base (sécurité crash)
-        this.saveToCloud();
+        // Étape 3 : Application des données
+        if (finalSaveData) {
+            if (window.LoadingManager) LoadingManager.advanceStep(`Application des données de la source ${source}...`);
+            this.applyData(finalSaveData);
+        }
 
+        // Étape 4 : Finalisation
+        if (source === 'NEW') {
+            // Si c'est une nouvelle partie, on force une première sauvegarde Cloud
+            if (window.LoadingManager) LoadingManager.advanceStep("Création de la première entrée Cloud...");
+            this.saveToCloud();
+        }
+        
+        if (window.LoadingManager) LoadingManager.advanceStep("Chargement des données terminé.");
+        
+        // Le LoadingManager.finishLoading() sera appelé dans main.js après l'initialisation des autres modules.
         return true;
     },
 
     // --- Utilitaires Internes ---
+
+    _getLocalStorageData: function() {
+        const localJson = localStorage.getItem(this.SAVE_KEY);
+        if (localJson) {
+            try {
+                return JSON.parse(localJson);
+            } catch (e) {
+                console.error("Erreur lecture JSON local:", e);
+                return null;
+            }
+        }
+        return null;
+    },
+
+    _setLocalStorageData: function(data) {
+        try {
+            localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.error("Erreur écriture JSON local:", e);
+        }
+    },
 
     // Récupère toutes les données du jeu pour créer l'objet de sauvegarde
     _gatherData: function() {
@@ -112,7 +158,7 @@ window.SaveManager = {
             grids: window.GridSystem ? GridSystem.export() : {},
             inventory: window.Inventory ? Inventory.export() : {},
             savedAt: new Date().toISOString(),
-            version: '1.2'
+            version: '1.3' // Mise à jour de la version de sauvegarde
         };
     },
 
@@ -125,7 +171,12 @@ window.SaveManager = {
             const res = await fetch(`/api/storage?gameId=${gameId}`);
             if (res.ok) {
                 const json = await res.json();
-                return json.data;
+                // La DB renvoie { data: {...}, updatedAt: "..." }
+                if (json.data) {
+                    // On ajoute l'horodatage du serveur pour la comparaison
+                    json.data.savedAt = json.updatedAt; 
+                    return json.data;
+                }
             }
         } catch (e) {
             console.error("Erreur réseau Cloud:", e);

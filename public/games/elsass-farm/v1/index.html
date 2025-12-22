@@ -22,6 +22,7 @@
 
     <!-- 3. JEU -->
     <script src="config.js"></script>
+    <script src="core/LoadingManager.js"></script>
     <script src="core/GameState.js"></script>
     <script src="core/TimeManager.js"></script>
     <script src="core/SaveManager.js"></script>
@@ -204,6 +205,10 @@
 
         // Charger automatiquement au démarrage
         window.addEventListener('load', function () {
+            // Le chargement est maintenant géré par le LoadingManager et le SaveManager
+            // On s'assure que la boucle p5.js est stoppée au début
+            if (typeof noLoop === 'function') noLoop();
+            
             setTimeout(function () {
                 if (typeof SaveManager !== 'undefined') {
                     SaveManager.load();
@@ -257,6 +262,20 @@
 </head>
 
 <body>
+    <!-- Écran de Chargement (Masque tout le reste au début) -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1>Elsass Farm</h1>
+            <div id="loading-bar-container" class="loading-bar-container">
+                <div class="save-status-text" id="loading-status-text">Initialisation...</div>
+                <div class="save-progress-track">
+                    <div class="save-progress-fill" id="loading-progress-fill"></div>
+                </div>
+            </div>
+            <button id="play-button" class="hud-btn" style="display: none; margin-top: 20px;">JOUER</button>
+        </div>
+    </div>
+
     <!-- UI Layer -->
     <div id="ui-layer">
         <div class="hud-bar">

@@ -5,35 +5,44 @@ console.log("🚜 Elsass Farm v1 Initializing...");
 
 // Vérification du chargement des dépendances
 (function checkDependencies() {
+    if (window.LoadingManager) LoadingManager.advanceStep("Vérification des dépendances...");
+    
     const required = [
         { name: 'Config', obj: typeof Config !== 'undefined' ? Config : null },
         { name: 'GameState', obj: window.GameState },
+        { name: 'TimeManager', obj: window.TimeManager },
+        { name: 'SaveManager', obj: window.SaveManager },
         { name: 'InputManager', obj: window.InputManager },
         { name: 'UIManager', obj: window.UIManager },
         { name: 'DebugManager', obj: window.DebugManager },
-        { name: 'MinimapRenderer', obj: window.MinimapRenderer }
+        { name: 'MinimapRenderer', obj: window.MinimapRenderer },
+        { name: 'GridSystem', obj: window.GridSystem },
+        { name: 'Inventory', obj: window.Inventory },
+        { name: 'QuickAction', obj: window.QuickAction }
     ];
 
     const missing = required.filter(dep => !dep.obj);
 
     if (missing.length > 0) {
         console.error("❌ Dépendances manquantes:", missing.map(d => d.name).join(', '));
+        if (window.LoadingManager) LoadingManager.updateStatus(`ERREUR: ${missing.map(d => d.name).join(', ')} manquants.`);
         return false;
     }
 
-    console.log("✅ Toutes les dépendances chargées");
+    if (window.LoadingManager) LoadingManager.advanceStep("✅ Toutes les dépendances chargées.");
     return true;
 })();
 
 // Initialisation du HUD avec les valeurs de GameState
 function initializeHUD() {
+    if (window.LoadingManager) LoadingManager.advanceStep("Initialisation de l'interface HUD...");
     UIManager.updateHUD({
         energy: GameState.energy,
         gold: GameState.gold,
         day: GameState.day,
         time: GameState.getTimeString()
     });
-    console.log("✅ HUD initialisé");
+    if (window.LoadingManager) LoadingManager.advanceStep("✅ HUD initialisé.");
 }
 
 // Fonction globale pour mettre à jour le HUD (appelée par d'autres modules)
@@ -46,9 +55,50 @@ window.refreshHUD = function () {
     });
 };
 
+// Fonction d'initialisation finale (appelée après le chargement de la sauvegarde)
+window.finalizeGameSetup = function () {
+    if (window.LoadingManager) LoadingManager.advanceStep("Finalisation des systèmes de jeu...");
+    
+    // Initialisation des systèmes qui dépendent de GameState chargé
+    if (window.QuickAction && QuickAction.refresh) {
+        QuickAction.refresh();
+        if (window.LoadingManager) LoadingManager.advanceStep("Raccourcis QuickAction rafraîchis.");
+    }
+    
+    // Assurer que la grille active est initialisée après le chargement de la zone
+    if (window.GridSystem) {
+        GridSystem.getActiveGrid();
+        if (window.LoadingManager) LoadingManager.advanceStep("Grille de la zone active initialisée.");
+    }
+
+    // Reste des étapes de progression pour atteindre 50
+    for (let i = LoadingManager.currentStep; i < LoadingManager.MAX_STEPS - 1; i++) {
+        LoadingManager.advanceStep("Préparation des assets et du rendu...");
+    }
+
+    if (window.LoadingManager) LoadingManager.advanceStep("Démarrage du moteur p5.js...");
+    
+    // Déclencher la fin du chargement
+    LoadingManager.finishLoading();
+    
+    console.log("✅ main.js: Finalisation OK.");
+};
+
+
 // Initialisation au chargement du DOM
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    // 1. Initialisation synchrone des managers
     initializeHUD();
+    
+    // 2. Lancement du chargement asynchrone de la sauvegarde
+    if (typeof SaveManager !== 'undefined') {
+        await SaveManager.load();
+    } else {
+        console.error("❌ SaveManager non chargé !");
+    }
+    
+    // 3. Finalisation après le chargement de la sauvegarde
+    finalizeGameSetup();
 });
 
 console.log("✅ main.js chargé");
