@@ -238,7 +238,7 @@ canvas {
 /* Conteneurs de coin (POWER UP et BOUTIQUE) */
 .corner-ui-zone {
     position: absolute;
-    bottom: 10vh; /* ALIGNÉ AVEC LIGNE 2 */
+    bottom: 3vh; /* Ajusté pour être plus bas */
     pointer-events: auto;
     z-index: 110;
     width: 120px; /* Taille fixe pour le bouton */
@@ -279,7 +279,7 @@ canvas {
 }
 
 .line-2 {
-    bottom: 10vh; /* y=90vh */
+    bottom: 3vh; /* Ajusté pour être plus bas */
 }
 
 .quick-slots-container {
