@@ -1,16 +1,6 @@
 {
   "games": [
     {
-      "id": "p5-learn-etape10",
-      "name": "P5.js Apprentissage - Étape 10",
-      "description": "Architecture Complète : États, Classes, Config.",
-      "path": "learn/etape10",
-      "version": "etape10",
-      "createdAt": "2025-12-17T16:30:00.000Z",
-      "width": 800,
-      "height": 600
-    },
-    {
       "id": "elsass-farm-v1",
       "name": "Elsass Farm",
       "description": "Simulation agricole isométrique. Gestion de ressources, craft et exploration.",
@@ -32,32 +22,7 @@
       "height": 600
     }
   ],
-  "scores": [
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 20,
-      "date": "2025-12-17T13:57:45.342Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    },
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 40,
-      "date": "2025-12-17T13:58:29.895Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    },
-    {
-      "gameId": "p5-learn-etape10",
-      "playerName": "lacolleacervelle+admin",
-      "score": 40,
-      "date": "2025-12-17T14:52:19.459Z",
-      "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "userEmail": "lacolleacervelle+admin@gmail.com"
-    }
-  ],
+  "scores": [],
   "saves": [
     {
       "gameId": "elsass-farm-v1",
@@ -179,7 +144,7 @@
               "col": 2,
               "state": "PLANTED",
               "watered": true,
-              "seedType": "eggplant",
+              "seedType": "squash",
               "growthStage": 0,
               "season": "AUTUMN"
             },
@@ -187,10 +152,10 @@
               "id": 11,
               "row": 2,
               "col": 3,
-              "state": "GROWING",
+              "state": "PLANTED",
               "watered": true,
-              "seedType": "pumpkin",
-              "growthStage": 2,
+              "seedType": "squash",
+              "growthStage": 0,
               "season": "AUTUMN"
             },
             {
@@ -906,7 +871,6 @@
               },
               {
                 "id": "radish",
-                "name": "Radis",
                 "icon": "🌱",
                 "qty": 42
               }
@@ -932,7 +896,6 @@
               },
               {
                 "id": "melon",
-                "name": "Melon",
                 "icon": "🍈",
                 "qty": 27
               }
@@ -958,7 +921,6 @@
               },
               {
                 "id": "mushroom",
-                "name": "Champignon",
                 "icon": "🍄",
                 "qty": 16
               }
@@ -972,7 +934,6 @@
               },
               {
                 "id": "artichoke",
-                "name": "Artichaut",
                 "icon": "🌿",
                 "qty": 0
               },
@@ -1017,7 +978,6 @@
             },
             {
               "id": "wand",
-              "name": "Baguette",
               "icon": "✨",
               "level": 1
             },
@@ -1070,13 +1030,11 @@
               },
               {
                 "id": "brick",
-                "name": "Brique",
                 "icon": "🧱",
                 "qty": 0
               },
               {
                 "id": "gravel",
-                "name": "Gravier",
                 "icon": "⚪",
                 "qty": 0
               }
@@ -1180,7 +1138,6 @@
               },
               {
                 "id": "potion_force",
-                "name": "Force",
                 "icon": "💪",
                 "qty": 0
               }
