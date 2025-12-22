@@ -50,33 +50,32 @@ window.LoadingManager = {
         }
     },
 
-    // Masque l'écran de chargement et affiche le bouton Jouer
+    // Masque l'écran de chargement et démarre le jeu
     finishLoading: function () {
-        this.advanceStep("Chargement terminé. Prêt à jouer.");
+        this.advanceStep("Chargement terminé. Démarrage automatique...");
         const loadingScreen = document.getElementById('loading-screen');
         const playButton = document.getElementById('play-button');
         
+        if (playButton) {
+            playButton.style.display = 'none'; // Masquer le bouton
+        }
+        
         if (loadingScreen) {
-            // Masquer la barre et le texte
-            document.getElementById('loading-bar-container').style.display = 'block'; // La barre reste visible
-            
-            // Afficher le bouton Jouer
-            if (playButton) {
-                playButton.style.display = 'block';
-                playButton.onclick = () => {
-                    // Utiliser une transition douce pour masquer l'écran de chargement
-                    loadingScreen.style.opacity = '0';
-                    setTimeout(() => {
-                        loadingScreen.style.display = 'none';
-                        // Démarrer la boucle de jeu p5.js (via startGame())
-                        
-                        // Notifier le GameSystem que le jeu est prêt
-                        if(window.GameSystem && window.GameSystem.Lifecycle) {
-                            window.GameSystem.Lifecycle.notifyReady();
-                        }
-                    }, 500);
-                };
-            }
+            // Transition douce pour masquer l'écran de chargement
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                
+                // Démarrage immédiat du jeu
+                if (typeof startGame === 'function') {
+                    startGame();
+                }
+                
+                // Notifier le GameSystem que le jeu est prêt
+                if(window.GameSystem && window.GameSystem.Lifecycle) {
+                    window.GameSystem.Lifecycle.notifyReady();
+                }
+            }, 500);
         }
     }
 };
