@@ -342,12 +342,8 @@ window.GridSystem = {
                         fill(itemColor);
                     }
                     
-                    // NE PAS DESSINER si l'item est en cours d'animation de déplacement
-                    const isMoving = window.AnimationSystem && AnimationSystem.animations.some(a => a.type === 'MOVE' && a.itemId === tile.itemId);
-                    
-                    if (!isMoving) {
-                        text(tile.itemId, x + this.tileSize / 2, y + this.tileSize / 2 + 5);
-                    }
+                    // L'item est déjà masqué par tile.itemId = null s'il est en mouvement.
+                    text(tile.itemId, x + this.tileSize / 2, y + this.tileSize / 2 + 5);
                 }
             }
         }
