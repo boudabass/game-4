@@ -55,14 +55,13 @@ window.refreshHUD = function () {
 window.finalizeGameSetup = function () {
     if (window.LoadingManager) LoadingManager.advanceStep("Finalisation des systèmes de jeu...");
     
-    // Initialisation de la grille
+    // Initialisation de la grille (pour que les dimensions soient prêtes)
     if (window.GridSystem) {
         GridSystem.init();
         if (window.LoadingManager) LoadingManager.advanceStep("Grille de puzzle initialisée.");
     }
     
-    // Initialisation de l'état de jeu (Démarrage direct en PLAYING via GameState.reset())
-    GameState.reset();
+    // NOTE: GameState.reset() est maintenant appelé par startGame()
     
     // Reste des étapes de progression pour atteindre 50
     for (let i = LoadingManager.currentStep; i < LoadingManager.MAX_STEPS - 1; i++) {
@@ -81,7 +80,7 @@ window.finalizeGameSetup = function () {
 // Initialisation au chargement du DOM
 document.addEventListener('DOMContentLoaded', async function () {
     // 1. Initialisation synchrone des managers
-    // GameState est initialisé ici, mais les valeurs sont par défaut (0, 0, MENU)
+    initializeHUD();
     
     // 2. Finalisation après l'initialisation
     finalizeGameSetup();
