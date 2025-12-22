@@ -106,13 +106,18 @@ window.GridSystem = {
             console.warn("Déplacement invalide (cible non vide).");
             return false;
         }
+        
+        const itemId = fromTile.itemId;
 
-        // 1. Déplacement
-        toTile.itemId = fromTile.itemId;
+        // 1. Déplacement (Snap)
+        toTile.itemId = itemId;
         fromTile.itemId = null;
         fromTile.state = 'NORMAL';
         
-        // 2. Vérification de fusion
+        // 2. Animation (Snap est instantané, donc pas d'animation de move ici)
+        // Si on voulait une animation, il faudrait la gérer dans sketch.js et bloquer l'input.
+        
+        // 3. Vérification de fusion
         this.checkAndProcessFusions();
         
         return true;
@@ -125,10 +130,20 @@ window.GridSystem = {
         
         if (!tile1 || !tile2) return false;
         
-        // Échange des IDs
-        const tempId = tile1.itemId;
-        tile1.itemId = tile2.itemId;
-        tile2.itemId = tempId;
+        const itemId1 = tile1.itemId;
+        const itemId2 = tile2.itemId;
+        
+        // 1. Animation (avant le swap physique)
+        if (window.AnimationSystem) {
+            // Animation de l'item 1 vers la position 2
+            AnimationSystem.addMove(col1, row1, col2, row2, itemId1);
+            // Animation de l'item 2 vers la position 1
+            AnimationSystem.addMove(col2, row2, col1, row1, itemId2);
+        }
+        
+        // 2. Swap physique (immédiat)
+        tile1.itemId = itemId2;
+        tile2.itemId = itemId1;
         
         // Réinitialiser les états de sélection
         tile1.state = 'NORMAL';
@@ -136,14 +151,11 @@ window.GridSystem = {
         
         console.log(`🔄 Swap effectué: (${col1}, ${row1}) <-> (${col2}, ${row2})`);
         
-        // Vérifier si le swap a créé un match et traiter la fusion
+        // 3. Vérification de fusion
         this.checkAndProcessFusions();
         
         return true; // Le swap est toujours réussi
     },
-    
-    // Annule un échange (Fonction supprimée car le swap est toujours permanent)
-    // undoSwap: function (col1, row1, col2, row2) { ... },
 
     // Vérifie les alignements et marque les tuiles
     checkMatch: function (col, row) {
@@ -211,6 +223,10 @@ window.GridSystem = {
         // 2. Marquer les tuiles comme MATCHED (pour le rendu visuel temporaire)
         tilesToClear.forEach(tile => {
             tile.state = 'MATCHED';
+            // Déclencher l'animation de fusion
+            if (window.AnimationSystem) {
+                AnimationSystem.addFusion(tile.col, tile.row, tile.itemId);
+            }
         });
         
         // 3. Calculer le score (avant la suppression)
@@ -252,6 +268,12 @@ window.GridSystem = {
         
         const offsetX = (width / 2) - (gridWidth / 2);
         const offsetY = (height / 2) - (gridHeight / 2);
+
+        // Mettre à jour les offsets pour le système d'animation
+        if (window.AnimationSystem) {
+            AnimationSystem.gridOffsetX = offsetX;
+            AnimationSystem.gridOffsetY = offsetY;
+        }
 
         push();
         translate(offsetX, offsetY);
@@ -309,7 +331,11 @@ window.GridSystem = {
                         fill(itemColor);
                     }
                     
-                    text(tile.itemId, x + this.tileSize / 2, y + this.tileSize / 2 + 5);
+                    // Ne dessiner l'item que s'il n'est pas en cours de déplacement (MOVE)
+                    // L'animation system le dessine à la place
+                    if (!window.AnimationSystem || !AnimationSystem.animations.some(a => a.type === 'MOVE' && a.itemId === tile.itemId)) {
+                        text(tile.itemId, x + this.tileSize / 2, y + this.tileSize / 2 + 5);
+                    }
                 }
             }
         }

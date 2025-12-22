@@ -44,21 +44,22 @@ function handleWorldClick(screenX, screenY) {
                     return;
                 }
                 
+                // Vérification de l'énergie pour toute action de mouvement
+                if (!GameState.spendEnergy(1)) {
+                    console.warn("Pas assez d'énergie pour bouger.");
+                    return;
+                }
+                
                 let actionSuccess = false;
-                let energySpent = false;
+                let energySpent = true; // L'énergie est dépensée ici
 
                 if (!tile.itemId) {
                     // Clic sur une case libre -> Déplacement (Snap libre)
-                    if (GameState.spendEnergy(1)) {
-                        energySpent = true;
-                        actionSuccess = GridSystem.moveItem(selected.col, selected.row, gridPos.col, gridPos.row);
-                    }
+                    actionSuccess = GridSystem.moveItem(selected.col, selected.row, gridPos.col, gridPos.row);
+                    
                 } else {
                     // Clic sur une case occupée -> Swap
-                    if (GameState.spendEnergy(1)) {
-                        energySpent = true;
-                        actionSuccess = GridSystem.swapItems(selected.col, selected.row, gridPos.col, gridPos.row);
-                    }
+                    actionSuccess = GridSystem.swapItems(selected.col, selected.row, gridPos.col, gridPos.row);
                 }
                 
                 if (actionSuccess) {
@@ -67,8 +68,7 @@ function handleWorldClick(screenX, screenY) {
                     GameState.selectedTile = null;
                     if (window.refreshHUD) refreshHUD();
                 } else if (energySpent) {
-                    // Si l'énergie a été dépensée mais l'action a échoué (swap annulé), 
-                    // on désélectionne pour recommencer.
+                    // Si l'action a échoué (ne devrait pas arriver avec le swap permanent), on désélectionne
                     if (previousTile) previousTile.state = 'NORMAL';
                     GameState.selectedTile = null;
                 }
@@ -180,8 +180,14 @@ function draw() {
     if (window.GridSystem) {
         GridSystem.draw();
     }
+    
+    // 3. Rendu des animations (DOIT être après GridSystem.draw())
+    if (window.AnimationSystem) {
+        AnimationSystem.update();
+        AnimationSystem.draw();
+    }
 
-    // 3. Mise à jour des infos de debug
+    // 4. Mise à jour des infos de debug
     if (Config.debug && window.UIManager) {
         UIManager.updateDebugInfo({
             screenX: mouseX,
