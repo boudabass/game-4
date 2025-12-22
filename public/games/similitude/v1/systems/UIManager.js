@@ -13,18 +13,30 @@ window.UIManager = {
 
     _closeAllModals: function (exceptId) {
         const modals = ['menu-modal', 'debug-modal', 'gameover-modal', 'powerup-modal', 'shop-modal'];
+        let wasPaused = GameState.currentState === GameState.GAME_STATE.PAUSED;
+        let modalClosed = false;
+
         modals.forEach(id => {
             if (id !== exceptId) {
                 const el = document.getElementById(id);
                 if (el && el.classList.contains('active')) {
                     el.classList.remove('active');
                     this.lastCloseTime = Date.now();
+                    modalClosed = true;
                 }
             }
         });
-        // Reprendre le jeu si toutes les modales bloquantes sont fermées
-        if (exceptId !== 'gameover-modal' && !this.isAnyModalOpen() && GameState.currentState === GameState.GAME_STATE.PAUSED) {
-            GameState.currentState = GameState.GAME_STATE.PLAYING;
+        
+        // Si une modale a été fermée et que le jeu était en pause (et n'est pas en Game Over)
+        if (modalClosed && wasPaused && GameState.currentState !== GameState.GAME_STATE.GAMEOVER) {
+            // Utiliser un délai pour s'assurer que le bouclier anti-clic (lastCloseTime) est passé
+            setTimeout(() => {
+                // Vérifier à nouveau qu'aucune autre modale n'a été ouverte entre-temps
+                if (!this.isAnyModalOpen()) {
+                    GameState.currentState = GameState.GAME_STATE.PLAYING;
+                    console.log("▶️ Jeu repris automatiquement.");
+                }
+            }, 200); // 200ms est suffisant pour dépasser le délai de 150ms
         }
     },
 
