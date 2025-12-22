@@ -58,6 +58,16 @@ window.GameState = {
     addGold: function (amount) {
         this.gold += amount;
     },
+    
+    // Dépense de l'or (retourne false si pas assez)
+    spendGold: function (amount) {
+        if (this.gold >= amount) {
+            this.gold -= amount;
+            return true;
+        }
+        console.warn(`Pas assez d'or! Requis: ${amount}, Disponible: ${this.gold}`);
+        return false;
+    },
 
     // Réinitialise l'état pour une nouvelle partie
     reset: function () {
