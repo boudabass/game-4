@@ -7,17 +7,15 @@ Le système utilise le **LocalStorage** pour la réactivité immédiate et la **
 
 ### 🔄 Cycle de Vie des Données
 
-#### A. Démarrage (`load`)
-Au lancement du jeu, l'algorithme suivant est exécuté :
+#### A. Démarrage (`load`) - Synchronisation Robuste
+Au lancement du jeu, l'algorithme suivant est exécuté pour garantir que la version la plus récente est toujours chargée :
 
-1.  **Vérification Locale** : Le jeu regarde si une sauvegarde existe dans le navigateur (`localStorage`).
-    *   *Si OUI* : On l'utilise immédiatement (Chargement rapide).
-    *   *Si NON* (Nouveau navigateur/Cache vidé) : On interroge l'API `/api/storage`.
-2.  **Synchronisation Cloud** :
-    *   Si le serveur renvoie une sauvegarde, on l'écrit immédiatement dans le `localStorage` pour recréer le cache local.
-3.  **Cas "Nouveau Joueur"** :
-    *   Si aucune sauvegarde n'est trouvée (ni Local, ni Cloud), le jeu initialise les valeurs par défaut.
-    *   Il force immédiatement une sauvegarde (`save()` + `saveToCloud()`) pour créer l'entrée utilisateur en base de données.
+1.  **Vérification Locale** : Le jeu récupère la sauvegarde du navigateur (`localStorage`).
+2.  **Synchronisation Cloud** : Le jeu interroge l'API `/api/storage` pour obtenir la sauvegarde Cloud.
+3.  **Comparaison par Horodatage** : Les champs `savedAt` (Local) et `updatedAt` (Cloud) sont comparés.
+    *   **Priorité** : La sauvegarde avec l'horodatage le plus récent est chargée.
+    *   **Mise en Cache** : Si la version Cloud est plus récente, elle écrase la version locale dans le `localStorage` pour maintenir le cache à jour.
+4.  **Initialisation** : Si aucune sauvegarde n'est trouvée, le jeu initialise les valeurs par défaut et force une première sauvegarde Cloud.
 
 #### B. En Jeu (`save`)
 Toutes les actions de gameplay (dormir, changer de zone) déclenchent une sauvegarde **uniquement en LocalStorage**.
@@ -33,73 +31,50 @@ Lorsque le joueur quitte proprement via le menu :
 
 ---
 
-## 2. Modèle de Données (JSON Unifié v1.2)
+## 2. UX de Chargement (LoadingManager)
+
+Le processus de chargement est désormais explicite et visuel, géré par le `LoadingManager` (50 étapes).
+
+### 🎨 Interface
+*   **Historique :** Une liste scrollable affiche chaque étape de chargement réussie (`[X/50] Message...`).
+*   **Barre de Progression :** Une barre de progression visuelle (50 pas) est affichée sous l'historique.
+*   **Démarrage :** Le jeu p5.js ne démarre pas tant que l'utilisateur n'a pas cliqué sur le bouton **JOUER** (affiché après la fin du chargement).
+
+### ⚙️ Séquence de Chargement (50 Pas)
+Le `LoadingManager` est appelé à chaque étape clé, garantissant que l'utilisateur suit la progression réelle :
+
+| Étape | Description (Exemple) |
+| :--- | :--- |
+| 1-7 | Initialisation des Managers (GameState, TimeManager, GridSystem, etc.) |
+| 8 | Vérification du cache local... |
+| 9 | Interrogation de la sauvegarde Cloud... |
+| 10 | Analyse des données de persistance... |
+| 11 | Application des données de la source [LOCAL/CLOUD]... |
+| 12-49 | Finalisation des systèmes, préparation du rendu, chargement des assets (marge pour futur contenu). |
+| 50 | Chargement terminé. Prêt à jouer. |
+
+---
+
+## 3. Modèle de Données (JSON Unifié v1.3)
 
 ```javascript
 const GameSave = {
   // Métadonnées système
-  version: "1.2",
-  savedAt: "2023-10-27T10:00:00.000Z",
+  version: "1.3", // Version de la structure de sauvegarde
+  savedAt: "2023-10-27T10:00:00.000Z", // Horodatage pour la comparaison (Local/Cloud)
 
   // État Joueur
   energy: 85,
   gold: 450,
-
-  // Temps Universel
-  day: 5,
-  hour: 14,
-  minute: 30,
-  season: "SPRING", // SPRING, SUMMER, AUTUMN, WINTER
-
-  // Position
-  currentZoneId: "C_C", // ID de la zone active
+  // ... (Temps, Position)
 
   // Inventaire Unifié (Inventory.js)
   inventory: {
-    // Les plantes servent de graines ET de récoltes
-    seeds: {
-        "SPRING": [
-            { "id": "potato", "qty": 12 },
-            { "id": "leek", "qty": 5 }
-            // ... 16 slots fixes
-        ],
-        // ... autres saisons
-    },
-    // Outils avec niveaux
-    tools: [
-        { "id": "watering_can", "level": 1 }
-        // ...
-    ],
-    // Ressources brutes (Bois, Pierre...)
-    loot: {
-        "WOOD": [ ... ],
-        "STONE": [ ... ]
-    }
+    // ... (seeds, tools, loot)
   },
 
   // Monde Persistant (GridSystem.js)
   grids: {
-    // Clé = ID de zone (ex: "C_C", "N_W")
-    "C_C": [
-      {
-        "id": 0,           // Index 0-99
-        "col": 0, "row": 0,
-        "state": "GROWING", // EMPTY, PLANTED, GROWING, READY
-        "seedType": "potato",
-        "growthStage": 4,   // Jours passés (Max 10)
-        "watered": true,    // Arrosé aujourd'hui ?
-        "season": "SPRING"
-      }
-      // ... 100 tuiles
-    ]
+    // ... (grilles par zone)
   }
 };
-```
-
----
-
-## 3. Sécurité & Robustesse
-
-*   **Initialisation** : Le `SaveManager` est chargé avant le jeu via `index.html` pour garantir sa disponibilité.
-*   **Fallback** : Si le réseau échoue lors du chargement Cloud, le jeu ne plante pas (il démarre une nouvelle partie ou utilise le local si dispo).
-*   **Protection** : `save()` est synchrone pour garantir que les données sont écrites sur le disque avant que le navigateur ne ferme le processus.
