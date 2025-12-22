@@ -47,6 +47,11 @@ function handleWorldClick(screenX, screenY) {
                 // Vérification de l'énergie pour toute action de mouvement
                 if (!GameState.spendEnergy(1)) {
                     console.warn("Pas assez d'énergie pour bouger.");
+                    // Déclencher la fin de partie si l'énergie est à zéro
+                    if (GameState.energy <= 0) {
+                        GameState.currentState = GameState.GAME_STATE.GAMEOVER;
+                        console.log("⚡ Énergie épuisée. Fin de partie.");
+                    }
                     return;
                 }
                 
@@ -169,8 +174,15 @@ function draw() {
 
     // 1. Mise à jour de la logique de jeu
     if (GameState.currentState === GameState.GAME_STATE.PLAYING) {
-        // Le ChronoManager gère le temps
-    } else if (GameState.currentState === GameState.GAME_STATE.GAMEOVER) {
+        // Vérification de l'énergie à chaque frame (si elle est déjà à 0)
+        if (GameState.energy <= 0 && GameState.chrono > 0) {
+            // Si l'énergie est épuisée, on passe en Game Over
+            GameState.currentState = GameState.GAME_STATE.GAMEOVER;
+            console.log("⚡ Énergie épuisée. Fin de partie.");
+        }
+    }
+    
+    if (GameState.currentState === GameState.GAME_STATE.GAMEOVER) {
         // Afficher le modal Game Over
         UIManager.showGameOver();
         noLoop(); // Arrêter la boucle

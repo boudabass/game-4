@@ -9,13 +9,12 @@ Ce document liste les fonctionnalités restantes à implémenter pour atteindre 
 | ✅ | **Grille & Items** | Grille 9x9 centrée, remplissage aléatoire, rendu des emojis. |
 | ✅ | **Sélection/Déplacement** | Logique Clic 1 (Sélection) et Clic 2 (Déplacement vers case vide). |
 | ✅ | **Détection Fusion** | `GridSystem.checkMatch()` pour alignements 3+. |
-| ✅ | **Gravité & Spawn** | `GridSystem.applyGravity()` pour faire tomber les items et remplir le haut. |
 | ✅ | **Score & Multiplicateurs** | Calcul du score basé sur la longueur du combo (x1, x2, x3). |
 | ✅ | **Chrono & Énergie** | Décompte du temps et consommation d'énergie par mouvement. |
 | ✅ | **HUD & Modales** | Affichage des stats et modales Pause/Game Over. |
-| ✅ | **Animation de Déplacement** | Lissage visuel du mouvement d'un item de la source à la destination (actuellement un snap instantané). |
+| ✅ | **Animation de Déplacement** | Lissage visuel du mouvement d'un item de la source à la destination. |
 | ✅ | **Animation de Fusion** | Effet visuel (explosion, disparition) lors de la fusion des items. |
-| ⬜ | **Feedback Énergie Zéro** | Afficher un message d'alerte lorsque l'énergie est épuisée et le jeu est bloqué. |
+| ✅ | **Feedback Énergie Zéro** | Déclenche la fin de partie lorsque l'énergie atteint zéro. |
 
 ## Phase 2 : Fonctionnalités Avancées (Inventaire & Power-ups)
 
