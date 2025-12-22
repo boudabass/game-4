@@ -4,11 +4,17 @@
 window.UIManager = {
     lastCloseTime: 0,
 
-    // Vérifie si une modale est ouverte.
+    // Vérifie si une modale est ouverte (pour bloquer les clics monde)
     isAnyModalOpen: function () {
         const isOpen = document.querySelectorAll('.modal-overlay.active').length > 0;
-        const justClosed = (Date.now() - this.lastCloseTime) < 150;
+        // Le délai de 150ms est conservé ici pour le bouclier anti-clic monde
+        const justClosed = (Date.now() - this.lastCloseTime) < 150; 
         return isOpen || justClosed;
+    },
+    
+    // Vérifie si une modale est VISIBLE (pour la reprise du jeu)
+    isAnyModalVisible: function() {
+        return document.querySelectorAll('.modal-overlay.active').length > 0;
     },
 
     _closeAllModals: function (exceptId) {
@@ -29,14 +35,14 @@ window.UIManager = {
         
         // Si une modale a été fermée et que le jeu était en pause (et n'est pas en Game Over)
         if (modalClosed && wasPaused && GameState.currentState !== GameState.GAME_STATE.GAMEOVER) {
-            // Utiliser un délai pour s'assurer que le bouclier anti-clic (lastCloseTime) est passé
+            // On utilise un petit délai pour s'assurer que le DOM a été mis à jour
             setTimeout(() => {
-                // Vérifier à nouveau qu'aucune autre modale n'a été ouverte entre-temps
-                if (!this.isAnyModalOpen()) {
+                // Si aucune modale n'est visible, on reprend le jeu
+                if (!this.isAnyModalVisible()) {
                     GameState.currentState = GameState.GAME_STATE.PLAYING;
                     console.log("▶️ Jeu repris automatiquement.");
                 }
-            }, 200); // 200ms est suffisant pour dépasser le délai de 150ms
+            }, 50); // 50ms est suffisant pour la mise à jour du DOM
         }
     },
 
