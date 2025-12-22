@@ -266,12 +266,20 @@
     <div id="loading-screen" class="loading-screen">
         <div class="loading-content">
             <h1>Elsass Farm</h1>
+            
+            <!-- Conteneur pour l'historique des messages -->
+            <div id="loading-history" class="loading-history">
+                <!-- Les messages de progression seront ajoutés ici -->
+            </div>
+
             <div id="loading-bar-container" class="loading-bar-container">
-                <div class="save-status-text" id="loading-status-text">Initialisation...</div>
+                <!-- Le statut actuel est maintenant dans l'historique -->
                 <div class="save-progress-track">
                     <div class="save-progress-fill" id="loading-progress-fill"></div>
                 </div>
             </div>
+            
+            <!-- Le bouton est maintenant sous la barre -->
             <button id="play-button" class="hud-btn" style="display: none; margin-top: 20px;">JOUER</button>
         </div>
     </div>
