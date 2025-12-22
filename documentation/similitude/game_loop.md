@@ -10,31 +10,30 @@ Le jeu utilise un système de clic en deux étapes :
 | :--- | :--- | :--- | :--- |
 | **Clic 1** | Tap sur un item | L'item est marqué `SELECTED` (Glow statique). | 0 ⚡ |
 | **Clic 2** | Tap sur une case vide | L'item sélectionné est déplacé (`snap-move`). | -1 ⚡ |
-| **Clic 2** | Tap sur un autre item | L'item précédent est désélectionné, le nouveau est sélectionné. | 0 ⚡ |
+| **Clic 2** | Tap sur un autre item | **Swap permanent** des deux items. | -1 ⚡ |
 | **Clic 2** | Tap sur l'item sélectionné | Désélection. | 0 ⚡ |
 
-> **Règle :** Le déplacement n'est possible que vers une case adjacente ou éloignée, tant qu'elle est vide.
+> **Règle :** Le déplacement (vers vide) et l'échange (swap) sont toujours possibles et permanents, même s'ils ne créent pas de combo.
 
-## 2. ⚙️ Logique de Déplacement (GridSystem.moveItem)
+## 2. ⚙️ Logique de Déplacement (GridSystem.moveItem / swapItems)
 
-Après un déplacement réussi :
+Après un mouvement réussi (déplacement ou swap) :
 
 1.  `GameState.energy` est décrémenté de 1.
-2.  L'item est déplacé.
-3.  `GridSystem.applyGravity()` est appelé.
-4.  `GridSystem.checkAndProcessFusions()` est appelé.
+2.  L'item est déplacé/échangé.
+3.  `GridSystem.checkAndProcessFusions()` est appelé.
 
 ## 3. 💥 Fusion et Gravité (GridSystem)
 
 ### A. Gravité (`applyGravity`)
-*   Les items tombent pour combler les trous créés par le déplacement ou la fusion.
-*   De nouveaux items aléatoires (`getRandomItem`) sont générés en haut de la colonne pour remplir la grille.
+*   La gravité est **désactivée** dans ce mode de jeu. Les cases fusionnées restent vides, créant des trous que le joueur doit gérer.
 
 ### B. Fusion (`checkAndProcessFusions`)
-*   Le système scanne la grille pour trouver des alignements de 3, 4 ou 5+ items identiques (horizontalement ou verticalement).
-*   Les tuiles fusionnées sont marquées pour suppression (`itemId = null`).
-*   Le score est calculé et ajouté à `GameState.score`.
-*   La gravité est appliquée à nouveau (pour gérer les réactions en chaîne, bien que la version actuelle ne fasse qu'une passe simple).
+*   Le système scanne la grille pour trouver des alignements de 3 ou plus.
+*   Si fusion trouvée :
+    *   Les tuiles sont marquées `MATCHED` (effet visuel).
+    *   Le score est calculé et ajouté à `GameState.score`.
+    *   Après un délai de 300ms, les tuiles sont supprimées (`itemId = null`).
 
 ## 4. ⏱️ Cycle Temporel (ChronoManager)
 
