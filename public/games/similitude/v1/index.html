@@ -40,7 +40,12 @@
         
         function startGame() {
             if (window.GameState) {
-                GameState.reset();
+                // Si on vient du menu pause, on reprend. Si on vient de Game Over/Menu, on reset.
+                if (GameState.currentState !== GameState.GAME_STATE.PAUSED) {
+                    GameState.reset();
+                    if (window.GridSystem) GridSystem.init(); // Réinitialiser la grille aussi
+                }
+                
                 GameState.currentState = GameState.GAME_STATE.PLAYING;
                 if (window.refreshHUD) refreshHUD();
                 
@@ -50,7 +55,7 @@
                     UIManager.toggleMenu();
                 }
                 
-                // Redémarrer la boucle p5.js si elle était arrêtée
+                // S'assurer que la boucle p5.js est lancée
                 if (typeof loop === 'function') loop();
             }
         }

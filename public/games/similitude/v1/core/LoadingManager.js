@@ -68,8 +68,7 @@ window.LoadingManager = {
                     loadingScreen.style.opacity = '0';
                     setTimeout(() => {
                         loadingScreen.style.display = 'none';
-                        // Démarrer la boucle de jeu p5.js (si elle n'est pas déjà lancée)
-                        if (typeof loop === 'function') loop();
+                        // Démarrer la boucle de jeu p5.js (via startGame())
                         
                         // Notifier le GameSystem que le jeu est prêt
                         if(window.GameSystem && window.GameSystem.Lifecycle) {
