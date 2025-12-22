@@ -109,8 +109,7 @@ window.GridSystem = {
         fromTile.itemId = null;
         fromTile.state = 'NORMAL';
         
-        // 2. Vérification de fusion
-        this.applyGravity();
+        // 2. Vérification de fusion (la gravité sera appelée si une fusion a lieu)
         this.checkAndProcessFusions();
         
         return true;
