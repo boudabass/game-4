@@ -59,5 +59,19 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
+    // Role-based protection for /admin
+    if (request.nextUrl.pathname.startsWith('/admin')) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user?.id)
+            .single()
+
+        if (profile?.role !== 'admin') {
+            console.log(`[Middleware] Admin access denied for user ${user?.email}. Role: ${profile?.role}`);
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+    }
+
     return response
 }

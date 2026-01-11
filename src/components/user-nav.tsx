@@ -18,7 +18,7 @@ import Link from "next/link";
 import { LogOut, User, Shield, Trophy } from "lucide-react";
 
 export function UserNav() {
-    const { user, isLoading } = useAuth();
+    const { user, role, isLoading } = useAuth();
     const router = useRouter();
     const supabase = createClient();
 
@@ -77,13 +77,15 @@ export function UserNav() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
 
-                {/* Lien Admin si nécessaire (vérification simple, vrai check coté serveur) */}
-                <DropdownMenuItem asChild>
-                    <Link href="/admin" className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" />
-                        <span>Admin Panel</span>
-                    </Link>
-                </DropdownMenuItem>
+                {/* Lien Admin réservé aux administrateurs */}
+                {role === 'admin' && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/admin" className="cursor-pointer">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                        </Link>
+                    </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600 cursor-pointer">

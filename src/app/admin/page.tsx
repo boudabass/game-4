@@ -24,12 +24,23 @@ import {
   GameFolder,
   GameVersionInfo
 } from "@/app/actions/game-manager";
-import { FileCode, ImageIcon, FileText, Trash2, Edit, Save, FolderOpen, FolderPlus, Layers } from "lucide-react";
+import {
+  getUsersAction,
+  createUserAction,
+  deleteUserAction,
+  updateUserRoleAction
+} from "@/app/actions/user-management";
+import { User } from "@supabase/supabase-js";
+import { FileCode, ImageIcon, FileText, Trash2, Edit, Save, FolderOpen, FolderPlus, Layers, Users, UserPlus, Shield, ShieldCheck } from "lucide-react";
 
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
   const [games, setGames] = useState<GameFolder[]>([]);
-  const [mode, setMode] = useState<"new-game" | "new-version" | "manage">("manage");
+  const [mode, setMode] = useState<"new-game" | "new-version" | "manage" | "users">("manage");
+
+  // États Utilisateurs
+  const [usersList, setUsersList] = useState<User[]>([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
 
   // États Creation / Import
   const [newGameName, setNewGameName] = useState("");
@@ -48,7 +59,17 @@ export default function AdminPage() {
 
   useEffect(() => {
     refreshGames();
+    refreshUsers();
   }, []);
+
+  const refreshUsers = async () => {
+    setIsUsersLoading(true);
+    const res = await getUsersAction();
+    if (res.success && res.users) {
+      setUsersList(res.users);
+    }
+    setIsUsersLoading(false);
+  };
 
   useEffect(() => {
     if (activePath) {
@@ -235,6 +256,13 @@ export default function AdminPage() {
           >
             <Layers className="w-4 h-4" /> Nouvelle Version
           </Button>
+          <Button
+            variant={mode === "users" ? "default" : "ghost"}
+            onClick={() => { setMode("users"); setActivePath(null); }}
+            className="flex gap-2"
+          >
+            <Users className="w-4 h-4" /> Utilisateurs
+          </Button>
         </div>
       </div>
 
@@ -356,42 +384,130 @@ export default function AdminPage() {
             </Card>
           )}
 
-          {mode === "new-version" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ajouter une Version</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Jeu</Label>
-                  <Select onValueChange={setSelectedGame}>
-                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                    <SelectContent>
-                      {games.map(g => <SelectItem key={g.name} value={g.name}>{g.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {selectedGame && (
-                  <>
+          {mode === "users" && (
+            <div className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserPlus className="w-5 h-5" /> Créer un Utilisateur
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form action={async (formData) => {
+                    const res = await createUserAction(formData);
+                    if (res.success) {
+                      toast.success(res.message);
+                      refreshUsers();
+                    } else {
+                      toast.error(res.error);
+                    }
+                  }} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div className="space-y-2">
-                      <Label>Version existante ?</Label>
-                      <Select onValueChange={(val) => setNewVersionName(val)}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                      <Label>Email</Label>
+                      <Input name="email" type="email" placeholder="email@exemple.com" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mot de passe</Label>
+                      <Input name="password" type="password" placeholder="******" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Rôle</Label>
+                      <Select name="role" defaultValue="user">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Rôle" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {getSelectedGameVersions().map(v => <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>)}
+                          <SelectItem value="user">Utilisateur</SelectItem>
+                          <SelectItem value="admin">Administrateur</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex gap-2">
-                      <Input placeholder="Nouvelle version (ex: v2)" value={newVersionName} onChange={(e) => setNewVersionName(e.target.value)} />
-                      <Button onClick={handleCreateVersion} variant={isVersionUpdate ? "secondary" : "default"}>
-                        {isVersionUpdate ? "MàJ" : "Créer"}
-                      </Button>
+                    <Button type="submit">Créer</Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Liste des Utilisateurs</CardTitle>
+                  <CardDescription>Gestion des accès et des rôles</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isUsersLoading ? (
+                    <p className="text-center py-4">Chargement...</p>
+                  ) : (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 border-b">
+                          <tr>
+                            <th className="p-3 font-semibold">Email</th>
+                            <th className="p-3 font-semibold">Rôle</th>
+                            <th className="p-3 font-semibold">Création</th>
+                            <th className="p-3 font-semibold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {usersList.map((u: any) => {
+                            const currentRole = u.profile_role || "user";
+                            return (
+                              <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-3">{u.email}</td>
+                                <td className="p-3">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${currentRole === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                    }`}>
+                                    {currentRole === 'admin' ? <ShieldCheck className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                                    {currentRole}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-slate-500">
+                                  {new Date(u.created_at).toLocaleDateString()}
+                                </td>
+                                <td className="p-3 text-right space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                      const newRole = currentRole === 'admin' ? 'user' : 'admin';
+                                      const res = await updateUserRoleAction(u.id, newRole);
+                                      if (res.success) {
+                                        toast.success(res.message);
+                                        refreshUsers();
+                                      }
+                                    }}
+                                  >
+                                    Changer Rôle
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={async () => {
+                                      if (confirm(`Supprimer l'utilisateur ${u.email} ?`)) {
+                                        const res = await deleteUserAction(u.id);
+                                        if (res.success) {
+                                          toast.success(res.message);
+                                          refreshUsers();
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {usersList.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="p-8 text-center text-slate-400 italic">Aucun utilisateur trouvé</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
 
