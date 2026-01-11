@@ -20,6 +20,36 @@
       "createdAt": "2025-12-22T01:59:03.180Z",
       "width": 800,
       "height": 600
+    },
+    {
+      "id": "elsass-frost-v1",
+      "name": "elsass-frost",
+      "description": "Version v1",
+      "path": "elsass-frost/v1",
+      "version": "v1",
+      "createdAt": "2025-12-26T20:00:00.359Z",
+      "width": 800,
+      "height": 600
+    },
+    {
+      "id": "test-personnage-v1",
+      "name": "test-personnage",
+      "description": "Tester le deplacement d'une entiter",
+      "path": "test-personnage/v1",
+      "version": "v1",
+      "createdAt": "2026-01-02T20:00:00.359Z",
+      "width": 800,
+      "height": 600
+    },
+    {
+      "id": "elsass-farm-v2",
+      "name": "elsass-farm",
+      "description": "Version v2",
+      "path": "elsass-farm/v2",
+      "version": "v2",
+      "createdAt": "2026-01-07T21:45:41.572Z",
+      "width": 800,
+      "height": 600
     }
   ],
   "scores": [],
@@ -27,926 +57,175 @@
     {
       "gameId": "elsass-farm-v1",
       "userId": "75ed45e6-9aed-442c-a958-4ecb630272a4",
-      "updatedAt": "2025-12-22T00:19:47.253Z",
+      "updatedAt": "2026-01-07T12:23:22.701Z",
       "data": {
-        "energy": 37,
-        "gold": 100,
-        "day": 9,
-        "hour": 16,
-        "minute": 47,
-        "season": "AUTUMN",
-        "currentZoneId": "N_C",
-        "grids": {
-          "C_C": [
-            {
-              "id": 0,
-              "row": 0,
-              "col": 0,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "melon",
-              "growthStage": 8,
-              "season": "SUMMER"
-            },
-            {
-              "id": 1,
-              "row": 0,
-              "col": 1,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 3,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 2,
-              "row": 0,
-              "col": 2,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 3,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 3,
-              "row": 0,
-              "col": 3,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "blueberry",
-              "growthStage": 7,
-              "season": "SUMMER"
-            },
-            {
-              "id": 4,
-              "row": 1,
-              "col": 0,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "pumpkin",
-              "growthStage": 3,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 5,
-              "row": 1,
-              "col": 1,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 6,
-              "row": 1,
-              "col": 2,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 7,
-              "row": 1,
-              "col": 3,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "pumpkin",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 8,
-              "row": 2,
-              "col": 0,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 9,
-              "row": 2,
-              "col": 1,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 4,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 10,
-              "row": 2,
-              "col": 2,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 11,
-              "row": 2,
-              "col": 3,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 12,
-              "row": 3,
-              "col": 0,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 2,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 13,
-              "row": 3,
-              "col": 1,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 3,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 14,
-              "row": 3,
-              "col": 2,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "pumpkin",
-              "growthStage": 2,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 15,
-              "row": 3,
-              "col": 3,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "pumpkin",
-              "growthStage": 1,
-              "season": "AUTUMN"
+        "energy": 100,
+        "gold": 0,
+        "day": 5,
+        "hour": 14,
+        "minute": 9,
+        "season": "SPRING",
+        "currentZoneId": "C_C",
+        "playerCol": 12,
+        "playerRow": 15,
+        "worldData": {
+          "zones": {
+            "C_C": {
+              "10_13": "ready",
+              "10_14": "ready",
+              "11_13": "ready",
+              "11_14": "ready",
+              "12_13": "growing",
+              "12_14": "growing",
+              "13_13": "growing",
+              "13_14": "growing",
+              "14_13": "growing",
+              "14_14": "growing"
             }
-          ],
-          "N_W": [
-            {
-              "id": 0,
-              "row": 0,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
+          },
+          "farming": {
+            "C_C": {
+              "10_14": {
+                "seedType": "potato",
+                "growthStage": 10,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "10_13": {
+                "seedType": "potato",
+                "growthStage": 10,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "11_13": {
+                "seedType": "potato",
+                "growthStage": 10,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "11_14": {
+                "seedType": "potato",
+                "growthStage": 10,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "12_14": {
+                "seedType": "potato",
+                "growthStage": 9,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "12_13": {
+                "seedType": "potato",
+                "growthStage": 9,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "13_14": {
+                "seedType": "potato",
+                "growthStage": 7,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "13_13": {
+                "seedType": "potato",
+                "growthStage": 7,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "14_13": {
+                "seedType": "potato",
+                "growthStage": 7,
+                "watered": false,
+                "season": "SPRING"
+              },
+              "14_14": {
+                "seedType": "potato",
+                "growthStage": 7,
+                "watered": false,
+                "season": "SPRING"
+              }
             },
-            {
-              "id": 1,
-              "row": 0,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 2,
-              "row": 0,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 3,
-              "row": 0,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 4,
-              "row": 1,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 5,
-              "row": 1,
-              "col": 1,
-              "state": "PLANTED",
-              "watered": false,
-              "seedType": "mushroom",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 6,
-              "row": 1,
-              "col": 2,
-              "state": "GROWING",
-              "watered": false,
-              "seedType": "mushroom",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 7,
-              "row": 1,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 8,
-              "row": 2,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 9,
-              "row": 2,
-              "col": 1,
-              "state": "PLANTED",
-              "watered": false,
-              "seedType": "mushroom",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 10,
-              "row": 2,
-              "col": 2,
-              "state": "GROWING",
-              "watered": false,
-              "seedType": "mushroom",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 11,
-              "row": 2,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 12,
-              "row": 3,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 13,
-              "row": 3,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 14,
-              "row": 3,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 15,
-              "row": 3,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            }
-          ],
-          "N_C": [
-            {
-              "id": 0,
-              "row": 0,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 1,
-              "row": 0,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 2,
-              "row": 0,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 3,
-              "row": 0,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 4,
-              "row": 1,
-              "col": 0,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 5,
-              "row": 1,
-              "col": 1,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 2,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 6,
-              "row": 1,
-              "col": 2,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 7,
-              "row": 1,
-              "col": 3,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 8,
-              "row": 2,
-              "col": 0,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 9,
-              "row": 2,
-              "col": 1,
-              "state": "GROWING",
-              "watered": true,
-              "seedType": "eggplant",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 10,
-              "row": 2,
-              "col": 2,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 11,
-              "row": 2,
-              "col": 3,
-              "state": "PLANTED",
-              "watered": true,
-              "seedType": "squash",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 12,
-              "row": 3,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 13,
-              "row": 3,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 14,
-              "row": 3,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 15,
-              "row": 3,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            }
-          ],
-          "S_C": [
-            {
-              "id": 0,
-              "row": 0,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 1,
-              "row": 0,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 2,
-              "row": 0,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 3,
-              "row": 0,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 4,
-              "row": 1,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 5,
-              "row": 1,
-              "col": 1,
-              "state": "PLANTED",
-              "watered": false,
-              "seedType": "squash",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 6,
-              "row": 1,
-              "col": 2,
-              "state": "GROWING",
-              "watered": false,
-              "seedType": "squash",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 7,
-              "row": 1,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 8,
-              "row": 2,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 9,
-              "row": 2,
-              "col": 1,
-              "state": "PLANTED",
-              "watered": false,
-              "seedType": "eggplant",
-              "growthStage": 0,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 10,
-              "row": 2,
-              "col": 2,
-              "state": "GROWING",
-              "watered": false,
-              "seedType": "squash",
-              "growthStage": 1,
-              "season": "AUTUMN"
-            },
-            {
-              "id": 11,
-              "row": 2,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 12,
-              "row": 3,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 13,
-              "row": 3,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 14,
-              "row": 3,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 15,
-              "row": 3,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            }
-          ],
-          "S_W": [
-            {
-              "id": 0,
-              "row": 0,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 1,
-              "row": 0,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 2,
-              "row": 0,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 3,
-              "row": 0,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 4,
-              "row": 1,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 5,
-              "row": 1,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 6,
-              "row": 1,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 7,
-              "row": 1,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 8,
-              "row": 2,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 9,
-              "row": 2,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 10,
-              "row": 2,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 11,
-              "row": 2,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 12,
-              "row": 3,
-              "col": 0,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 13,
-              "row": 3,
-              "col": 1,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 14,
-              "row": 3,
-              "col": 2,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            },
-            {
-              "id": 15,
-              "row": 3,
-              "col": 3,
-              "state": "EMPTY",
-              "watered": false,
-              "seedType": null,
-              "growthStage": 0,
-              "season": null
-            }
-          ]
+            "N_W": {},
+            "N_C": {},
+            "N_E": {},
+            "C_W": {},
+            "C_E": {},
+            "S_W": {},
+            "S_C": {}
+          }
         },
         "inventory": {
           "seeds": {
             "SPRING": [
               {
                 "id": "potato",
-                "name": "Pomme de terre",
-                "icon": "🥔",
-                "qty": 18
+                "qty": 0
               },
               {
                 "id": "leek",
-                "name": "Poireau",
-                "icon": "🧅",
-                "qty": 21
+                "qty": 5
               },
               {
                 "id": "cabbage",
-                "name": "Chou",
-                "icon": "🥬",
-                "qty": 13
+                "qty": 5
               },
               {
                 "id": "radish",
-                "icon": "🌱",
-                "qty": 42
+                "qty": 8
               }
             ],
             "SUMMER": [
               {
                 "id": "blueberry",
-                "name": "Bleuets",
-                "icon": "🫐",
-                "qty": 21
+                "qty": 0
               },
               {
                 "id": "beans",
-                "name": "Haricots",
-                "icon": "🫘",
-                "qty": 14
+                "qty": 0
               },
               {
                 "id": "pepper",
-                "name": "Piment",
-                "icon": "🌶️",
-                "qty": 16
+                "qty": 0
               },
               {
                 "id": "melon",
-                "icon": "🍈",
-                "qty": 27
+                "qty": 0
               }
             ],
             "AUTUMN": [
               {
                 "id": "eggplant",
-                "name": "Aubergine",
-                "icon": "🍆",
-                "qty": 7
+                "qty": 0
               },
               {
                 "id": "pumpkin",
-                "name": "Potiron",
-                "icon": "🎃",
-                "qty": 15
+                "qty": 0
               },
               {
                 "id": "squash",
-                "name": "Citrouille",
-                "icon": "🎃",
-                "qty": 12
+                "qty": 0
               },
               {
                 "id": "mushroom",
-                "icon": "🍄",
-                "qty": 16
+                "qty": 0
               }
             ],
             "WINTER": [
               {
                 "id": "garlic",
-                "name": "Ail",
-                "icon": "🧄",
                 "qty": 0
               },
               {
                 "id": "artichoke",
-                "icon": "🌿",
                 "qty": 0
               },
               {
                 "id": "winter_empty1",
-                "name": "?",
-                "icon": "❓",
                 "qty": 0
               },
               {
                 "id": "winter_empty2",
-                "name": "?",
-                "icon": "❓",
                 "qty": 0
               }
             ]
@@ -954,37 +233,26 @@
           "tools": [
             {
               "id": "watering_can",
-              "name": "Arrosoir",
-              "icon": "💧",
               "level": 1
             },
             {
               "id": "pickaxe",
-              "name": "Pioche",
-              "icon": "⛏️",
               "level": 1
             },
             {
               "id": "axe",
-              "name": "Hache",
-              "icon": "🪓",
               "level": 1
             },
             {
               "id": "sword",
-              "name": "Épée",
-              "icon": "🗡️",
               "level": 1
             },
             {
               "id": "wand",
-              "icon": "✨",
               "level": 1
             },
             {
               "id": "special",
-              "name": "Spécial",
-              "icon": "🔧",
               "level": 0
             }
           ],
@@ -992,162 +260,117 @@
             "WOOD": [
               {
                 "id": "log",
-                "name": "Bûches",
-                "icon": "🪵",
                 "qty": 0
               },
               {
                 "id": "coal",
-                "name": "Charbon",
-                "icon": "💎",
                 "qty": 0
               },
               {
                 "id": "plank",
-                "name": "Planche",
-                "icon": "🪵",
                 "qty": 0
               },
               {
                 "id": "stick",
-                "name": "Bâton",
-                "icon": "🥢",
                 "qty": 0
               }
             ],
             "STONE": [
               {
                 "id": "stone",
-                "name": "Pierre",
-                "icon": "🪨",
                 "qty": 0
               },
               {
                 "id": "concrete",
-                "name": "Béton",
-                "icon": "🧱",
                 "qty": 0
               },
               {
                 "id": "brick",
-                "icon": "🧱",
                 "qty": 0
               },
               {
                 "id": "gravel",
-                "icon": "⚪",
                 "qty": 0
               }
             ],
             "METAL": [
               {
                 "id": "iron_ore",
-                "name": "Fer (Minerai)",
-                "icon": "🪨",
                 "qty": 0
               },
               {
                 "id": "iron_ingot",
-                "name": "Fer (Lingot)",
-                "icon": "🥈",
                 "qty": 0
               },
               {
                 "id": "copper_ore",
-                "name": "Cuivre (Minerai)",
-                "icon": "🪨",
                 "qty": 0
               },
               {
                 "id": "copper_ingot",
-                "name": "Cuivre (Lingot)",
-                "icon": "🥉",
                 "qty": 0
               }
             ],
             "MACHINES": [
               {
                 "id": "workbench",
-                "name": "Établi",
-                "icon": "🔨",
                 "qty": 0
               },
               {
                 "id": "furnace",
-                "name": "Four",
-                "icon": "🔥",
                 "qty": 0
               },
               {
                 "id": "herbalist",
-                "name": "Herbaliste",
-                "icon": "⚗️",
                 "qty": 0
               },
               {
                 "id": "research",
-                "name": "Recherche",
-                "icon": "🔬",
                 "qty": 0
               }
             ],
             "NATURE": [
               {
                 "id": "wild_berry",
-                "name": "Baies Sauvages",
-                "icon": "🫐",
                 "qty": 0
               },
               {
                 "id": "wild_mushroom",
-                "name": "Champi. Sauvage",
-                "icon": "🍄",
                 "qty": 0
               },
               {
                 "id": "herb",
-                "name": "Herbe",
-                "icon": "🌿",
                 "qty": 0
               },
               {
                 "id": "flower",
-                "name": "Fleur",
-                "icon": "🌸",
                 "qty": 0
               }
             ],
             "POTIONS": [
               {
                 "id": "potion_health",
-                "name": "Santé",
-                "icon": "❤️",
                 "qty": 0
               },
               {
                 "id": "potion_energy",
-                "name": "Énergie",
-                "icon": "⚡",
                 "qty": 0
               },
               {
                 "id": "potion_speed",
-                "name": "Vitesse",
-                "icon": "👟",
                 "qty": 0
               },
               {
                 "id": "potion_force",
-                "icon": "💪",
                 "qty": 0
               }
             ]
           },
           "selectedToolIndex": 0,
-          "selectedSeedIndex": -1
+          "selectedSeedIndex": 0
         },
-        "savedAt": "2025-12-22T00:19:47.102Z",
-        "version": "1.3"
+        "savedAt": "2026-01-07T12:23:22.502Z",
+        "version": "1.4"
       }
     }
   ]

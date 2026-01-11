@@ -233,53 +233,31 @@ canvas {
     background: #e74c3c !important;
 }
 
-/* --- NOUVELLE ZONE UI BASSE (Power-ups) --- */
-
-/* Conteneurs de coin (POWER UP et BOUTIQUE) */
-.corner-ui-zone {
+/* --- NOUVELLE ZONE UI BASSE (Power-ups et Actions) --- */
+.bottom-hud-container {
     position: absolute;
-    bottom: 3vh; /* Ajusté pour être plus bas */
-    pointer-events: auto;
-    z-index: 110;
-    width: 120px; /* Taille fixe pour le bouton */
-}
-
-.corner-left {
-    left: 3vh;
-}
-
-.corner-right {
-    right: 3vh;
-}
-
-.pu-btn-main {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    background: #f39c12; /* Jaune/Ambre */
-    border-color: #f1c40f;
-    color: #1e272e;
-}
-
-.pu-btn-main:hover {
-    background: #f1c40f;
-}
-
-/* Ligne 2: Slots d'utilisation rapide (Centrés) */
-.bottom-ui-line {
-    position: absolute;
+    bottom: 3vh;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
-    max-width: 400px;
-    pointer-events: auto;
-    z-index: 110; /* Au-dessus du canvas */
+    width: 95%;
+    max-width: 450px;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 110;
 }
 
-.line-2 {
-    bottom: 3vh; /* Ajusté pour être plus bas */
+.bottom-hud-row {
+    display: flex;
+    justify-content: center;
+    pointer-events: auto;
+    width: 100%;
+}
+
+/* Ligne supérieure : les 5 slots */
+.row-top {
+    height: auto;
 }
 
 .quick-slots-container {
@@ -287,6 +265,17 @@ canvas {
     grid-template-columns: repeat(5, 1fr);
     gap: 10px;
     width: 100%;
+}
+
+/* Ligne inférieure : les 2 boutons Power Up / Boutique */
+.row-bottom {
+    gap: 15px;
+}
+
+.row-bottom .hud-btn {
+    flex: 1;
+    /* Les deux boutons prennent la même largeur */
+    max-width: 200px;
 }
 
 .quick-slot {
@@ -324,7 +313,8 @@ canvas {
 }
 
 .quick-slot.active-glow {
-    border-color: #f39c12; /* Glow jaune prêt */
+    border-color: #f39c12;
+    /* Glow jaune prêt */
     box-shadow: 0 0 10px #f39c12;
     background: #4a657a;
 }
@@ -341,7 +331,8 @@ canvas {
     width: 90%;
 }
 
-.powerup-grid, .shop-grid {
+.powerup-grid,
+.shop-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 10px;
@@ -367,7 +358,8 @@ canvas {
 }
 
 .pu-slot.equipped {
-    border-color: #55efc4; /* Turquoise pour équipé */
+    border-color: #55efc4;
+    /* Turquoise pour équipé */
     box-shadow: 0 0 8px #55efc4;
 }
 
@@ -390,7 +382,8 @@ canvas {
 
 /* Shop Items */
 .shop-grid {
-    grid-template-columns: repeat(3, 1fr); /* 3 colonnes pour plus de détails */
+    grid-template-columns: repeat(3, 1fr);
+    /* 3 colonnes pour plus de détails */
     gap: 15px;
 }
 

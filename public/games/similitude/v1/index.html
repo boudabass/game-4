@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Similitude</title>
 
     <link rel="stylesheet" href="style.css">
@@ -41,7 +42,7 @@
         function toggleGrid() { UIManager.toggleGrid(); }
         function togglePowerUpWindow() { UIManager.togglePowerUpWindow(); }
         function toggleShop() { UIManager.toggleShop(); }
-        
+
         function startGame() {
             if (window.GameState) {
                 // Si on vient du menu pause, on reprend. Si on vient de Game Over/Menu, on reset.
@@ -49,16 +50,16 @@
                     GameState.reset();
                     if (window.GridSystem) GridSystem.init(); // Réinitialiser la grille aussi
                 }
-                
+
                 GameState.currentState = GameState.GAME_STATE.PLAYING;
                 if (window.refreshHUD) refreshHUD();
-                
+
                 // Fermer le menu si on démarre depuis le menu
                 const menuModal = document.getElementById('menu-modal');
                 if (menuModal && menuModal.classList.contains('active')) {
                     UIManager.toggleMenu();
                 }
-                
+
                 // S'assurer que la boucle p5.js est lancée
                 window.toggleGameLoop(true);
             }
@@ -83,7 +84,7 @@
     <div id="loading-screen" class="loading-screen">
         <div class="loading-content">
             <h1>Similitude</h1>
-            
+
             <div id="loading-history" class="loading-history"></div>
 
             <div id="loading-bar-container" class="loading-bar-container">
@@ -91,8 +92,9 @@
                     <div class="save-progress-fill" id="loading-progress-fill"></div>
                 </div>
             </div>
-            
-            <button id="play-button" class="hud-btn" style="display: none; margin-top: 20px;" onclick="startGame()">JOUER</button>
+
+            <button id="play-button" class="hud-btn" style="display: none; margin-top: 20px;"
+                onclick="startGame()">JOUER</button>
         </div>
     </div>
 
@@ -111,30 +113,27 @@
                 <button class="hud-btn" onclick="event.stopPropagation(); toggleMenu()">≡ MENU</button>
             </div>
         </div>
-        
-        <!-- --- NOUVELLE ZONE UI BASSE --- -->
-        
-        <!-- Bouton POWER UP (Coin Bas Gauche) -->
-        <div class="corner-ui-zone corner-left">
-            <button class="hud-btn pu-btn-main" onclick="event.stopPropagation(); togglePowerUpWindow()">
-                💥 POWER UP
-            </button>
-        </div>
-        
-        <!-- Bouton BOUTIQUE (Coin Bas Droit) -->
-        <div class="corner-ui-zone corner-right">
-            <button class="hud-btn pu-btn-main" onclick="event.stopPropagation(); toggleShop()">
-                💰 BOUTIQUE
-            </button>
-        </div>
-        
-        <!-- Ligne 2: Slots d'utilisation rapide (Centrés) -->
-        <div class="bottom-ui-line line-2">
-            <div id="quick-slots-container" class="quick-slots-container">
-                <!-- Slots générés par JS -->
+
+        <!-- --- NOUVELLE ZONE UI BASSE (CENTRÉE SUR 2 LIGNES) --- -->
+        <div class="bottom-hud-container">
+            <!-- Ligne 1 : Slots d'utilisation rapide (5 boutons) -->
+            <div class="bottom-hud-row row-top">
+                <div id="quick-slots-container" class="quick-slots-container">
+                    <!-- Slots générés par JS -->
+                </div>
+            </div>
+
+            <!-- Ligne 2 : Boutons POWER UP et BOUTIQUE (2 boutons sous les slots) -->
+            <div class="bottom-hud-row row-bottom">
+                <button class="hud-btn pu-btn-main" onclick="event.stopPropagation(); togglePowerUpWindow()">
+                    💥 POWER UP
+                </button>
+                <button class="hud-btn pu-btn-main" onclick="event.stopPropagation(); toggleShop()">
+                    💰 BOUTIQUE
+                </button>
             </div>
         </div>
-        
+
         <!-- --- MODALES --- -->
 
         <!-- Menu Principal Modal -->
@@ -149,7 +148,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Game Over Modal -->
         <div id="gameover-modal" class="modal-overlay" style="background: rgba(0,0,0,0.8);">
             <div class="modal-content">
@@ -161,7 +160,8 @@
         </div>
 
         <!-- Power Up Management Modal (Fenêtre 5x5) -->
-        <div id="powerup-modal" class="modal-overlay" onclick="if(event.target.id === 'powerup-modal') togglePowerUpWindow()">
+        <div id="powerup-modal" class="modal-overlay"
+            onclick="if(event.target.id === 'powerup-modal') togglePowerUpWindow()">
             <div class="modal-content pu-modal-content">
                 <h3 style="color: #55efc4;">Gestion des Power-ups (5x5)</h3>
                 <div id="powerup-grid" class="powerup-grid">
@@ -170,12 +170,13 @@
                 <button class="hud-btn hud-btn-red" onclick="togglePowerUpWindow()">Fermer</button>
             </div>
         </div>
-        
+
         <!-- Shop Modal -->
         <div id="shop-modal" class="modal-overlay" onclick="if(event.target.id === 'shop-modal') toggleShop()">
             <div class="modal-content pu-modal-content">
                 <h3 style="color: #f39c12;">💰 Boutique Power-ups</h3>
-                <p style="color: white; font-size: 14px;">Or disponible: <span style="font-weight: bold;">${GameState.gold}</span></p>
+                <p style="color: white; font-size: 14px;">Or disponible: <span
+                        style="font-weight: bold;">${GameState.gold}</span></p>
                 <div id="shop-grid" class="shop-grid">
                     <!-- Items de la boutique générés par JS -->
                 </div>
@@ -201,8 +202,7 @@
                     <button class="hud-btn active" id="tab-general"
                         onclick="DebugManager.switchTab('general')">Général</button>
                     <button class="hud-btn" id="tab-time" onclick="DebugManager.switchTab('time')">Temps</button>
-                    <button class="hud-btn" id="tab-puzzle"
-                        onclick="DebugManager.switchTab('puzzle')">Puzzle</button>
+                    <button class="hud-btn" id="tab-puzzle" onclick="DebugManager.switchTab('puzzle')">Puzzle</button>
                     <button class="hud-btn" id="tab-res" onclick="DebugManager.switchTab('res')">Ressources</button>
                 </div>
 
@@ -229,7 +229,8 @@
                         <h4 style="margin: 10px 0;">Contrôles</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             <button class="hud-btn" onclick="DebugManager.action('addTime')">+30s</button>
-                            <button class="hud-btn hud-btn-red" onclick="DebugManager.action('endGame')">Fin de Partie</button>
+                            <button class="hud-btn hud-btn-red" onclick="DebugManager.action('endGame')">Fin de
+                                Partie</button>
                         </div>
                     </div>
 
@@ -237,8 +238,10 @@
                     <div id="panel-puzzle" class="debug-panel" style="display: none;">
                         <h4 style="margin: 5px 0; color: #2ecc71;">Grille</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <button class="hud-btn" onclick="DebugManager.action('forceFusion')">💥 Forcer Fusion</button>
-                            <button class="hud-btn hud-btn-red" onclick="DebugManager.action('resetGrid')">🔄 Réinitialiser Grille</button>
+                            <button class="hud-btn" onclick="DebugManager.action('forceFusion')">💥 Forcer
+                                Fusion</button>
+                            <button class="hud-btn hud-btn-red" onclick="DebugManager.action('resetGrid')">🔄
+                                Réinitialiser Grille</button>
                         </div>
                     </div>
 

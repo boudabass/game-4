@@ -12,23 +12,77 @@ window.changeZone = function (newZoneId, entryPoint) {
         return;
     }
 
-    console.log(`Transition de ${GameState.currentZoneId} vers ${newZoneId}`);
+    console.log(`Transition de ${GameState.currentZoneId} vers ${newZoneId} via ${entryPoint}`);
     GameState.currentZoneId = newZoneId;
 
     // Réinitialiser la position de la caméra dans la nouvelle zone
-    if (entryPoint === 'N') camera.y = Config.zoneHeight - 100;
-    else if (entryPoint === 'S') camera.y = 100;
-    else if (entryPoint === 'W') camera.x = Config.zoneWidth - 100;
-    else if (entryPoint === 'E') camera.x = 100;
-    else {
-        camera.x = Config.zoneWidth / 2;
-        camera.y = Config.zoneHeight / 2;
+    if (window.GridSystem) {
+        GridSystem.updateConfigDimensions();
+    }
+
+    // Positions de grille par défaut pour l'entrée
+    let targetCol = Math.floor(Config.GRID_SIZE / 2);
+    let targetRow = Math.floor(Config.GRID_SIZE / 2);
+
+    if (entryPoint === 'N') {
+        // Vient du Nord (portal haut), donc arrive au Sud (bas)
+        camera.y = Config.zoneHeight / 2 - 100;
+        targetRow = Config.GRID_SIZE - 4; // Juste au-dessus du portail Sud
+    } else if (entryPoint === 'S') {
+        // Vient du Sud (portal bas), donc arrive au Nord (haut)
+        camera.y = -Config.zoneHeight / 2 + 100;
+        targetRow = 3; // Juste en dessous du portail Nord
+    } else if (entryPoint === 'W') {
+        // Vient de l'Ouest (portal gauche), donc arrive à l'Est (droite)
+        camera.x = Config.zoneWidth / 2 - 100;
+        targetCol = Config.GRID_SIZE - 4; // Juste à gauche du portail Est
+    } else if (entryPoint === 'E') {
+        // Vient de l'Est (portal droite), donc arrive à l'Ouest (gauche)
+        camera.x = -Config.zoneWidth / 2 + 100;
+        targetCol = 3; // Juste à droite du portail Ouest
+    } else {
+        camera.x = 0;
+        camera.y = 0;
+    }
+
+    // Repositionner le joueur
+    if (window.PlayerSystem && PlayerSystem.player) {
+        const worldPos = GridSystem.gridToWorld(targetCol, targetRow);
+        PlayerSystem.player.sprite.x = worldPos.x;
+        PlayerSystem.player.sprite.y = worldPos.y;
+        PlayerSystem.player.gridCol = targetCol;
+        PlayerSystem.player.gridRow = targetRow;
+        PlayerSystem.player.targetWorldX = worldPos.x;
+        PlayerSystem.player.targetWorldY = worldPos.y;
+        PlayerSystem.player.isMoving = false;
+        PlayerSystem.player.path = [];
+        PlayerSystem.player.sprite.vel.x = 0;
+        PlayerSystem.player.sprite.vel.y = 0;
     }
 
     // Force le redraw - nécessaire pour mobile
     if (typeof redraw === 'function') {
         redraw();
     }
+}
+// --- CHARGEMENT DES ASSETS ---
+window.groundTextures = [];
+
+function preload() {
+    console.log("📦 Préchargement des assets...");
+
+    // Charger les textures de sol
+    const path = Config.assets.groundPath;
+    const prefix = Config.assets.groundPrefix;
+    const count = Config.assets.groundCount;
+
+    for (let i = 1; i <= count; i++) {
+        const id = String(i).padStart(2, '0');
+        const fileName = `${prefix}${id}.png`;
+        groundTextures.push(loadImage(path + fileName));
+    }
+
+    console.log(`✅ ${groundTextures.length} textures de sol chargées.`);
 }
 
 // Logique de clic du monde (accepte les coordonnées monde directement)
@@ -37,10 +91,10 @@ function handleWorldClick(worldX, worldY) {
     if (UIManager && UIManager.isAnyModalOpen()) {
         return;
     }
-    
+
     console.log('Clic Monde détecté !');
-    
-    // Vérifier si le clic est sur la grille de farming
+
+    // Vérifier si le clic est sur la grille
     if (GridSystem) {
         const gridPos = GridSystem.worldToGrid(worldX, worldY);
 
@@ -51,30 +105,51 @@ function handleWorldClick(worldX, worldY) {
             const tool = Inventory ? Inventory.getSelectedTool() : null;
             const seed = Inventory ? Inventory.getSelectedSeed() : null;
 
-            let result;
+            // --- NOUVEAU : DÉTECTION D'ACTION ET DISTANCE ---
+            const canPlant = (tile.type === GridSystem.CELL_TYPES.FIELD_ZONE && seed && seed.qty > 0);
+            const canHarvest = (tile.type === GridSystem.CELL_TYPES.READY);
+            const canWater = (tool && tool.id === 'watering_can' &&
+                (tile.type === GridSystem.CELL_TYPES.PLANTED ||
+                    tile.type === GridSystem.CELL_TYPES.GROWING));
 
-            // Action selon l'état de la tuile et l'outil
-            if (tile.state === GridSystem.STATES.EMPTY && seed && seed.qty > 0) {
+            const isInteracting = canPlant || canHarvest || canWater;
+
+            // Calcul de la distance (Chebyshev)
+            const p = PlayerSystem.player;
+            const distance = Math.max(Math.abs(p.gridCol - gridPos.col), Math.abs(p.gridRow - gridPos.row));
+
+            if (isInteracting && distance > 2) {
+                console.log(`Trop loin pour agir (dist: ${distance}), déplacement...`);
+                PlayerSystem.moveTo(gridPos.col, gridPos.row);
+                return;
+            }
+            // ------------------------------------------------
+
+            let result = null;
+
+            // 1. Tenter une action de farming si applicable
+            if (canPlant) {
                 // Planter
                 result = GridSystem.plant(gridPos.col, gridPos.row, seed.id);
                 if (result.success && Inventory) {
                     Inventory.useSeed(seed.id);
                 }
-            } else if (tile.state === GridSystem.STATES.READY) {
+            } else if (canHarvest) {
                 // Récolter
                 result = GridSystem.harvest(gridPos.col, gridPos.row);
                 if (result.success && result.item && Inventory) {
-                    // Inventory.addLoot ajoute +2 à la récolte, donc on ajoute 1 ici pour le +2 total
-                    Inventory.addLoot(result.item, 1); 
+                    Inventory.addLoot(result.item, 1);
                 }
-            } else if (tool && tool.id === 'watering_can' &&
-                (tile.state === GridSystem.STATES.PLANTED ||
-                    tile.state === GridSystem.STATES.GROWING)) {
+            } else if (canWater) {
                 // Arroser
                 result = GridSystem.water(gridPos.col, gridPos.row);
             }
 
-            if (result) {
+            // 2. Si aucune action de farming n'a été faite, déplacer le personnage
+            if (!result && window.PlayerSystem) {
+                console.log("Mouvement du personnage vers la case cliquée");
+                PlayerSystem.moveTo(gridPos.col, gridPos.row);
+            } else if (result) {
                 console.log(result.message);
             }
         }
@@ -82,6 +157,9 @@ function handleWorldClick(worldX, worldY) {
 }
 
 function setup() {
+    // Forcer la densité de pixels à 1 pour éviter les problèmes de jointures de grille sur mobile/retina
+    pixelDensity(1);
+
     // Utiliser createCanvas() pour initialiser correctement le canvas p5.js
     const p5Canvas = createCanvas(windowWidth, windowHeight);
 
@@ -97,9 +175,26 @@ function setup() {
     }
     // -----------------------------------
 
-    camera.x = Config.zoneWidth / 2;
-    camera.y = Config.zoneHeight / 2;
     camera.zoom = Config.zoom.start;
+
+    // Initialiser le GridSystem unifié (Géré par main.js désormais)
+    // if (window.GridSystem) {
+    //     GridSystem.init();
+    // }
+
+    // Initialiser le PlayerSystem
+    if (window.PlayerSystem) {
+        PlayerSystem.init();
+    }
+
+    // Fix: Centrer la caméra sur le joueur s'il existe, sinon sur (0,0)
+    if (window.PlayerSystem && PlayerSystem.player) {
+        camera.x = PlayerSystem.player.sprite.x;
+        camera.y = PlayerSystem.player.sprite.y;
+    } else {
+        camera.x = 0;
+        camera.y = 0;
+    }
 
     // Le GameSystem.Lifecycle.notifyReady() est maintenant appelé par LoadingManager.finishLoading()
     // pour s'assurer que le jeu est prêt AVANT de masquer l'écran de chargement.
@@ -124,10 +219,10 @@ function setup() {
     const handleStart = (e) => {
         e.preventDefault();
         const { x, y } = getCoords(e);
-        
+
         // Ignorer si clic sur HUD
-        if (y < 60) return; 
-        
+        if (y < 60) return;
+
         InputManager.startDrag(x, y);
     };
 
@@ -135,7 +230,7 @@ function setup() {
     const handleMove = (e) => {
         e.preventDefault();
         const { x, y } = getCoords(e);
-        
+
         if (InputManager.isDragging) {
             InputManager.moveDrag(x, y, camera);
         }
@@ -144,19 +239,19 @@ function setup() {
     // 3. FIN (mouseup/touchend)
     const handleEnd = (e) => {
         // e.preventDefault(); // Ne pas bloquer ici pour laisser les événements DOM se propager si besoin
-        
+
         if (InputManager.isDragging) {
             const wasClick = InputManager.endDrag();
-            
+
             if (wasClick) {
                 // Si c'était un clic pur, nous utilisons les coordonnées de fin (lastX/Y)
                 const screenX = InputManager.lastX;
                 const screenY = InputManager.lastY;
-                
+
                 // Conversion manuelle des coordonnées écran en coordonnées monde
                 const worldX = camera.x + (screenX - width / 2) / camera.zoom;
                 const worldY = camera.y + (screenY - height / 2) / camera.zoom;
-                
+
                 handleWorldClick(worldX, worldY);
             }
         }
@@ -171,7 +266,7 @@ function setup() {
 
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchend', handleEnd);
-    
+
     // Gestion du zoom (inchangé)
     canvasElement.addEventListener('wheel', (e) => {
         if (e.clientY < 60) return true;
@@ -180,9 +275,8 @@ function setup() {
         camera.zoom -= zoomAmount;
         camera.zoom = constrain(camera.zoom, Config.zoom.min, Config.zoom.max);
     }, { passive: false });
-    
-    // Arrêter la boucle de jeu au démarrage. Elle sera relancée par LoadingManager.finishLoading()
-    if (typeof noLoop === 'function') noLoop();
+
+    // La boucle de jeu est active par défaut pour les animations fluides
 }
 
 function windowResized() {
@@ -192,7 +286,7 @@ function windowResized() {
     }
 }
 
-window.redraw = function() {
+window.redraw = function () {
     if (typeof redraw === 'function') {
         redraw();
     }
@@ -206,26 +300,23 @@ function draw() {
 
     // 2. Rendu Monde (Active la transformation de la caméra)
     camera.on();
+    rect(-Config.zoneWidth / 2, -Config.zoneHeight / 2, Config.zoneWidth, Config.zoneHeight);
+    camera.off();
 
-    // Dessin du monde réel (la zone active)
-    noFill();
-    stroke(0);
-    strokeWeight(2);
-    rect(0, 0, Config.zoneWidth, Config.zoneHeight);
-
-    if (Config.debug && Config.showGrid) {
-        drawSimpleGrid();
-    }
-
-    // Dessiner la grille de farming (si dans une zone de ferme)
-    if (GridSystem && (GameState.currentZoneId === 'C_C' ||
-        GameState.currentZoneId.includes('N') ||
-        GameState.currentZoneId.includes('S'))) {
+    // La grille mondiale unifiée gère son propre affichage de debug (interne camera.on/off)
+    if (GridSystem) {
         GridSystem.draw();
     }
 
-    allSprites.draw();
-    camera.off(); // Désactive la transformation
+    // Le dessin des sprites est géré automatiquement par p5play à la fin de draw()
+    // si loop() est actif. On évite le dessin manuel ici.
+
+    // Mettre à jour et dessiner le personnage
+    if (window.PlayerSystem) {
+        PlayerSystem.update();
+    }
+
+
 
     // 3. Mise à jour de la caméra (Déplacement et Contraintes)
     InputManager.constrainCamera(camera, width, height);
@@ -259,21 +350,9 @@ function draw() {
 }
 
 // Fonctions p5.js inutilisées après refactor (laisser vides pour éviter les avertissements)
-function mouseClicked() {}
-function mousePressed() {}
-function mouseReleased() {}
-function touchStarted() {}
+function mouseClicked() { }
+function mousePressed() { }
+function mouseReleased() { }
+function touchStarted() { }
 function touchMoved() { return false; }
-function touchEnded() {}
-
-function drawSimpleGrid() {
-    stroke(Config.colors.gridLines);
-    strokeWeight(1 / camera.zoom);
-
-    for (let x = 0; x <= Config.zoneWidth; x += 64) {
-        line(x, 0, x, Config.zoneHeight);
-    }
-    for (let y = 0; y <= Config.zoneHeight; y += 64) {
-        line(0, y, Config.zoneWidth, y);
-    }
-}
+function touchEnded() { }

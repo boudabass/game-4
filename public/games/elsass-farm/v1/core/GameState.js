@@ -13,8 +13,10 @@ window.GameState = {
     minute: 0,        // Minutes (0-59)
     season: 'SPRING', // SPRING, SUMMER, AUTUMN, WINTER
 
-    // --- Zone ---
+    // --- Zone et Position ---
     currentZoneId: 'C_C',  // Zone de départ (Ferme Principale)
+    playerCol: 5,          // Colonne de départ
+    playerRow: 5,          // Ligne de départ
 
     // --- Méthodes utilitaires ---
 
@@ -72,6 +74,8 @@ window.GameState = {
         this.minute = 0;
         this.season = 'SPRING';
         this.currentZoneId = 'C_C';
+        this.playerCol = 5;
+        this.playerRow = 5;
     }
 };
 

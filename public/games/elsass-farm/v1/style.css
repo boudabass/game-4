@@ -36,6 +36,8 @@ canvas {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 /* --- Écran de Chargement Fullscreen --- */

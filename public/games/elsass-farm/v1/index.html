@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Elsass Farm</title>
 
     <link rel="stylesheet" href="style.css">
@@ -31,6 +32,9 @@
     <script src="systems/UIManager.js"></script>
     <script src="systems/InputManager.js"></script>
     <script src="systems/GridSystem.js"></script>
+    <script src="systems/PathfindingSystem.js"></script>
+    <script src="systems/Player.js"></script>
+    <script src="systems/PlayerSystem.js"></script>
     <script src="systems/Inventory.js"></script>
     <script src="systems/QuickAction.js"></script>
     <script src="main.js"></script>
@@ -208,7 +212,7 @@
             // Le chargement est maintenant géré par le LoadingManager et le SaveManager
             // On s'assure que la boucle p5.js est stoppée au début
             if (typeof noLoop === 'function') noLoop();
-            
+
             setTimeout(function () {
                 if (typeof SaveManager !== 'undefined') {
                     SaveManager.load();
@@ -266,7 +270,7 @@
     <div id="loading-screen" class="loading-screen">
         <div class="loading-content">
             <h1>Elsass Farm</h1>
-            
+
             <!-- Conteneur pour l'historique des messages -->
             <div id="loading-history" class="loading-history">
                 <!-- Les messages de progression seront ajoutés ici -->
@@ -278,7 +282,7 @@
                     <div class="save-progress-fill" id="loading-progress-fill"></div>
                 </div>
             </div>
-            
+
             <!-- Le bouton est maintenant sous la barre -->
             <button id="play-button" class="hud-btn" style="display: none; margin-top: 20px;">JOUER</button>
         </div>
