@@ -16,6 +16,6 @@ services:
       # Plus besoin de DATABASE_URL car on est en Lowdb pur
       # Les variables Supabase sont injectées via le .env ou l'UI Dyad
     env_file:
-      - .env
+      - ./.env
 
     restart: unless-stopped
