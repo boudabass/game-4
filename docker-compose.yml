@@ -1,7 +1,7 @@
 services:
   web:
     image: ghcr.io/boudabass/game-4:latest
-    container_name: dyad-app-web
+    container_name: gamesenior
     ports:
       - "3000:3000"
     volumes:

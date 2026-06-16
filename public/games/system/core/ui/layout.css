@@ -1,0 +1,175 @@
+/* public/games/system/core/ui/layout.css */
+
+/* App Wrapper */
+#app-wrapper {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #111;
+}
+
+/* Game Container (Le monde p5play) */
+#game-container {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-game);
+}
+
+/* HUD & UI Layers inside game */
+#ui-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+#ui-layer>* {
+    pointer-events: auto;
+}
+
+/* Modals */
+.system-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal-overlay);
+}
+
+/* Modale non bloquante pour permettre interactions avec le jeu en dessous */
+.system-modal.click-through {
+    pointer-events: none;
+    background: transparent;
+}
+
+.system-modal.click-through .modal-content {
+    pointer-events: auto;
+    /* Décalage vers le bas pour ne pas cacher le centre de l'écran où le ghost apparaît */
+    margin-top: 300px;
+}
+
+.modal-content {
+    background: #333;
+    padding: 30px;
+    border: 2px solid #555;
+    border-radius: 12px;
+    max-width: 450px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: var(--z-modal-content);
+}
+
+/* Tooltips */
+.system-tooltip {
+    z-index: var(--z-tooltip);
+}
+
+/* Loader */
+#loading-screen {
+    z-index: var(--z-loader);
+}
+
+/* === MOBILE-FIRST TOUCH SUPPORT === */
+#game-container,
+#game-layer,
+#game-layer canvas {
+    touch-action: none;
+    /* Désactive le scroll/zoom natif sur le canvas */
+    -webkit-touch-callout: none;
+    /* Désactive le menu contextuel iOS */
+    -webkit-user-select: none;
+    /* Désactive la sélection de texte */
+    user-select: none;
+}
+
+#ui-layer {
+    touch-action: pan-y;
+    /* Permet le scroll vertical sur l'UI si nécessaire */
+}
+
+/* Optimisation des boutons pour le tactile */
+.action-btn-circle,
+.tab-btn,
+.hud-btn,
+.speed-btn,
+.sys-btn,
+.close-btn,
+.build-item-container,
+button {
+    touch-action: manipulation;
+    /* Optimise pour les taps rapides (pas de double-tap zoom) */
+    -webkit-tap-highlight-color: transparent;
+    /* Désactive le highlight bleu iOS/Android */
+    cursor: pointer;
+}
+
+/* === PLACEMENT HUD (Mobile Standard) === */
+.placement-hud {
+    position: absolute;
+    bottom: 140px;
+    /* Au dessus du Shelf qui est caché */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    /* IMPORTANT: Laisse passer le drag pour bouger la caméra */
+    z-index: 2000;
+}
+
+.placement-controls {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    background: rgba(15, 23, 42, 0.9);
+    padding: 15px 40px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+    /* Les boutons doivent intercepter le clic */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.big-icon-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    font-size: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s, filter 0.2s;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+}
+
+.big-icon-btn:active {
+    transform: scale(0.9);
+}
+
+.cancel-btn.big-icon-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+}
+
+.confirm-btn.big-icon-btn {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+}
+
+.placement-message {
+    color: #a5f3fc;
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1px;
+}

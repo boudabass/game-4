@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Test System Granulaire - Premium UI</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/p5.js"></script>
+    <script src="https://p5play.org/v3/planck.min.js"></script>
+    <script src="https://p5play.org/v3/p5play.js"></script>
+    <style>
+        /* Custom game-specific styles */
+        #loading-screen {
+            z-index: 9999;
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle, #2c3e50 0%, #0b1015 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: 'Oswald', sans-serif;
+        }
+
+        #loading-bar {
+            width: 300px;
+            height: 10px;
+            border: 1px solid #555;
+            background: rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        #loading-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #a5f3fc;
+            box-shadow: 0 0 10px #a5f3fc;
+            transition: width 0.3s;
+        }
+    </style>
+    <link rel="stylesheet" href="../../system/core/ui/layout.css">
+    <link rel="stylesheet" href="../../system/core/ui/interior.css">
+</head>
+
+<body>
+    <!-- DEBUG ERROR OVERLAY -->
+    <div id="debug-error-overlay"
+        style="display:none; position:fixed; top:0; left:0; right:0; padding:20px; background:rgba(200,0,0,0.9); color:white; z-index:99999; font-family:monospace; white-space:pre-wrap;">
+    </div>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            var overlay = document.getElementById('debug-error-overlay');
+            if (overlay) {
+                overlay.style.display = 'block';
+                overlay.innerText += "ERREUR: " + msg + "\nLigne: " + line + "\n\n";
+            }
+            return false; // Let default handler run too
+        };
+    </script>
+
+    <!-- Screen for initial loading -->
+    <div id="loading-screen">
+        <h1>Initialisation...</h1>
+        <div id="loading-bar">
+            <div id="loading-progress-fill"></div>
+        </div>
+        <div id="loading-history" style="font-size: 12px; color: #888; margin-top: 10px;"></div>
+        <button id="play-button" style="display: none; margin-top: 20px;"
+            onclick="LoadingManager.finish()">JOUER</button>
+    </div>
+
+    <!-- MAIN APP STRUCTURE -->
+    <div id="app-wrapper">
+        <div id="game-container">
+            <div id="game-layer"></div>
+        </div>
+
+        <!-- Couche Unique pour toute l'Interface Utilisateur -->
+        <div id="ui-layer">
+            <!-- HUD SUPÉRIEUR -->
+            <div id="top-hud-container" class="top-hud-container">
+                <div class="hud-centered-wrapper">
+                    <div class="hud-group-col left-group">
+                        <div class="hud-row-item res-row-left">
+                            <div class="res-item" title="Or"><span class="icon">💰</span>
+                                <div class="res-info"><span id="val-gold" class="value">0</span><span
+                                        class="label">Or</span></div>
+                            </div>
+                            <div class="res-item" title="Energie"><span class="icon">⚡</span>
+                                <div class="res-info"><span id="val-energy" class="value">100</span><span
+                                        class="label">Energie</span></div>
+                            </div>
+                        </div>
+                        <div class="hud-row-item time-row-left">
+                            <div class="time-controls">
+                                <span id="day-counter" class="day-counter">JOUR 1</span>
+                                <span id="clock" class="clock">08:00</span>
+                                <div class="speed-btns">
+                                    <button id="speed-0" class="speed-btn" onclick="setSpeed(0)">||</button>
+                                    <button id="speed-1" class="speed-btn active" onclick="setSpeed(1)">></button>
+                                    <button id="speed-2" class="speed-btn" onclick="setSpeed(2)">>></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hud-anchor-square">
+                        <div class="central-temp-gauge">
+                            <span id="central-temp-val">20°C</span>
+                        </div>
+                    </div>
+
+                    <div class="hud-group-col right-group">
+                        <div class="hud-row-item res-row-right">
+                            <div class="res-item system-split-btn">
+                                <button class="sys-btn half-btn" onclick="toggleMenu()" title="Menu">≡</button>
+                                <button class="sys-btn half-btn" onclick="toggleDebugMenu()" title="Debug">🐞</button>
+                            </div>
+                        </div>
+                        <div class="hud-row-item weather-row-right">
+                            <div style="padding-left: 20px; font-family: Oswald; font-size: 14px; color: #a5f3fc;">CIEL
+                                DÉGAGÉ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANNEAU DE MISSIONS -->
+            <div id="mission-panel" class="mission-panel">
+                <div class="mission-header">OBJECTIF PRINCIPAL</div>
+                <div id="mission-list">
+                    <div class="mission-item">
+                        <div class="mission-icon-container">⭐</div>
+                        <div class="mission-text">
+                            <div class="mission-title">Explorer la zone</div>
+                            <div class="mission-condition">Construisez 3 maisons</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TECH SHELF (FULL HEIGHT) -->
+            <div id="tech-shelf" class="tech-shelf">
+                <div class="tech-header">
+                    <h2>TECHNOLOGIES</h2>
+                    <button class="close-btn" onclick="toggleTechPanel()">×</button>
+                </div>
+                <div id="tech-tabs" class="tabs-row">
+                    <button class="tab-btn active"
+                        onclick="UIManager.Panels.Tech.setCategory('resource')">RESSOURCE</button>
+                    <button class="tab-btn" onclick="UIManager.Panels.Tech.setCategory('industry')">INDUSTRIE</button>
+                    <button class="tab-btn" onclick="UIManager.Panels.Tech.setCategory('people')">CITOYEN</button>
+                    <button class="tab-btn" onclick="UIManager.Panels.Tech.setCategory('farming')">JARDINAGE</button>
+                    <button class="tab-btn" onclick="UIManager.Panels.Tech.setCategory('food')">ALIMENTATION</button>
+                    <button class="tab-btn"
+                        onclick="UIManager.Panels.Tech.setCategory('infrastructure')">INFRASTRUCTURE</button>
+                    <button class="tab-btn" onclick="UIManager.Panels.Tech.setCategory('health')">SANTÉ</button>
+                    <button class="tab-btn"
+                        onclick="UIManager.Panels.Tech.setCategory('exploration')">EXPLORATION</button>
+                </div>
+                <div class="tech-content scrollable-y">
+                    <div id="tech-list" class="tech-grid">
+                        <!-- Tech items will be here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD INFÉRIEUR -->
+            <div class="bottom-ui-container">
+                <div id="build-shelf" class="build-shelf">
+                    <div class="tabs-row">
+                        <button id="tab-all" class="tab-btn active" onclick="filterBuildings('all')">TOUT</button>
+                        <button id="tab-People" class="tab-btn" onclick="filterBuildings('People')">PEUPLE</button>
+                        <button id="tab-Health" class="tab-btn" onclick="filterBuildings('Health')">SANTÉ</button>
+                        <button id="tab-Food" class="tab-btn" onclick="filterBuildings('Food')">NOURRITURE</button>
+                        <button id="tab-Wood" class="tab-btn" onclick="filterBuildings('Wood')">BOIS</button>
+                        <button id="tab-Coal" class="tab-btn" onclick="filterBuildings('Coal')">CHARBON</button>
+                        <button id="tab-Steel" class="tab-btn" onclick="filterBuildings('Steel')">ACIER</button>
+                        <button id="tab-Storage" class="tab-btn" onclick="filterBuildings('Storage')">STOCKAGE</button>
+                        <button id="tab-Tech" class="tab-btn" onclick="filterBuildings('Tech')">TECH</button>
+                        <button id="tab-World" class="tab-btn" onclick="filterBuildings('World')">MONDE</button>
+                        <button id="tab-infra" class="tab-btn" onclick="filterBuildings('infra')">INFRA</button>
+                        <button id="tab-base" class="tab-btn hidden" onclick="filterBuildings('base')">BASE</button>
+                    </div>
+                    <div class="buildings-row-container">
+                        <div class="fixed-build-actions">
+                            <div id="build-item-road" class="build-item-container" data-id="road"
+                                onclick="UIManager.Panels.Build.handleBuildClick('road')">
+                                <div class="action-btn-circle sub-btn">
+                                    <span>🟫</span>
+                                </div>
+                                <span class="build-label">Route</span>
+                            </div>
+                            <div class="vertical-divider"></div>
+                        </div>
+                        <div id="build-info-pane" class="build-info-pane">
+                            <!-- Rempli dynamiquement au clic -->
+                            <div class="info-pane-placeholder">Sélectionnez une construction</div>
+                        </div>
+                        <div id="buildings-row" class="buildings-row scrollable-x"></div>
+                    </div>
+                </div>
+
+                <!-- PEOPLE SHELF (SIMILAR TO BUILD SHELF) -->
+                <div id="people-shelf" class="build-shelf people-shelf">
+                    <div id="people-tabs" class="tabs-row">
+                        <!-- Tabs generated dynamically by PersonSystem / UI -->
+                    </div>
+                    <div class="people-shelf-content">
+                        <div id="selected-person-content" class="shelf-person-details">
+                            <!-- Content for selected person -->
+                            <p style="text-align:center; color:var(--text-dim); margin-top:20px;">Sélectionnez un
+                                citoyen
+                                pour voir ses détails.</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="bottom-bar">
+                    <div class="action-group">
+                        <div id="btn-tech" class="action-btn-circle" onclick="toggleTechPanel()">🔬</div>
+                        <div id="btn-build" class="action-btn-circle" onclick="toggleBuildMenu()">🔨</div>
+                    </div>
+                    <div class="social-gauges">
+                        <div class="gauge-container" title="Espoir">
+                            <div id="fill-hope" class="gauge-fill hope" style="width: 70%;"></div>
+                            <div class="gauge-label">Espoir</div>
+                        </div>
+                        <div class="gauge-container" title="Mécontentement">
+                            <div id="fill-discontent" class="gauge-fill discontent" style="width: 20%;"></div>
+                            <div class="gauge-label">Mécontentement</div>
+                        </div>
+                    </div>
+                    <div class="action-group">
+                        <div id="btn-laws" class="action-btn-circle">⚖️</div>
+                        <div id="btn-reports" class="action-btn-circle">📋</div>
+                        <div id="btn-people" class="action-btn-circle" onclick="togglePeoplePanel()" title="Citoyens">👥
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANNEAU DE DETAIL -->
+            <div id="detail-panel" class="detail-panel">
+                <div class="detail-header">
+                    <div id="detail-icon" class="detail-icon">🏠</div>
+                    <h3 id="detail-name">Nom Bâtiment</h3>
+                    <button class="close-btn" onclick="UIManager.hideDetailPanel()">×</button>
+                </div>
+                <div class="detail-body">
+                    <div id="detail-desc" class="detail-desc">Description du bâtiment.</div>
+                    <div class="mgmt-row">
+                        <span>Personnel :</span>
+                        <div class="mgmt-controls">
+                            <button onclick="BuildingSystem.staffDecrease()">-</button>
+                            <span id="detail-staff-val">0 / 0</span>
+                            <button onclick="BuildingSystem.staffIncrease()">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-footer">
+                    <button id="btn-dismantle-main" class="hud-btn dismantle-btn"
+                        onclick="UIManager.Panels.Detail.requestDismantle()">DÉMANTELER</button>
+
+                    <div id="dismantle-confirm-group" class="dismantle-confirm-group hidden">
+                        <button class="hud-btn confirm-btn" style="border-color: #2ecc71; color: #2ecc71;"
+                            onclick="UIManager.Panels.Detail.confirmDismantle()">VALIDER</button>
+                        <button class="hud-btn cancel-btn"
+                            onclick="UIManager.Panels.Detail.cancelDismantle()">ANNULER</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION MODAL -->
+            <div id="action-modal" class="action-modal">
+                <div class="action-header">
+                    <div id="action-icon" class="action-icon">🏗️</div>
+                    <h3 id="action-title">ACTION</h3>
+                </div>
+                <div id="action-msg" class="action-body">Voulez-vous effectuer cette action ?</div>
+                <div id="action-cost" class="action-cost"></div>
+                <div class="action-footer">
+                    <button id="btn-cancel" class="hud-btn cancel-btn">ANNULER</button>
+                    <button id="btn-confirm" class="hud-btn confirm-btn">CONFIRMER</button>
+                </div>
+                <!-- HUD DE PLACEMENT (Mobile-Standard) -->
+                <div id="placement-hud" class="placement-hud" style="display: none;">
+                    <div class="placement-controls">
+                        <button id="btn-place-cancel" class="hud-btn cancel-btn big-icon-btn"
+                            onclick="BuildingSystem.cancelPlacement()">❌</button>
+                        <div class="placement-message">Glissez pour viser</div>
+                        <button id="btn-place-confirm" class="hud-btn confirm-btn big-icon-btn"
+                            onclick="BuildingSystem.confirmPlacement()">✅</button>
+                    </div>
+                </div>
+                <!-- DEBUG PANEL -->
+                <div id="debug-panel" class="debug-panel">
+                    <div class="debug-header">
+                        <h3>DEBUG SYSTEM</h3>
+                        <button class="close-btn" onclick="toggleDebugMenu()">×</button>
+                    </div>
+                    <div id="debug-content" class="debug-content">
+                        <!-- Dynamic Controls -->
+                    </div>
+                </div>
+
+
+
+                <!-- PEOPLE PICKER PANEL (KEEP AS MODAL) -->
+                <div id="people-picker-panel" class="people-panel people-picker-panel">
+                    <div class="detail-header">
+                        <div class="detail-icon">👤</div>
+                        <h3>CHOISIR UN CITOYEN</h3>
+                        <button class="close-btn" onclick="UIManager.Panels.People.hidePicker()">×</button>
+                    </div>
+                    <div class="people-list-view">
+                        <div id="people-picker-list" class="people-picker-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCRIPTS -->
+        <script>window.DyadGame = { id: 'test-system-v1', version: '1.0' };</script>
+        <script src="../../system/config/main.js"></script>
+
+        <!-- Bâtiments (Modularisé) -->
+        <script src="../../system/config/buildings/base.js"></script>
+        <script src="../../system/config/buildings/central.js"></script>
+        <script src="../../system/config/buildings/people.js"></script>
+        <script src="../../system/config/buildings/health.js"></script>
+        <script src="../../system/config/buildings/food.js"></script>
+        <script src="../../system/config/buildings/resources.js"></script>
+        <script src="../../system/config/buildings/wood.js"></script>
+        <script src="../../system/config/buildings/coal.js"></script>
+        <script src="../../system/config/buildings/steel.js"></script>
+        <script src="../../system/config/buildings/tech.js"></script>
+        <script src="../../system/config/buildings/world.js"></script>
+        <script src="../../system/config/buildings/infra.js"></script>
+        <script src="../../system/config/buildings.js"></script>
+
+        <!-- Items (Modularisé) -->
+        <script src="../../system/config/items/resources.js"></script>
+        <script src="../../system/config/items/seeds.js"></script>
+        <script src="../../system/config/items/tools.js"></script>
+        <script src="../../system/config/items/loot.js"></script>
+        <script src="../../system/config/items/fishing.js"></script>
+        <script src="../../system/config/items.js"></script>
+        <script src="../../system/config/interiors/base.js"></script>
+        <script src="../../system/config/interiors/machines.js"></script>
+        <script src="../../system/config/interiors/storage.js"></script>
+        <script src="../../system/config/interiors/decoration.js"></script>
+
+        <script>
+            // Initialisation de l'agrégation
+            Config.initBuildings();
+            Config.initItems();
+        </script>
+
+        <!-- CORE UI SYSTEM (Modular) -->
+        <link rel="stylesheet" href="../../system/core/ui/styles.css">
+
+        <script src="../../system/core/ui/base.js"></script>
+        <script src="../../system/core/ui/tooltips.js"></script>
+        <script src="../../system/core/ui/init.js"></script>
+
+        <!-- UI Modules -->
+        <script src="../../system/core/ui/hud/top.js"></script>
+        <script src="../../system/core/ui/hud/bottom.js"></script>
+        <script src="../../system/core/ui/hud/mission.js"></script>
+
+        <script src="../../system/core/ui/panels/build.js"></script>
+        <script src="../../system/core/ui/panels/detail.js"></script>
+        <script src="../../system/core/ui/panels/debug.js"></script>
+
+        <script src="../../system/core/ui/modals/action.js"></script>
+        <script src="../../system/core/gameState/base.js"></script>
+        <script src="../../system/core/gameState/data.js"></script>
+        <script src="../../system/core/gameState/time.js"></script>
+        <script src="../../system/core/gameState/resources.js"></script>
+        <script src="../../system/core/saveManager/base.js"></script>
+        <script src="../../system/core/saveManager/local.js"></script>
+        <script src="../../system/core/saveManager/cloud.js"></script>
+        <script src="../../system/core/saveManager/applier.js"></script>
+        <script src="../../system/core/inputManager/base.js"></script>
+        <script src="../../system/core/inputManager/drag.js"></script>
+        <script src="../../system/core/inputManager/camera.js"></script>
+        <script src="../../system/core/inputManager/touch.js"></script>
+        <script src="../../system/core/pathfinding/base.js"></script>
+        <script src="../../system/core/player/Person.js"></script>
+        <script src="../../system/core/people/PersonSystem.js"></script>
+        <script src="../../system/core/ui/panels/people.js"></script>
+        <script src="../../system/core/ui/panels/people_list.js"></script>
+
+        <!-- Tech Trees Config -->
+        <script src="../../system/config/tech/citizen.js"></script>
+        <script src="../../system/config/tech/resource.js"></script>
+        <script src="../../system/config/tech/industry.js"></script>
+        <script src="../../system/config/tech/farming.js"></script>
+        <script src="../../system/config/tech/food.js"></script>
+        <script src="../../system/config/tech/infrastructure.js"></script>
+        <script src="../../system/config/tech/health.js"></script>
+        <script src="../../system/config/tech/exploration.js"></script>
+
+        <script src="../../system/core/ui/panels/tech.js"></script>
+
+        <script src="../../system/core/ui/layers.js"></script>
+        <script src="../../system/core/layout/base.js"></script>
+
+        <script src="../../system/core/building/base.js"></script>
+        <script src="../../system/core/building/placement.js"></script>
+        <script src="../../system/core/building/management.js"></script>
+
+        <script src="../../system/core/ux/base.js"></script>
+
+        <script src="../../system/core/loadingManager/base.js"></script>
+        <script src="../../system/core/loadingManager/ui.js"></script>
+        <script src="../../system/core/TimeManager.js"></script>
+
+        <script src="../../system/core/grid/GridSystem.js"></script>
+        <script src="../../system/core/ui/panels/interior.js"></script>
+        <script src="../../system/core/interiors/InteriorSystem.js"></script>
+        <script src="../../system/core/interiors/InteriorRenderer.js"></script>
+        <script src="world/world_00.js"></script>
+        <script src="sketch.js"></script>
+        <script>
+            // Start UI scaling and initialization
+            window.addEventListener('load', () => {
+                if (window.UIManager) UIManager.init();
+            });
+        </script>
+</body>
+
+</html>

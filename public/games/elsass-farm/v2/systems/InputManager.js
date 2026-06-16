@@ -66,16 +66,17 @@ window.InputManager = {
     // Contraintes Caméra (Doit être appelé dans draw() pour être exécuté à chaque frame)
     constrainCamera: function (camera, width, height) {
         const margin = Config.worldMargin;
-        const zoneWidth = Config.zoneWidth;
-        const zoneHeight = Config.zoneHeight;
+        const zoneWidth = Config.zoneWidth || 1312;
+        const zoneHeight = Config.zoneHeight || 1312;
+        const currentZoom = camera.zoom || 1.0;
 
         const halfWidth = zoneWidth / 2;
         const halfHeight = zoneHeight / 2;
 
-        const minX = -halfWidth - margin + (width / 2) / camera.zoom;
-        const maxX = halfWidth + margin - (width / 2) / camera.zoom;
-        const minY = -halfHeight - margin + (height / 2) / camera.zoom;
-        const maxY = halfHeight + margin - (height / 2) / camera.zoom;
+        const minX = -halfWidth - margin + (width / 2) / currentZoom;
+        const maxX = halfWidth + margin - (width / 2) / currentZoom;
+        const minY = -halfHeight - margin + (height / 2) / currentZoom;
+        const maxY = halfHeight + margin - (height / 2) / currentZoom;
 
         // Si la zone est plus petite que l'écran (zoom arrière trop fort), on bloque au centre
         if (minX > maxX) camera.x = 0;

@@ -211,12 +211,12 @@ function setup() {
 
     // Fonction utilitaire pour obtenir les coordonnées (souris ou touch)
     const getCoords = (e) => {
-        const rect = canvasElement.getBoundingClientRect();
+        const canvasRect = canvasElement.getBoundingClientRect();
         const clientX = e.clientX || e.touches?.[0]?.clientX;
         const clientY = e.clientY || e.touches?.[0]?.clientY;
         return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
+            x: clientX - canvasRect.left,
+            y: clientY - canvasRect.top
         };
     };
 

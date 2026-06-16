@@ -3,8 +3,8 @@ const Config = {
     showGrid: true, // Nouvel état
 
     // Taille de la zone de jeu (Calculé dynamiquement dans GridSystem)
-    // zoneWidth: 672,
-    // zoneHeight: 672,
+    zoneWidth: 1312,
+    zoneHeight: 1312,
     worldMargin: 64, // Marge réduite car grille plus petite
 
     // Zones de Transition (Portails) - Gardé pour la logique de clic, mais non dessiné
