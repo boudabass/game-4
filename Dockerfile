@@ -8,7 +8,10 @@ WORKDIR /app
 # Activer pnpm via corepack
 RUN corepack enable pnpm
 
-# Copier les fichiers de dépendances (prend en charge pnpm)
+# Configurer pnpm pour ignorer l'erreur des scripts de build non approuvés
+RUN pnpm config set ignore-scripts true
+
+# Copier les fichiers de dépendances
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
