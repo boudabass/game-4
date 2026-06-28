@@ -1,73 +1,64 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/database';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
+import { odooClient } from "@/lib/odoo";
+import { getSessionCookie } from "@/app/actions/auth";
 
-export const dynamic = 'force-dynamic';
-
-// GET /api/scores?gameId=tetris-v1
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const gameId = searchParams.get('gameId');
+  try {
+    const sessionId = await getSessionCookie();
+    if (!sessionId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!gameId) {
-    return NextResponse.json({ error: 'Game ID required' }, { status: 400 });
+    const { searchParams } = new URL(request.url);
+    const gameId = searchParams.get("gameId");
+    
+    let domain = [];
+    if (gameId) {
+      domain.push(["x_game_id", "=", parseInt(gameId, 10)]);
+    }
+
+    try {
+      const scores = await odooClient.callKw(
+        "x_game_score",
+        "search_read",
+        [domain],
+        { fields: ["id", "x_game_id", "x_user_id", "x_score", "create_date"], limit: 100, order: "x_score desc" },
+        sessionId
+      );
+      return NextResponse.json({ scores });
+    } catch (e) {
+      console.warn("Odoo fetch failed, returning empty scores array:", e);
+      return NextResponse.json({ scores: [] });
+    }
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-  const db = await getDb();
-  await db.read();
-
-  const scores = db.data.scores
-    .filter((s) => s.gameId === gameId)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10); // Top 10
-
-  return NextResponse.json(scores);
 }
 
-// POST /api/scores
 export async function POST(request: Request) {
   try {
+    const sessionId = await getSessionCookie();
+    if (!sessionId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { gameId, playerName, score } = body;
+    const { gameId, score } = body;
 
-    if (!gameId || score === undefined) {
-      return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
+    try {
+      const result = await odooClient.callKw(
+        "x_game_score",
+        "create",
+        [[{ x_game_id: gameId, x_score: score }]],
+        {},
+        sessionId
+      );
+      return NextResponse.json({ success: true, id: result[0] });
+    } catch (e) {
+      console.error("Failed to post score to Odoo:", e);
+      return NextResponse.json({ error: "Failed to save score" }, { status: 500 });
     }
-
-    // --- COOKIE SESSION LOCAL ---
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('arcade_session')?.value;
-    let user = null;
-
-    if (sessionCookie) {
-      try {
-        user = JSON.parse(sessionCookie);
-      } catch (e) {}
-    }
-
-    let finalPlayerName = playerName || 'Anonyme';
-    let userId = undefined;
-    let userEmail = undefined;
-
-    if (user) {
-      finalPlayerName = user.name || user.email?.split('@')[0] || 'Joueur';
-      userId = user.id;
-      userEmail = user.email;
-    }
-
-    const db = await getDb();
-    await db.update(({ scores }) => scores.push({
-      gameId,
-      playerName: finalPlayerName,
-      score: Number(score),
-      date: new Date().toISOString(),
-      userId,
-      userEmail
-    }));
-
-    return NextResponse.json({ success: true, user: user?.email });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

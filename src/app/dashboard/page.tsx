@@ -5,12 +5,13 @@ import { Card, CardFooter, CardHeader, CardTitle, CardContent } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Play, Trophy, Star, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { getDb, GameRelease } from "@/lib/database"
+import { odooClient } from "@/lib/odoo"
 
 export default async function DashboardPage() {
     // 1. Server-Side Auth Check
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('arcade_session')?.value;
+    const userCookie = cookieStore.get('arcade_user')?.value;
 
     if (!sessionCookie) {
         redirect('/login')
@@ -18,14 +19,24 @@ export default async function DashboardPage() {
 
     let user;
     try {
-        user = JSON.parse(sessionCookie);
+        user = userCookie ? JSON.parse(userCookie) : { name: 'Joueur' };
     } catch(e) {
         redirect('/login');
     }
 
     // 2. Server-Side Data Fetching (Games)
-    const db = await getDb()
-    const latestGames = db.data.games.slice(0, 3)
+    let latestGames: any[] = [];
+    try {
+      latestGames = await odooClient.callKw(
+        "x_game_release",
+        "search_read",
+        [[]],
+        { fields: ["id", "x_name", "x_description", "x_url"], limit: 3, order: "create_date desc" },
+        sessionCookie
+      );
+    } catch (e) {
+      console.warn("Could not fetch games", e);
+    }
 
     const userName = user.name || user.email?.split('@')[0] || "Joueur"
 
@@ -61,12 +72,12 @@ export default async function DashboardPage() {
                             {latestGames.length > 0 ? latestGames.map(game => (
                                 <div key={game.id} className="flex items-center justify-between p-3 bg-white rounded-lg border hover:border-indigo-200 transition-colors group">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-12 w-12 rounded-md bg-slate-200 overflow-hidden">
-                                            {game.thumbnail && <img src={`/games/${game.path}/${game.thumbnail}`} className="w-full h-full object-cover" />}
+                                        <div className="h-12 w-12 rounded-md bg-slate-200 overflow-hidden flex items-center justify-center text-slate-400">
+                                            <Play className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-slate-800">{game.name}</h4>
-                                            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{game.version}</span>
+                                            <h4 className="font-bold text-slate-800">{game.x_name}</h4>
+                                            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">v1.0</span>
                                         </div>
                                     </div>
                                     <Link href={`/play/${game.id}`}>

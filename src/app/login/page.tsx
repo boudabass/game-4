@@ -1,44 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useAuth, LocalUser } from "@/components/auth-provider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth-provider";
 import { signInAction } from "@/app/actions/auth";
-import { getUsersAction } from "@/app/actions/user-management";
-import { Shield, User, Gamepad2, AlertCircle } from "lucide-react";
+import { Gamepad2, Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
   const { refreshAuth } = useAuth();
-  const [users, setUsers] = useState<LocalUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [signingInId, setSigningInId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    async function loadUsers() {
-      const res = await getUsersAction();
-      if (res.success && res.users) {
-        setUsers(res.users);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const res = await signInAction(formData);
+      
+      if (res.success) {
+        toast.success("Connexion réussie !");
+        await refreshAuth();
+        router.push("/dashboard");
       } else {
-        toast.error("Impossible de charger les profils locaux");
+        toast.error(res.error || "Identifiants incorrects.");
       }
-      setLoading(false);
-    }
-    loadUsers();
-  }, []);
-
-  const handleSignIn = async (userId: string) => {
-    setSigningInId(userId);
-    const res = await signInAction(userId);
-    if (res.success) {
-      toast.success("Connexion réussie !");
-      await refreshAuth();
-      router.push("/dashboard");
-    } else {
-      toast.error(res.error || "Erreur de connexion");
-      setSigningInId(null);
+    } catch (err) {
+      toast.error("Une erreur est survenue lors de la connexion.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,70 +56,64 @@ export default function LoginPage() {
             ARCADE.OS
           </CardTitle>
           <CardDescription className="text-slate-400 mt-2 font-medium">
-            Choisissez un profil local pour lancer la console
+            Connectez-vous avec vos identifiants Odoo
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pb-8">
-          {loading ? (
-            <div className="space-y-3 py-4">
-              <div className="h-14 bg-slate-800/50 rounded-xl animate-pulse"></div>
-              <div className="h-14 bg-slate-800/50 rounded-xl animate-pulse"></div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-300">Email</Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <Input 
+                  id="email" 
+                  name="email"
+                  type="email" 
+                  placeholder="joueur@theelsassisch.com" 
+                  required 
+                  className="pl-10 bg-slate-950/50 border-white/10 focus:border-indigo-500 text-white placeholder:text-slate-600"
+                />
+              </div>
             </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-6 text-slate-400 space-y-2">
-              <AlertCircle className="w-8 h-8 mx-auto text-amber-500" />
-              <p className="text-sm font-medium">Aucun profil détecté en base.</p>
-              <p className="text-xs text-slate-500">
-                Veuillez réinitialiser la base de données ou créer un utilisateur.
-              </p>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-slate-300">Mot de passe</Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <Input 
+                  id="password" 
+                  name="password"
+                  type="password" 
+                  required 
+                  className="pl-10 bg-slate-950/50 border-white/10 focus:border-indigo-500 text-white"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-3">
-              {users.map((u) => {
-                const isAdmin = u.role === 'admin';
-                const isSigningIn = signingInId === u.id;
-                return (
-                  <button
-                    key={u.id}
-                    disabled={signingInId !== null}
-                    onClick={() => handleSignIn(u.id)}
-                    className="w-full text-left p-4 rounded-xl border border-white/5 bg-slate-950/40 hover:bg-slate-950/90 hover:border-indigo-500/40 transition-all flex items-center justify-between group transform hover:-translate-y-[1px] disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-                        isAdmin 
-                          ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' 
-                          : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
-                      }`}>
-                        {isAdmin ? <Shield className="w-5 h-5" /> : <User className="w-5 h-5" />}
-                      </div>
-                      <div>
-                        <div className="font-bold text-sm text-slate-200 group-hover:text-white transition-colors">
-                          {u.name || u.email.split('@')[0]}
-                        </div>
-                        <div className="text-xs text-slate-500 font-mono">
-                          {u.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full border ${
-                        isAdmin 
-                          ? 'bg-purple-950/40 border-purple-500/30 text-purple-300' 
-                          : 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300'
-                      }`}>
-                        {u.role}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+
+            <Button 
+              type="submit" 
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/20 shadow-lg shadow-indigo-900/20 h-11"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connexion...
+                </>
+              ) : (
+                "Se connecter"
+              )}
+            </Button>
+          </form>
 
           <div className="text-center">
             <span className="text-xs text-slate-600 bg-slate-950/50 px-3 py-1.5 rounded-full border border-white/5 font-mono">
-              Mode Autonome Offline
+              Odoo Secure Auth
             </span>
           </div>
         </CardContent>

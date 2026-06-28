@@ -1,66 +1,77 @@
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { Card, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play } from "lucide-react"
+import { Play, Info, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { getDb } from "@/lib/database"
-
-export const dynamic = 'force-dynamic';
+import { odooClient } from "@/lib/odoo"
+import { cookies } from "next/headers"
 
 export default async function GamesPage() {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get('arcade_session')?.value
-
-    if (!sessionCookie) {
-        redirect('/login')
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('arcade_session')?.value;
+    
+    let games: any[] = [];
+    try {
+        if (sessionId) {
+            games = await odooClient.callKw(
+                "x_game_release",
+                "search_read",
+                [[]],
+                { fields: ["id", "x_name", "x_description", "x_url"] },
+                sessionId
+            );
+        }
+    } catch (e) {
+        console.warn("Could not fetch games", e);
     }
 
-    const db = await getDb()
-    const games = db.data.games
-
     return (
-        <div className="container mx-auto py-8 space-y-8 animate-in fade-in">
-            <header className="flex items-center justify-between border-b pb-6">
+        <div className="container mx-auto py-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-end border-b pb-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Arcade Hub</h1>
-                    <p className="text-slate-500 text-lg">Le catalogue complet</p>
+                    <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                        <Play className="w-8 h-8 text-indigo-600" />
+                        Catalogue de Jeux
+                    </h1>
+                    <p className="text-slate-500 mt-2 text-lg">Découvrez tous les titres disponibles sur la plateforme.</p>
                 </div>
-            </header>
+            </div>
 
             {games.length === 0 ? (
-                <div className="text-center py-20 bg-slate-50 rounded-xl border border-dashed">
-                    <p className="text-xl text-slate-500">Aucun jeu installé.</p>
-                </div>
+                <Card className="bg-slate-50 border-dashed border-2 border-slate-200">
+                    <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                            <Info className="w-8 h-8 text-slate-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-700 mb-2">Aucun jeu disponible</h3>
+                        <p className="text-slate-500 max-w-md">La bibliothèque est actuellement vide.</p>
+                    </CardContent>
+                </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {games.map((game) => (
-                        <Card key={game.id} className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white dark:bg-slate-900">
-                            <div className="relative h-48 bg-slate-900 overflow-hidden">
-                                {game.thumbnail ? (
-                                    <img
-                                        src={`/games/${game.path}/${game.thumbnail}`}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    // Note: onError is client-side, hard to do in Server Component without hydration. 
-                                    // We assume thumbnail exists if path is set, or CSS handles broken image/fallback.
-                                    // Alternatively, we can use a client component wrapper for the Image.
-                                    // For now, simple img tag.
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-indigo-950 text-indigo-500 font-bold text-4xl opacity-30">
-                                        {game.id.slice(0, 2).toUpperCase()}
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60"></div>
-                                <div className="absolute bottom-4 left-4 right-4">
-                                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-yellow-400 transition-colors">{game.name}</h3>
-                                    <p className="text-xs text-white/70 line-clamp-1">{game.description}</p>
-                                </div>
+                    {games.map(game => (
+                        <Card key={game.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group border-slate-200/60 flex flex-col h-full hover:-translate-y-1">
+                            <div className="h-48 bg-slate-200 relative overflow-hidden flex items-center justify-center">
+                                <Play className="w-12 h-12 text-slate-400 group-hover:scale-110 transition-transform duration-500" />
                             </div>
-                            <CardFooter className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                            
+                            <CardHeader className="pb-3">
+                                <div className="flex justify-between items-start">
+                                    <CardTitle className="text-xl font-bold group-hover:text-indigo-600 transition-colors">
+                                        {game.x_name}
+                                    </CardTitle>
+                                </div>
+                            </CardHeader>
+                            
+                            <CardContent className="flex-grow">
+                                <p className="text-slate-600 text-sm line-clamp-3">
+                                    {game.x_description || "Aucune description disponible pour ce jeu."}
+                                </p>
+                            </CardContent>
+                            
+                            <CardFooter className="pt-4 border-t bg-slate-50/50">
                                 <Link href={`/play/${game.id}`} className="w-full">
-                                    <Button className="w-full font-bold shadow-md bg-indigo-600 hover:bg-indigo-700 text-white">
-                                        <Play className="mr-2 w-4 h-4 fill-current" /> JOUER
+                                    <Button className="w-full bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm font-semibold group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                        Jouer maintenant <ArrowRight className="ml-2 w-4 h-4 opacity-70" />
                                     </Button>
                                 </Link>
                             </CardFooter>
@@ -69,5 +80,5 @@ export default async function GamesPage() {
                 </div>
             )}
         </div>
-    );
+    )
 }

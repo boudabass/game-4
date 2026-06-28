@@ -1,99 +1,87 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/database';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
+import { odooClient } from "@/lib/odoo";
+import { getSessionCookie } from "@/app/actions/auth";
 
-export const dynamic = 'force-dynamic';
-
-// GET /api/storage?gameId=xxx
-// Récupère la sauvegarde du joueur connecté pour ce jeu
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const gameId = searchParams.get('gameId');
+  try {
+    const sessionId = await getSessionCookie();
+    if (!sessionId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!gameId) {
-    return NextResponse.json({ error: 'Game ID required' }, { status: 400 });
-  }
+    const { searchParams } = new URL(request.url);
+    const gameId = searchParams.get("gameId");
 
-  // 1. Auth Check
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('arcade_session')?.value;
-  let user = null;
+    if (!gameId) {
+      return NextResponse.json({ error: "gameId is required" }, { status: 400 });
+    }
 
-  if (sessionCookie) {
     try {
-      user = JSON.parse(sessionCookie);
-    } catch (e) {}
+      const saves = await odooClient.callKw(
+        "x_game_save",
+        "search_read",
+        [[["x_game_id", "=", parseInt(gameId, 10)]]],
+        { fields: ["id", "x_data", "write_date"], limit: 1, order: "write_date desc" },
+        sessionId
+      );
+      return NextResponse.json({ data: saves.length > 0 ? saves[0].x_data : null });
+    } catch (e) {
+      console.warn("Odoo fetch failed, returning empty storage:", e);
+      return NextResponse.json({ data: null });
+    }
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // 2. DB Read
-  const db = await getDb();
-  await db.read();
-
-  // 3. Find Save
-  const save = db.data.saves.find(s => s.gameId === gameId && s.userId === user.id);
-
-  if (!save) {
-    return NextResponse.json({ data: null }); // Pas de sauvegarde existante, c'est valide
-  }
-
-  return NextResponse.json({ data: save.data, updatedAt: save.updatedAt });
 }
 
-// POST /api/storage
-// Écrase la sauvegarde du joueur pour ce jeu
 export async function POST(request: Request) {
   try {
+    const sessionId = await getSessionCookie();
+    if (!sessionId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { gameId, data } = body;
 
-    if (!gameId || !data) {
-      return NextResponse.json({ error: 'Missing gameId or data' }, { status: 400 });
-    }
+    try {
+      // First check if a save exists for this game and this user
+      // Assuming x_user_id is automatically populated by Odoo based on session or we need to pass it
+      // Let's search first
+      const existing = await odooClient.callKw(
+        "x_game_save",
+        "search",
+        [[["x_game_id", "=", parseInt(gameId, 10)]]],
+        { limit: 1 },
+        sessionId
+      );
 
-    // 1. Auth Check
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('arcade_session')?.value;
-    let user = null;
-
-    if (sessionCookie) {
-      try {
-        user = JSON.parse(sessionCookie);
-      } catch (e) {}
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const db = await getDb();
-    
-    // 2. Upsert Logic (Update or Insert)
-    await db.update(({ saves }) => {
-      const existingIndex = saves.findIndex(s => s.gameId === gameId && s.userId === user.id);
-      
-      const newSaveEntry = {
-        gameId,
-        userId: user.id,
-        updatedAt: new Date().toISOString(),
-        data: data
-      };
-
-      if (existingIndex >= 0) {
+      if (existing && existing.length > 0) {
         // Update
-        saves[existingIndex] = newSaveEntry;
+        await odooClient.callKw(
+          "x_game_save",
+          "write",
+          [existing, { x_data: JSON.stringify(data) }],
+          {},
+          sessionId
+        );
+        return NextResponse.json({ success: true, updated: true });
       } else {
-        // Insert
-        saves.push(newSaveEntry);
+        // Create
+        await odooClient.callKw(
+          "x_game_save",
+          "create",
+          [[{ x_game_id: parseInt(gameId, 10), x_data: JSON.stringify(data) }]],
+          {},
+          sessionId
+        );
+        return NextResponse.json({ success: true, created: true });
       }
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 });
+    } catch (e) {
+      console.error("Failed to post storage to Odoo:", e);
+      return NextResponse.json({ error: "Failed to save data" }, { status: 500 });
+    }
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

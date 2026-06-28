@@ -12,6 +12,19 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self' https://www.theelsassisch.com",
+          },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     const rewrites = [];
 
