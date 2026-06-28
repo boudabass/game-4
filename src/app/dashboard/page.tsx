@@ -2,9 +2,10 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardFooter, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, Trophy, Star, ArrowRight } from "lucide-react"
+import { Play, Trophy, Star, ArrowRight, LogOut } from "lucide-react"
 import Link from "next/link"
 import { odooClient } from "@/lib/odoo"
+import { signOutAction } from "@/app/actions/auth"
 
 export default async function DashboardPage() {
     const cookieStore = await cookies();
@@ -31,8 +32,10 @@ export default async function DashboardPage() {
         { fields: ["id", "x_name", "x_studio_description", "x_studio_url"], limit: 3, order: "create_date desc" },
         sessionCookie
       );
-    } catch (e) {
+    } catch (e: any) {
       console.warn("Could not fetch games", e);
+      // Si la session est expirée, on pourrait forcer la déconnexion ici, 
+      // mais on laisse l'utilisateur utiliser le bouton pour l'instant.
     }
 
     const userName = user.name || user.email?.split('@')[0] || "Joueur"
@@ -83,7 +86,7 @@ export default async function DashboardPage() {
                                         </Button>
                                     </Link>
                                 </div>
-                            )) : <p className="text-slate-400 italic">Aucun jeu récent.</p>}
+                            )) : <p className="text-slate-400 italic">Aucun jeu récent (ou session expirée).</p>}
                         </div>
                     </CardContent>
                     <CardFooter>
@@ -100,7 +103,7 @@ export default async function DashboardPage() {
                         <CardHeader>
                             <CardTitle className="text-lg">Mon Espace</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-4 relative z-10">
                             <div className="p-3 bg-white/10 rounded-lg flex items-center justify-between backdrop-blur-sm">
                                 <span className="text-indigo-100 font-medium">Statut</span>
                                 <span className="bg-green-400 text-green-900 text-xs px-2 py-0.5 rounded-full font-bold">EN LIGNE</span>
@@ -115,6 +118,18 @@ export default async function DashboardPage() {
                                     <Trophy className="mr-2 w-4 h-4" /> Mes Scores
                                 </Button>
                             </Link>
+                            
+                            <hr className="border-indigo-500/50 my-2" />
+                            
+                            <form action={async () => {
+                                "use server";
+                                await signOutAction();
+                                redirect('/login');
+                            }}>
+                                <Button type="submit" variant="ghost" className="w-full text-red-200 hover:text-white hover:bg-red-500/30 transition-colors">
+                                    <LogOut className="mr-2 w-4 h-4" /> Déconnexion
+                                </Button>
+                            </form>
                         </CardContent>
                     </Card>
                 </div>
