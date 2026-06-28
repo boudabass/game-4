@@ -22,25 +22,22 @@ export default async function ProfilePage() {
         redirect('/login')
     }
 
-    // Server-Side Data Fetching
     let userScores: any[] = [];
     try {
-        // Assume x_user_id exists in x_game_score, or just fetch my scores.
         userScores = await odooClient.callKw(
             "x_game_score",
             "search_read",
-            [[]], // In a real scenario, filter by user. Odoo might filter automatically if model has ir.rule
-            { fields: ["id", "x_game_id", "x_score", "create_date"] },
+            [[]], 
+            { fields: ["id", "x_studio_game", "x_studio_score", "create_date"] },
             sessionId
         );
     } catch(e) {}
 
-    const totalGamesPlayed = userScores.length; // Simplified
-    const highestScore = userScores.length > 0 ? Math.max(...userScores.map(s => s.x_score)) : 0;
+    const totalGamesPlayed = userScores.length;
+    const highestScore = userScores.length > 0 ? Math.max(...userScores.map(s => s.x_studio_score)) : 0;
 
     return (
         <div className="container mx-auto py-8 animate-in fade-in duration-500">
-            {/* ... rest of your UI using userScores ... */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card className="md:col-span-1">
                     <CardHeader>

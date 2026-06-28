@@ -27,7 +27,7 @@ export default async function PlayPage({ params }: { params: { gameId: string } 
                 "x_game_release",
                 "search_read",
                 [[["id", "=", parseInt(gameId, 10)]]],
-                { fields: ["id", "x_name", "x_url"] },
+                { fields: ["id", "x_name", "x_studio_url"] },
                 sessionId
             );
             if (games && games.length > 0) {
@@ -58,7 +58,7 @@ export default async function PlayPage({ params }: { params: { gameId: string } 
             <div className="flex-grow bg-black relative">
                 <GamePlayer
                   gameName={game.x_name}
-                  gameUrl={game.x_url || `/games/unknown/index.html`}
+                  gameUrl={game.x_studio_url || `/games/unknown/index.html`}
                 />
             </div>
         </div>

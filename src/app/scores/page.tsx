@@ -14,7 +14,7 @@ export default async function ScoresPage() {
                 "x_game_score",
                 "search_read",
                 [[]],
-                { fields: ["id", "x_game_id", "x_score", "create_date"], limit: 50, order: "x_score desc" },
+                { fields: ["id", "x_studio_game", "x_studio_score", "create_date"], limit: 50, order: "x_studio_score desc" },
                 sessionId
             );
         }
@@ -38,8 +38,8 @@ export default async function ScoresPage() {
                         <div className="space-y-4">
                             {scores.map((score, idx) => (
                                 <div key={score.id} className="flex justify-between p-2 border-b">
-                                    <span>#{idx + 1} - Jeu ID: {score.x_game_id?.[1] || score.x_game_id}</span>
-                                    <span className="font-bold">{score.x_score}</span>
+                                    <span>#{idx + 1} - Jeu ID: {score.x_studio_game?.[1] || score.x_studio_game}</span>
+                                    <span className="font-bold">{score.x_studio_score}</span>
                                 </div>
                             ))}
                         </div>

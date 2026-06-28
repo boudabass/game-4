@@ -1,4 +1,3 @@
-
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardFooter, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -8,7 +7,6 @@ import Link from "next/link"
 import { odooClient } from "@/lib/odoo"
 
 export default async function DashboardPage() {
-    // 1. Server-Side Auth Check
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('arcade_session')?.value;
     const userCookie = cookieStore.get('arcade_user')?.value;
@@ -24,14 +22,13 @@ export default async function DashboardPage() {
         redirect('/login');
     }
 
-    // 2. Server-Side Data Fetching (Games)
     let latestGames: any[] = [];
     try {
       latestGames = await odooClient.callKw(
         "x_game_release",
         "search_read",
         [[]],
-        { fields: ["id", "x_name", "x_description", "x_url"], limit: 3, order: "create_date desc" },
+        { fields: ["id", "x_name", "x_studio_description", "x_studio_url"], limit: 3, order: "create_date desc" },
         sessionCookie
       );
     } catch (e) {

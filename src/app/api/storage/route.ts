@@ -20,11 +20,11 @@ export async function GET(request: Request) {
       const saves = await odooClient.callKw(
         "x_game_save",
         "search_read",
-        [[["x_game_id", "=", parseInt(gameId, 10)]]],
-        { fields: ["id", "x_data", "write_date"], limit: 1, order: "write_date desc" },
+        [[["x_studio_game", "=", parseInt(gameId, 10)]]],
+        { fields: ["id", "x_studio_data", "write_date"], limit: 1, order: "write_date desc" },
         sessionId
       );
-      return NextResponse.json({ data: saves.length > 0 ? saves[0].x_data : null });
+      return NextResponse.json({ data: saves.length > 0 ? saves[0].x_studio_data : null });
     } catch (e) {
       console.warn("Odoo fetch failed, returning empty storage:", e);
       return NextResponse.json({ data: null });
@@ -45,33 +45,28 @@ export async function POST(request: Request) {
     const { gameId, data } = body;
 
     try {
-      // First check if a save exists for this game and this user
-      // Assuming x_user_id is automatically populated by Odoo based on session or we need to pass it
-      // Let's search first
       const existing = await odooClient.callKw(
         "x_game_save",
         "search",
-        [[["x_game_id", "=", parseInt(gameId, 10)]]],
+        [[["x_studio_game", "=", parseInt(gameId, 10)]]],
         { limit: 1 },
         sessionId
       );
 
       if (existing && existing.length > 0) {
-        // Update
         await odooClient.callKw(
           "x_game_save",
           "write",
-          [existing, { x_data: JSON.stringify(data) }],
+          [existing, { x_studio_data: JSON.stringify(data) }],
           {},
           sessionId
         );
         return NextResponse.json({ success: true, updated: true });
       } else {
-        // Create
         await odooClient.callKw(
           "x_game_save",
           "create",
-          [[{ x_game_id: parseInt(gameId, 10), x_data: JSON.stringify(data) }]],
+          [[{ x_studio_game: parseInt(gameId, 10), x_studio_data: JSON.stringify(data) }]],
           {},
           sessionId
         );

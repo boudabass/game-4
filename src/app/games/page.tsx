@@ -16,7 +16,7 @@ export default async function GamesPage() {
                 "x_game_release",
                 "search_read",
                 [[]],
-                { fields: ["id", "x_name", "x_description", "x_url"] },
+                { fields: ["id", "x_name", "x_studio_description", "x_studio_url"] },
                 sessionId
             );
         }
@@ -64,7 +64,7 @@ export default async function GamesPage() {
                             
                             <CardContent className="flex-grow">
                                 <p className="text-slate-600 text-sm line-clamp-3">
-                                    {game.x_description || "Aucune description disponible pour ce jeu."}
+                                    {game.x_studio_description || "Aucune description disponible pour ce jeu."}
                                 </p>
                             </CardContent>
                             

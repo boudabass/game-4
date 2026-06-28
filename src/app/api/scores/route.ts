@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     
     let domain = [];
     if (gameId) {
-      domain.push(["x_game_id", "=", parseInt(gameId, 10)]);
+      domain.push(["x_studio_game", "=", parseInt(gameId, 10)]);
     }
 
     try {
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         "x_game_score",
         "search_read",
         [domain],
-        { fields: ["id", "x_game_id", "x_user_id", "x_score", "create_date"], limit: 100, order: "x_score desc" },
+        { fields: ["id", "x_studio_game", "x_studio_user", "x_studio_score", "create_date"], limit: 100, order: "x_studio_score desc" },
         sessionId
       );
       return NextResponse.json({ scores });
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       const result = await odooClient.callKw(
         "x_game_score",
         "create",
-        [[{ x_game_id: gameId, x_score: score }]],
+        [[{ x_studio_game: gameId, x_studio_score: score }]],
         {},
         sessionId
       );

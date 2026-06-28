@@ -9,13 +9,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Attempt to fetch from Odoo, return empty array if it fails/unconfigured
     try {
       const games = await odooClient.callKw(
         "x_game_release",
         "search_read",
-        [[]], // domain
-        { fields: ["id", "x_name", "x_description", "x_url"] }, // kwargs
+        [[]],
+        { fields: ["id", "x_name", "x_studio_description", "x_studio_url"] },
         sessionId
       );
       return NextResponse.json({ games });
