@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { odooClient } from "@/lib/odoo";
 import { cookies } from "next/headers";
 
-export default async function PlayPage({ params }: { params: { gameId: string } }) {
+export default async function PlayPage({ params }: { params: Promise<{ gameId: string }> }) {
     const { gameId } = await params;
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('arcade_session')?.value;
