@@ -82,7 +82,7 @@ export class OdooClient {
    */
   async callKw(model: string, method: string, args: any[] = [], kwargs: any = {}, sessionId?: string) {
     const { result } = await this.jsonRpcCall(
-      "/web/dataset/call_kw",
+      `/web/dataset/call_kw/${model}/${method}`,
       "call",
       {
         model,
