@@ -54,3 +54,4 @@ data/*
 !public/games/test-hub
 
 !data/db.json
+.dyad/

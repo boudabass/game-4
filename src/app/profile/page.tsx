@@ -1,5 +1,5 @@
 
-import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -9,11 +9,18 @@ import { fr } from "date-fns/locale"
 import { Trophy, Calendar, Gamepad2 } from "lucide-react"
 
 export default async function ProfilePage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('arcade_session')?.value;
 
-    if (!user) {
-        redirect('/')
+    if (!sessionCookie) {
+        redirect('/login')
+    }
+
+    let user;
+    try {
+        user = JSON.parse(sessionCookie);
+    } catch(e) {
+        redirect('/login');
     }
 
     const email = user.email || "Utilisateur"
@@ -21,16 +28,7 @@ export default async function ProfilePage() {
 
     // Server-Side Data Fetch: My Scores
     const db = await getDb()
-    // Assuming scores have userId or we filter by something? 
-    // The current DB schema has 'userId' optional. 
-    // If not present, we can't filter securely. 
-    // But let's check what logic was there: /api/my-scores filtered by... what? 
-    // Let's assume we filter by user.id if available, or just return empty/all?
-    // Looking at previous code, it fetched /api/my-scores.
-    // I should check what that API did. But likely it filtered by user.id.
-
     const myScores = db.data.scores.filter(s => s.userId === user.id)
-    // Sort recent first
     myScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     const recentScores = myScores.slice(0, 50)
 
@@ -40,11 +38,10 @@ export default async function ProfilePage() {
             <Card>
                 <CardContent className="pt-6 flex flex-col md:flex-row items-center gap-6">
                     <Avatar className="h-24 w-24 border-4 border-slate-100">
-                        <AvatarImage src={user.user_metadata?.avatar_url} />
                         <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
                     </Avatar>
                     <div className="text-center md:text-left space-y-2">
-                        <h1 className="text-3xl font-bold">{user.user_metadata?.full_name || email}</h1>
+                        <h1 className="text-3xl font-bold">{user.name || email}</h1>
                         <p className="text-slate-500 flex items-center justify-center md:justify-start gap-2">
                             <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Membre</span>
                             <span className="text-xs text-slate-400">ID: {user.id.slice(0, 8)}...</span>

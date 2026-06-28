@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, Gamepad2 } from "lucide-react"
@@ -6,14 +6,14 @@ import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { getDb, Score } from "@/lib/database"
 
-export const dynamic = 'force-dynamic'; // Ajout de cette ligne
+export const dynamic = 'force-dynamic';
 
 export default async function ScoresPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('arcade_session')?.value;
 
-    if (!user) {
-        redirect('/')
+    if (!sessionCookie) {
+        redirect('/login')
     }
 
     const db = await getDb()

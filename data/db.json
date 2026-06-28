@@ -764,5 +764,21 @@
         "version": "1.4"
       }
     }
+  ],
+  "users": [
+    {
+      "id": "75ed45e6-9aed-442c-a958-4ecb630272a4",
+      "email": "admin@local.com",
+      "name": "Administrateur Local",
+      "role": "admin",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "2815af9b-5e75-4884-a841-53cf39ea6080",
+      "email": "joueur@local.com",
+      "name": "Joueur Local",
+      "role": "user",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    }
   ]
 }

@@ -30,16 +30,16 @@ import {
   deleteUserAction,
   updateUserRoleAction
 } from "@/app/actions/user-management";
-import { User } from "@supabase/supabase-js";
+import { LocalUser } from "@/components/auth-provider";
 import { FileCode, ImageIcon, FileText, Trash2, Edit, Save, FolderOpen, FolderPlus, Layers, Users, UserPlus, Shield, ShieldCheck } from "lucide-react";
 
 export default function AdminPage() {
-  const { user, isLoading } = useAuth();
+  const { user, role, isLoading } = useAuth();
   const [games, setGames] = useState<GameFolder[]>([]);
   const [mode, setMode] = useState<"new-game" | "new-version" | "manage" | "users">("manage");
 
   // États Utilisateurs
-  const [usersList, setUsersList] = useState<User[]>([]);
+  const [usersList, setUsersList] = useState<LocalUser[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
 
   // États Creation / Import
@@ -231,9 +231,9 @@ export default function AdminPage() {
     console.log("[Admin Page] Loading auth state...");
     return <div>Chargement...</div>;
   }
-  if (!user) {
-    console.warn("[Admin Page] Access denied: No user found.");
-    return <div>Accès refusé</div>;
+  if (!user || role !== 'admin') {
+    console.warn("[Admin Page] Access denied: Not authorized.");
+    return <div className="p-8 text-center text-red-500 font-bold">Accès refusé</div>;
   }
 
   return (
@@ -413,8 +413,8 @@ export default function AdminPage() {
                       <Input name="email" type="email" placeholder="email@exemple.com" required />
                     </div>
                     <div className="space-y-2">
-                      <Label>Mot de passe</Label>
-                      <Input name="password" type="password" placeholder="******" required />
+                      <Label>Nom d&apos;affichage</Label>
+                      <Input name="name" type="text" placeholder="Prénom Nom" />
                     </div>
                     <div className="space-y-2">
                       <Label>Rôle</Label>
@@ -454,7 +454,7 @@ export default function AdminPage() {
                         </thead>
                         <tbody className="divide-y">
                           {usersList.map((u: any) => {
-                            const currentRole = u.profile_role || "user";
+                            const currentRole = u.role || u.profile_role || "user";
                             return (
                               <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="p-3">{u.email}</td>
@@ -466,7 +466,7 @@ export default function AdminPage() {
                                   </span>
                                 </td>
                                 <td className="p-3 text-slate-500">
-                                  {new Date(u.created_at).toLocaleDateString()}
+                                  {new Date(u.createdAt || u.created_at).toLocaleDateString()}
                                 </td>
                                 <td className="p-3 text-right space-x-2">
                                   <Button

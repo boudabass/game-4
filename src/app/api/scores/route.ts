@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
-export const dynamic = 'force-dynamic'; // Important pour que Next.js ne cache pas les résultats
+export const dynamic = 'force-dynamic';
 
 // GET /api/scores?gameId=tetris-v1
 export async function GET(request: Request) {
@@ -16,7 +16,6 @@ export async function GET(request: Request) {
   const db = await getDb();
   await db.read();
 
-  // On renvoie les scores filtrés par jeu, triés par score descendant
   const scores = db.data.scores
     .filter((s) => s.gameId === gameId)
     .sort((a, b) => b.score - a.score)
@@ -35,22 +34,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
     }
 
-    // --- SECURITE SUPABASE ---
-    const supabase = await createClient(); // Fonction standard server-side
-    const { data: { user } } = await supabase.auth.getUser();
+    // --- COOKIE SESSION LOCAL ---
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('arcade_session')?.value;
+    let user = null;
+
+    if (sessionCookie) {
+      try {
+        user = JSON.parse(sessionCookie);
+      } catch (e) {}
+    }
 
     let finalPlayerName = playerName || 'Anonyme';
     let userId = undefined;
     let userEmail = undefined;
 
     if (user) {
-      // Authentifié : On force l'identité (Sécurité)
-      // On utilise l'email ou une metadata 'full_name' si présente
-      finalPlayerName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+      finalPlayerName = user.name || user.email?.split('@')[0] || 'Joueur';
       userId = user.id;
       userEmail = user.email;
     }
-    // -------------------------
 
     const db = await getDb();
     await db.update(({ scores }) => scores.push({
@@ -58,8 +61,8 @@ export async function POST(request: Request) {
       playerName: finalPlayerName,
       score: Number(score),
       date: new Date().toISOString(),
-      userId,     // Nouveau champ
-      userEmail   // Nouveau champ
+      userId,
+      userEmail
     }));
 
     return NextResponse.json({ success: true, user: user?.email });

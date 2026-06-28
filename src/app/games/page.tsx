@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -6,14 +6,14 @@ import { Play } from "lucide-react"
 import Link from "next/link"
 import { getDb } from "@/lib/database"
 
-export const dynamic = 'force-dynamic'; // Ajout de cette ligne
+export const dynamic = 'force-dynamic';
 
 export default async function GamesPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get('arcade_session')?.value
 
-    if (!user) {
-        redirect('/')
+    if (!sessionCookie) {
+        redirect('/login')
     }
 
     const db = await getDb()

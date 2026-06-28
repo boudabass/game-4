@@ -12,19 +12,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User, Shield, Trophy } from "lucide-react";
 
 export function UserNav() {
-    const { user, role, isLoading } = useAuth();
+    const { user, role, isLoading, signOut } = useAuth();
     const router = useRouter();
-    const supabase = createClient();
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut();
-        router.refresh(); // Rafraîchir pour mettre à jour le middleware/cookies
+        await signOut();
     };
 
     if (isLoading) return <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200"></div>;
@@ -46,7 +43,7 @@ export function UserNav() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.user_metadata?.avatar_url} alt={email} />
+                        <AvatarImage src={undefined} alt={email} />
                         <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                 </Button>

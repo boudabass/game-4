@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import { redirect, notFound } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -7,11 +7,11 @@ import { getDb } from "@/lib/database"
 
 export default async function PlayPage({ params }: { params: Promise<{ gameId: string }> }) {
   // 1. Auth Check (Server Side)
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get('arcade_session')?.value
 
-  if (!user) {
-    redirect('/')
+  if (!sessionCookie) {
+    redirect('/login')
   }
 
   // 2. Unwrap Params and Fetch Data

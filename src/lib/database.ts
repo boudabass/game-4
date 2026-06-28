@@ -36,15 +36,53 @@ export interface GameSave {
   data: any;            // Payload JSON libre (inventaire, positions, etc.)
 }
 
+export interface LocalUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+}
+
 export interface DatabaseData {
   games: GameRelease[];
   scores: Score[];
-  saves: GameSave[];    // Nouvelle table
+  saves: GameSave[];
+  users: LocalUser[];
 }
 
-const defaultData: DatabaseData = { games: [], scores: [], saves: [] };
+const defaultData: DatabaseData = {
+  games: [],
+  scores: [],
+  saves: [],
+  users: [
+    {
+      id: '75ed45e6-9aed-442c-a958-4ecb630272a4',
+      email: 'admin@local.com',
+      name: 'Administrateur Local',
+      role: 'admin',
+      createdAt: '2026-01-01T00:00:00.000Z'
+    },
+    {
+      id: '2815af9b-5e75-4884-a841-53cf39ea6080',
+      email: 'joueur@local.com',
+      name: 'Joueur Local',
+      role: 'user',
+      createdAt: '2026-01-01T00:00:00.000Z'
+    }
+  ]
+};
 
 // Singleton pour la connexion DB
 export const getDb = async () => {
-  return await JSONFilePreset<DatabaseData>('data/db.json', defaultData);
+  const db = await JSONFilePreset<DatabaseData>('data/db.json', defaultData);
+  
+  // Garantir l'initialisation et l'écriture des profils par défaut s'ils manquent dans le fichier physique
+  await db.read();
+  if (!db.data.users || db.data.users.length === 0) {
+    db.data.users = [...defaultData.users];
+    await db.write();
+  }
+  
+  return db;
 };

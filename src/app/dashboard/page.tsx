@@ -1,5 +1,5 @@
 
-import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardFooter, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,18 +9,25 @@ import { getDb, GameRelease } from "@/lib/database"
 
 export default async function DashboardPage() {
     // 1. Server-Side Auth Check
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('arcade_session')?.value;
 
-    if (!user) {
-        redirect('/')
+    if (!sessionCookie) {
+        redirect('/login')
+    }
+
+    let user;
+    try {
+        user = JSON.parse(sessionCookie);
+    } catch(e) {
+        redirect('/login');
     }
 
     // 2. Server-Side Data Fetching (Games)
     const db = await getDb()
     const latestGames = db.data.games.slice(0, 3)
 
-    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Joueur"
+    const userName = user.name || user.email?.split('@')[0] || "Joueur"
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700 container mx-auto py-8">

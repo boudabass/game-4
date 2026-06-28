@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +15,15 @@ export async function GET(request: Request) {
   }
 
   // 1. Auth Check
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('arcade_session')?.value;
+  let user = null;
+
+  if (sessionCookie) {
+    try {
+      user = JSON.parse(sessionCookie);
+    } catch (e) {}
+  }
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,8 +55,15 @@ export async function POST(request: Request) {
     }
 
     // 1. Auth Check
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('arcade_session')?.value;
+    let user = null;
+
+    if (sessionCookie) {
+      try {
+        user = JSON.parse(sessionCookie);
+      } catch (e) {}
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

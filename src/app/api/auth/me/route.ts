@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('arcade_session')?.value;
 
-    if (!user) {
-        return NextResponse.json({ user: null });
-    }
+  if (!sessionCookie) {
+    return NextResponse.json({ user: null });
+  }
 
-    return NextResponse.json({
-        user: {
-            id: user.id,
-            email: user.email,
-            name: user.user_metadata?.full_name
-        }
-    });
+  try {
+    const user = JSON.parse(sessionCookie);
+    return NextResponse.json({ user });
+  } catch (e) {
+    return NextResponse.json({ user: null });
+  }
 }
