@@ -3,7 +3,9 @@ export class OdooClient {
   private db: string;
 
   constructor() {
-    this.url = process.env.ODOO_URL || "https://www.theelsassisch.com";
+    // On s'assure d'enlever le slash final s'il y en a un
+    const rawUrl = process.env.ODOO_URL || "https://www.theelsassisch.com";
+    this.url = rawUrl.replace(/\/$/, "");
     this.db = process.env.ODOO_DB || "theelsassisch";
   }
 
@@ -45,7 +47,7 @@ export class OdooClient {
       throw new Error(`Odoo RPC Error: ${data.error.message || JSON.stringify(data.error)}`);
     }
 
-    // Extract set-cookie for session_id if it's the authentication call
+    // Extract set-cookie for session_id (Fallback)
     const setCookie = response.headers.get("set-cookie");
     let newSessionId = null;
     
@@ -63,7 +65,7 @@ export class OdooClient {
    * Authenticate a user with Odoo and get a session_id
    */
   async authenticate(login: string, password: string) {
-    const { result, sessionId } = await this.jsonRpcCall(
+    const { result, sessionId: cookieSessionId } = await this.jsonRpcCall(
       "/web/session/authenticate",
       "call",
       {
@@ -73,8 +75,16 @@ export class OdooClient {
       }
     );
     
+    // Les instances .odoo.com renvoient généralement la session_id directement dans le result.
+    // C'est beaucoup plus fiable que de parser le header Set-Cookie qui peut être bloqué.
+    const finalSessionId = result.session_id || cookieSessionId;
+
+    if (!finalSessionId) {
+        throw new Error("Impossible de récupérer l'ID de session depuis Odoo.");
+    }
+
     // Result contains the user context (uid, name, etc.)
-    return { user: result, sessionId };
+    return { user: result, sessionId: finalSessionId };
   }
 
   /**
