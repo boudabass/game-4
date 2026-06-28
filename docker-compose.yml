@@ -1,21 +1,16 @@
+version: '3.8'
+
 services:
   web:
-    image: ghcr.io/boudabass/game-4:latest
-    container_name: gamesenior
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    volumes:
-      # STOCKAGE DONNÉES (db.json - Scores & Métadonnées)
-      - /mnt/share1/server/apps/gamesenior/data:/app/data
-
-      # STOCKAGE FICHIERS (Jeux p5.js statiques)
-      - /mnt/share1/server/apps/gamesenior/games:/app/public/games
-
     environment:
-      NODE_ENV: production
-      # Plus besoin de DATABASE_URL car on est en Lowdb pur
-      # Les variables Supabase sont injectées via le .env ou l'UI Dyad
-    env_file:
-      - .env
-
+      - NODE_ENV=production
+      - PORT=3000
+      # Variables d'environnement pour Odoo (à remplir dans le panel Coolify)
+      # - ODOO_URL=https://www.theelsassisch.com
+      # - ODOO_DB=theelsassisch
     restart: unless-stopped

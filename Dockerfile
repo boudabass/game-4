@@ -1,55 +1,41 @@
-# Stage 1: Build the Next.js application
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS base
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
+# 1. Étape d'installation des dépendances
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy the rest of the application code
+# 2. Étape de build
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV NEXT_TELEMETRY_DISABLED 1
+RUN npm run build
 
-# Build the Next.js application
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-RUN pnpm build
-
-# Stage 2: Create the production-ready image
-FROM node:20-alpine
-
-# Install CA certificates for HTTPS requests
-RUN apk add --no-cache ca-certificates
-
-# Set environment variables for Next.js production mode
-ENV NODE_ENV=production
-ENV PORT=3000
-
+# 3. Étape de production (Image finale)
+FROM base AS runner
 WORKDIR /app
 
-# Install pnpm in production stage too (optional for running scripts, but good practice)
-RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Create volume mount points with correct permissions
-RUN mkdir -p /app/data && mkdir -p /app/public/games
+# Sécurité : créer un utilisateur non-root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copy only necessary files from the builder stage
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Copier uniquement les dossiers générés par le mode standalone
 COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Expose the port
+USER nextjs
+
 EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
 
-# Command to run the Next.js application
-CMD ["pnpm", "start"]
+# Lancer le serveur optimisé
+CMD ["node", "server.js"]
