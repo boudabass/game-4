@@ -41,10 +41,10 @@ Pour simplifier les calculs de collision et de pathfinding, le système radial e
     - p5play -> HTML : Mise à jour des textes DOM via le Tick Engine.
 
 ## 6. Persistance des Données
-1. **Init** : Fetch Cloud (Supabase/DB) -> LocalStorage.
+1. **Init** : Fetch Cloud (Odoo Cloud Save via /api/storage) -> LocalStorage.
 2. **Jeu** : Lecture/Écriture dans un objet `state` en mémoire.
 3. **Auto-save** : `state` -> LocalStorage (toutes les minutes).
-4. **Sync** : LocalStorage -> Cloud périodiquement ou à la sortie.
+4. **Sync** : LocalStorage -> Cloud périodiquement ou à la sortie (Odoo).
 
 ## 7. Optimisations p5play
 - **Culling** : `citizen.visible = false` si hors-écran.
