@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/auth-provider";
-import { LayoutWrapper } from "@/components/layout-wrapper"; // Import LayoutWrapper
+import { LayoutWrapper } from "@/components/layout-wrapper";
+import { IframeResizer } from "@/components/iframe-resizer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <IframeResizer />
         <AuthProvider>
           <LayoutWrapper>
             {children}
