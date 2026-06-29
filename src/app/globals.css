@@ -80,13 +80,20 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Masquer la scrollbar pour Firefox et IE/Edge */
-    -ms-overflow-style: none;
-    scrollbar-width: none;
   }
   
-  /* Masquer la scrollbar pour Chrome, Safari et Opera */
-  body::-webkit-scrollbar {
-    display: none;
+  /* Scrollbar personnalisée élégante */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-500;
   }
 }
