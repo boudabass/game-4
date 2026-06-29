@@ -43,7 +43,7 @@ export default async function PlayPage({ params }: { params: Promise<{ gameId: s
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)]">
+        <div className="flex flex-col h-[850px]">
             <div className="bg-slate-900 border-b border-slate-800 text-white p-2 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Link href="/games">

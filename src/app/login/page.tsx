@@ -40,7 +40,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6 selection:bg-indigo-500/30 relative overflow-hidden">
+    <div className="min-h-[800px] bg-slate-950 text-white flex items-center justify-center p-6 selection:bg-indigo-500/30 relative overflow-hidden">
       {/* Arrière-plan dégradé dynamique */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/30 via-slate-950 to-slate-950 z-0"></div>
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>

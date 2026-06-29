@@ -4,28 +4,38 @@ import { useEffect } from "react";
 
 export function IframeResizer() {
   useEffect(() => {
-    // Si nous ne sommes pas dans le navigateur ou pas dans une iframe, on ignore
     if (typeof window === "undefined" || window === window.parent) return;
 
+    let lastHeight = 0;
+
     const sendHeight = () => {
-      // On calcule la hauteur totale du contenu
-      const height = document.documentElement.scrollHeight;
-      // On envoie le message à Odoo
-      window.parent.postMessage({ type: "ARCADE_RESIZE", height: height }, "*");
+      // Mesurer le contenu réel du body
+      const height = document.body.offsetHeight;
+      
+      // Sécurité : Ne redimensionner que si la différence est supérieure à 30 pixels
+      // Cela casse les boucles infinies de micro-ajustements
+      if (Math.abs(lastHeight - height) > 30) {
+        lastHeight = height;
+        window.parent.postMessage({ type: "ARCADE_RESIZE", height: height }, "*");
+      }
     };
 
-    // Envoyer la hauteur au chargement initial
     sendHeight();
 
-    // Observer les changements de taille (quand on ouvre un menu, navigue, etc.)
+    // Utilisation d'un délai (debounce) pour ne pas saturer le navigateur
+    let timeoutId: NodeJS.Timeout;
     const observer = new ResizeObserver(() => {
-      sendHeight();
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => sendHeight(), 100);
     });
 
     observer.observe(document.body);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
-  return null; // Ce composant est totalement invisible
+  return null;
 }
