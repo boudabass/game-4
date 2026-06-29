@@ -15,7 +15,7 @@ Le jeu écrit dans le `localStorage` du navigateur lors des actions clés. C'est
 *   Quête validée
 
 ### 2. Fin de session (Unique - CLOUD)
-Le jeu écrit dans la **Base de Données (DB)** une seule fois.
+Le jeu écrit dans le **Cloud Odoo** (modèle `x_game_save`) une seule fois via l'API de plateforme.
 *   Bouton "Quitter & Sauvegarder"
 *   Cela garantit que la progression est disponible sur un autre appareil au prochain lancement.
 
@@ -23,7 +23,7 @@ Le jeu écrit dans la **Base de Données (DB)** une seule fois.
 | Action | Cible | Fréquence |
 | :--- | :--- | :--- |
 | Gameplay (Dormir, Planter) | **Local Storage** | Haute (Sans latence) |
-| Démarrage Jeu | **Lecture DB** | 1 fois (Synchro) |
-| Quitter Jeu | **Écriture DB** | 1 fois (Upload) |
+| Démarrage Jeu | **Lecture Odoo (Cloud)** | 1 fois (Synchro) |
+| Quitter Jeu | **Écriture Odoo (Cloud)** | 1 fois (Upload) |
 
 > **Résultat :** Portabilité totale sans ralentir le jeu avec des requêtes réseau constantes.

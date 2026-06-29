@@ -67,10 +67,10 @@ Ce document recense les erreurs rencontrées lors du développement et les solut
 
 ## 4. Système & Serveur
 
-### 🔴 Problème : Erreur 500 sur `POST /api/scores`
-*   **Symptôme :** Le jeu fonctionne mais le score n'est pas sauvegardé à la fin.
-*   **Cause :** Le fichier `db.json` est corrompu ou mal initialisé (tableau `scores` manquant).
-*   **Solution Validée :** Vérifier que `data/db.json` contient bien `"scores": []` à la racine.
+### 🔴 Problème : Erreur 500 sur `POST /api/scores` ou `POST /api/storage`
+*   **Symptôme :** Le jeu fonctionne mais la sauvegarde ou le score échoue en fin de partie.
+*   **Cause :** La session Odoo a expiré ou le cookie `arcade_session` est manquant/invalide.
+*   **Solution Validée :** Rediriger l'utilisateur vers la page de login ou s'assurer que la session est toujours active en interrogeant `/api/auth/me`.
 
 ## 5. Gameplay
 

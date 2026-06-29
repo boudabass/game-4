@@ -3,7 +3,7 @@
 Architecture de persistance robuste conçue pour la performance en jeu et la portabilité entre appareils.
 
 ## 1. Philosophie "Hybride"
-Le système utilise le **LocalStorage** pour la réactivité immédiate et la **Base de Données (DB)** pour la sécurité et le cross-device.
+Le système utilise le **LocalStorage** pour la réactivité immédiate et la **Base de Données Odoo** pour la sécurité et le cross-device.
 
 ### 🔄 Cycle de Vie des Données
 
@@ -11,8 +11,8 @@ Le système utilise le **LocalStorage** pour la réactivité immédiate et la **
 Au lancement du jeu, l'algorithme suivant est exécuté pour garantir que la version la plus récente est toujours chargée :
 
 1.  **Vérification Locale** : Le jeu récupère la sauvegarde du navigateur (`localStorage`).
-2.  **Synchronisation Cloud** : Le jeu interroge l'API `/api/storage` pour obtenir la sauvegarde Cloud.
-3.  **Comparaison par Horodatage** : Les champs `savedAt` (Local) et `updatedAt` (Cloud) sont comparés.
+2.  **Synchronisation Cloud** : Le jeu interroge l'API `/api/storage` pour obtenir la sauvegarde Cloud d'Odoo.
+3.  **Comparaison par Horodatage** : Les champs `savedAt` (Local) et `write_date` (Cloud Odoo) sont comparés.
     *   **Priorité** : La sauvegarde avec l'horodatage le plus récent est chargée.
     *   **Mise en Cache** : Si la version Cloud est plus récente, elle écrase la version locale dans le `localStorage` pour maintenir le cache à jour.
 4.  **Initialisation** : Si aucune sauvegarde n'est trouvée, le jeu initialise les valeurs par défaut et force une première sauvegarde Cloud.
@@ -27,7 +27,7 @@ Toutes les actions de gameplay (dormir, changer de zone) déclenchent une sauveg
 Lorsque le joueur quitte proprement via le menu :
 1.  Le jeu prend l'état actuel du `localStorage`.
 2.  Il envoie ce paquet JSON vers l'API `/api/storage`.
-3.  La Base de Données est mise à jour.
+3.  La Base de Données Odoo (modèle `x_game_save`) est mise à jour.
 
 ---
 
@@ -47,7 +47,7 @@ Le `LoadingManager` est appelé à chaque étape clé, garantissant que l'utilis
 | :--- | :--- |
 | 1-7 | Initialisation des Managers (GameState, TimeManager, GridSystem, etc.) |
 | 8 | Vérification du cache local... |
-| 9 | Interrogation de la sauvegarde Cloud... |
+| 9 | Interrogation de la sauvegarde Cloud Odoo... |
 | 10 | Analyse des données de persistance... |
 | 11 | Application des données de la source [LOCAL/CLOUD]... |
 | 12-49 | Finalisation des systèmes, préparation du rendu, chargement des assets (marge pour futur contenu). |
