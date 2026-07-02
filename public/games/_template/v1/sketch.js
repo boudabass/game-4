@@ -5,6 +5,9 @@
  *   - sauvegarde/chargement du meilleur score via Engine.Save (local + cloud)
  *   - envoi du score via GameSystem.Score.submit()
  *   - machine d'états switch/case (conforme à TROUBLESHOOTING.md)
+ *   - CANVAS RESPONSIVE : remplit toute la fenêtre et suit ses changements
+ *     de taille. Règle d'or pour tous les jeux futurs : ne JAMAIS utiliser
+ *     de pixels en dur ; tout se calcule à partir de width, height et u().
  */
 
 const STATE = { MENU: "MENU", GAME: "GAME", OVER: "OVER" };
@@ -19,10 +22,27 @@ let btn = null;
 
 const C = window.TemplateConfig;
 
+// u(n) = n % du plus petit côté de l'écran.
+// Exemple : u(5) = 5% → une taille qui reste proportionnée sur mobile
+// comme sur grand écran. À utiliser pour TOUTES les tailles (textes,
+// rayons, boutons, marges...).
+function u(n) {
+    return (min(width, height) * n) / 100;
+}
+
 function setup() {
-    createCanvas(C.width, C.height);
+    createCanvas(windowWidth, windowHeight);
     textAlign(CENTER, CENTER);
     boot();
+}
+
+// Appelé automatiquement par p5 quand la fenêtre (l'iframe) change de
+// taille : rotation du téléphone, passage en plein écran, etc.
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    // On garde la cible dans l'écran si celui-ci a rétréci.
+    target.x = constrain(target.x, target.r, width - target.r);
+    target.y = constrain(target.y, target.r, height - target.r);
 }
 
 // Démarrage asynchrone : chargement de la sauvegarde puis fin du loader.
@@ -53,11 +73,11 @@ function draw() {
 
 function drawMenu() {
     fill(C.colors.text);
-    textSize(42); text(C.title, width / 2, height / 2 - 70);
-    textSize(18);
-    text("Cliquez la cible le plus de fois possible en " + C.duration + "s", width / 2, height / 2 - 10);
-    text("Meilleur score : " + best, width / 2, height / 2 + 25);
-    drawButton("JOUER", height / 2 + 100);
+    textSize(u(7)); text(C.title, width / 2, height / 2 - u(14));
+    textSize(u(3));
+    text("Cliquez la cible le plus de fois possible en " + C.duration + "s", width / 2, height / 2 - u(2));
+    text("Meilleur score : " + best, width / 2, height / 2 + u(4));
+    drawButton("JOUER", height / 2 + u(16));
 }
 
 function drawGame() {
@@ -70,27 +90,29 @@ function drawGame() {
     circle(target.x, target.y, target.r * 2);
 
     fill(C.colors.text);
-    textSize(22);
-    textAlign(LEFT, TOP); text("Score : " + score, 20, 20);
-    textAlign(RIGHT, TOP); text("Temps : " + ceil(timeLeft), width - 20, 20);
+    textSize(u(4));
+    textAlign(LEFT, TOP); text("Score : " + score, u(3), u(3));
+    textAlign(RIGHT, TOP); text("Temps : " + ceil(timeLeft), width - u(3), u(3));
     textAlign(CENTER, CENTER);
 }
 
 function drawOver() {
     fill(C.colors.text);
-    textSize(36); text("Partie terminée", width / 2, height / 2 - 70);
-    textSize(24);
-    text("Score : " + score, width / 2, height / 2 - 15);
-    text("Meilleur : " + best, width / 2, height / 2 + 20);
-    drawButton("REJOUER", height / 2 + 95);
+    textSize(u(6)); text("Partie terminée", width / 2, height / 2 - u(14));
+    textSize(u(4));
+    text("Score : " + score, width / 2, height / 2 - u(3));
+    text("Meilleur : " + best, width / 2, height / 2 + u(3));
+    drawButton("REJOUER", height / 2 + u(16));
 }
 
 function drawButton(label, y) {
-    btn = { x: width / 2 - 90, y: y - 28, w: 180, h: 56 };
+    const w = u(30);
+    const h = u(9);
+    btn = { x: width / 2 - w / 2, y: y - h / 2, w: w, h: h };
     fill(C.colors.button);
-    rect(btn.x, btn.y, btn.w, btn.h, 12);
+    rect(btn.x, btn.y, btn.w, btn.h, u(2));
     fill(C.colors.buttonText);
-    textSize(24); text(label, width / 2, y);
+    textSize(u(4)); text(label, width / 2, y);
 }
 
 function insideBtn(mx, my) {
@@ -98,9 +120,10 @@ function insideBtn(mx, my) {
 }
 
 function moveTarget() {
-    const m = 60;
+    target.r = u(5);
+    const m = target.r * 2;
     target.x = random(m, width - m);
-    target.y = random(m + 40, height - m);
+    target.y = random(m + u(8), height - m);
 }
 
 function startGame() {
