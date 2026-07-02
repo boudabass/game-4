@@ -95,4 +95,5 @@ Toute modification de `package.json` **impose** de régénérer `pnpm-lock.yaml`
 | [`documentation/developer_guide.md`](documentation/developer_guide.md) | Guide technique détaillé (données Odoo, intégration jeu) |
 | [`documentation/GAME_WORKFLOW.md`](documentation/GAME_WORKFLOW.md) | Processus pas à pas de création d'un jeu |
 | [`documentation/TROUBLESHOOTING.md`](documentation/TROUBLESHOOTING.md) | Erreurs connues p5.play et solutions |
+| [`documentation/JOURNAL_FONDATION.md`](documentation/JOURNAL_FONDATION.md) | Journal & leçons : ce qui marche, les pièges, les recettes (Odoo, nouveau jeu) |
 | [`documentation/DOC_AUDIT.md`](documentation/DOC_AUDIT.md) | État de la documentation (à jour / obsolète) |
