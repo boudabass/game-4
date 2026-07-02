@@ -64,10 +64,9 @@ docker compose down   # pour arrêter
 Les jeux se gèrent **directement dans Odoo** (il n'y a plus de panneau `/admin` dans l'app) :
 1. Déposer les fichiers du jeu dans `public/games/<jeu>/<version>/` (voir le template dans [`documentation/GAME_WORKFLOW.md`](documentation/GAME_WORKFLOW.md)).
 2. Créer un enregistrement dans le modèle Odoo **`x_game_release`** : renseigner `x_name` et `x_studio_url` (ex. `/games/elsass-farm/v2/index.html`).
-3. Reporter l'**ID numérique** généré par Odoo dans le `index.html` du jeu :
-   ```html
-   <script>window.DyadGame = { id: 'ID_ODOO', version: 'v2' };</script>
-   ```
+3. L'ID numérique de la release est injecté automatiquement dans l'iframe via `?gid=` (plus besoin de le coder en dur dans le jeu).
+
+Un template de départ propre est disponible dans `public/games/_template/v1/`.
 
 ### Structure du code
 
@@ -77,7 +76,7 @@ src/app/api/        Route Handlers : auth/me, games, scores, storage → Odoo
 src/app/actions/    Server Actions (auth : login/logout + cookies)
 src/lib/odoo.ts     Client JSON-RPC Odoo
 src/components/      Composants React (auth-provider, game-player, ui/…)
-public/games/       Jeux p5.js + système mutualisé (public/games/system/)
+public/games/       Jeux p5.js + socle mutualisé (system/ + system/engine/)
 documentation/      Docs (architecture, workflow, patterns, design des jeux)
 ```
 
@@ -91,6 +90,7 @@ Toute modification de `package.json` **impose** de régénérer `pnpm-lock.yaml`
 | Fichier | Contenu |
 |---|---|
 | [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) | Vue d'ensemble : plateforme, Odoo, jeux, flux, déploiement |
+| [`documentation/ARCHITECTURE_CIBLE.md`](documentation/ARCHITECTURE_CIBLE.md) | Plan de la fondation cible (socle jeu, contrat d'intégration) |
 | [`AI_RULES.md`](AI_RULES.md) | Règles strictes d'architecture (source de vérité pour l'IA et les devs) |
 | [`documentation/developer_guide.md`](documentation/developer_guide.md) | Guide technique détaillé (données Odoo, intégration jeu) |
 | [`documentation/GAME_WORKFLOW.md`](documentation/GAME_WORKFLOW.md) | Processus pas à pas de création d'un jeu |
