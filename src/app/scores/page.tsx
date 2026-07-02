@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Trophy, Medal, AlertCircle } from "lucide-react"
-import { odooClient } from "@/lib/odoo"
+import { odooClient, isSessionExpired } from "@/lib/odoo"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 export default async function ScoresPage() {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('arcade_session')?.value;
     
     let scores: any[] = [];
+    let sessionExpired = false;
     try {
         if (sessionId) {
             scores = await odooClient.callKw(
@@ -18,7 +20,11 @@ export default async function ScoresPage() {
                 sessionId
             );
         }
-    } catch(e) {}
+    } catch(e) {
+        if (isSessionExpired(e)) sessionExpired = true;
+    }
+    // Session Odoo expirée : direction la page de connexion, avec retour ici.
+    if (sessionExpired) redirect("/login?expired=1&next=/scores");
 
     return (
         <div className="container mx-auto py-8 animate-in fade-in duration-500">

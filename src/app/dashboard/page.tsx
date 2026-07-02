@@ -4,7 +4,7 @@ import { Card, CardFooter, CardHeader, CardTitle, CardContent } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Play, Trophy, Star, ArrowRight, LogOut } from "lucide-react"
 import Link from "next/link"
-import { odooClient } from "@/lib/odoo"
+import { odooClient, isSessionExpired } from "@/lib/odoo"
 import { signOutAction } from "@/app/actions/auth"
 
 export default async function DashboardPage() {
@@ -24,6 +24,7 @@ export default async function DashboardPage() {
     }
 
     let latestGames: any[] = [];
+    let sessionExpired = false;
     try {
       latestGames = await odooClient.callKw(
         "x_game_release",
@@ -33,10 +34,11 @@ export default async function DashboardPage() {
         sessionCookie
       );
     } catch (e: any) {
-      console.warn("Could not fetch games", e);
-      // Si la session est expirée, on pourrait forcer la déconnexion ici, 
-      // mais on laisse l'utilisateur utiliser le bouton pour l'instant.
+      if (isSessionExpired(e)) sessionExpired = true;
+      else console.warn("Could not fetch games", e);
     }
+    // Session Odoo expirée : direction la page de connexion, avec retour ici.
+    if (sessionExpired) redirect("/login?expired=1&next=/dashboard");
 
     const userName = user.name || user.email?.split('@')[0] || "Joueur"
 

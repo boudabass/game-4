@@ -1,3 +1,19 @@
+/**
+ * Erreur levée quand la session Odoo du client n'est plus valide
+ * (expirée ou révoquée). Les pages la détectent pour rediriger
+ * l'utilisateur vers /login au lieu d'afficher des données vides.
+ */
+export class OdooSessionExpiredError extends Error {
+  constructor() {
+    super("Session Odoo expir\u00e9e");
+    this.name = "OdooSessionExpiredError";
+  }
+}
+
+export function isSessionExpired(e: unknown): boolean {
+  return e instanceof OdooSessionExpiredError;
+}
+
 export class OdooClient {
   private url: string;
   private db: string;
@@ -49,7 +65,12 @@ export class OdooClient {
     const data = await response.json();
 
     if (data.error) {
-      throw new Error(`Odoo RPC Error: ${data.error.message || JSON.stringify(data.error)}`);
+      const message = data.error.message || JSON.stringify(data.error);
+      // Odoo signale une session invalide par le code 100 ("Odoo Session Expired").
+      if (data.error.code === 100 || /session expired/i.test(message)) {
+        throw new OdooSessionExpiredError();
+      }
+      throw new Error(`Odoo RPC Error: ${message}`);
     }
 
     const setCookie = response.headers.get("set-cookie");

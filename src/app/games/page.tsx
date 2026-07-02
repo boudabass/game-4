@@ -2,14 +2,16 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Play, Info, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { odooClient } from "@/lib/odoo"
+import { odooClient, isSessionExpired } from "@/lib/odoo"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 export default async function GamesPage() {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('arcade_session')?.value;
     
     let games: any[] = [];
+    let sessionExpired = false;
     try {
         if (sessionId) {
             games = await odooClient.callKw(
@@ -21,8 +23,11 @@ export default async function GamesPage() {
             );
         }
     } catch (e) {
-        console.warn("Could not fetch games", e);
+        if (isSessionExpired(e)) sessionExpired = true;
+        else console.warn("Could not fetch games", e);
     }
+    // Session Odoo expirée : direction la page de connexion, avec retour ici.
+    if (sessionExpired) redirect("/login?expired=1&next=/games");
 
     return (
         <div className="container mx-auto py-8 animate-in fade-in duration-500">

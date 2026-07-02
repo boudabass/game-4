@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { GameShell } from '@/components/game-shell';
-import { odooClient } from "@/lib/odoo";
+import { odooClient, isSessionExpired } from "@/lib/odoo";
+import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 // Injecte l'ID numérique de la release Odoo dans l'URL de l'iframe (?gid=).
@@ -17,6 +18,7 @@ export default async function PlayPage({ params }: { params: Promise<{ gameId: s
     const sessionId = cookieStore.get('arcade_session')?.value;
 
     let game = null;
+    let sessionExpired = false;
 
     try {
         if (sessionId) {
@@ -32,8 +34,12 @@ export default async function PlayPage({ params }: { params: Promise<{ gameId: s
             }
         }
     } catch (e) {
-        console.error(e);
+        if (isSessionExpired(e)) sessionExpired = true;
+        else console.error(e);
     }
+
+    // Session Odoo expirée : direction la page de connexion, avec retour ici.
+    if (sessionExpired) redirect(`/login?expired=1&next=/play/${gameId}`);
 
     if (!game) {
         notFound();

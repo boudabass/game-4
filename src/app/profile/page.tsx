@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Trophy, Clock, Target, Gamepad2, Medal } from "lucide-react"
-import { odooClient } from "@/lib/odoo"
+import { odooClient, isSessionExpired } from "@/lib/odoo"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -23,6 +23,7 @@ export default async function ProfilePage() {
     }
 
     let userScores: any[] = [];
+    let sessionExpired = false;
     try {
         userScores = await odooClient.callKw(
             "x_game_score",
@@ -31,7 +32,11 @@ export default async function ProfilePage() {
             { fields: ["id", "x_studio_game", "x_studio_score", "create_date"] },
             sessionId
         );
-    } catch(e) {}
+    } catch(e) {
+        if (isSessionExpired(e)) sessionExpired = true;
+    }
+    // Session Odoo expirée : direction la page de connexion, avec retour ici.
+    if (sessionExpired) redirect("/login?expired=1&next=/profile");
 
     const totalGamesPlayed = userScores.length;
     const highestScore = userScores.length > 0 ? Math.max(...userScores.map(s => s.x_studio_score)) : 0;

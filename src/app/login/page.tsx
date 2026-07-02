@@ -1,34 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth-provider";
 import { signInAction } from "@/app/actions/auth";
-import { Gamepad2, Loader2, Lock, Mail } from "lucide-react";
+import { Gamepad2, Loader2, Lock, Mail, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { refreshAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // ?expired=1 : la session Odoo a expiré, on explique pourquoi on est là.
+  const sessionExpired = searchParams.get("expired") === "1";
+  // ?next=/games : page à réouvrir après connexion (chemins internes uniquement).
+  const rawNext = searchParams.get("next") || "";
+  const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    
+
     try {
       const res = await signInAction(formData);
-      
+
       if (res.success) {
         toast.success("Connexion réussie !");
         await refreshAuth();
-        router.push("/dashboard");
+        router.push(nextPath);
       } else {
         toast.error(res.error || "Identifiants incorrects.");
       }
@@ -60,7 +67,14 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pb-8">
-          
+
+          {sessionExpired && (
+            <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+              <AlertCircle className="h-5 w-5 shrink-0 text-amber-400" />
+              <p>Votre session a expiré. Reconnectez-vous pour reprendre là où vous en étiez.</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-300">Email</Label>
@@ -119,5 +133,14 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// useSearchParams impose une frontière Suspense en Next 15.
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
