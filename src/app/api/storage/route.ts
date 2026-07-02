@@ -44,11 +44,16 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { gameId, data } = body;
 
+    const gameIdInt = parseInt(gameId, 10);
+    if (Number.isNaN(gameIdInt)) {
+      return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
+    }
+
     try {
       const existing = await odooClient.callKw(
         "x_game_save",
         "search",
-        [[["x_studio_game", "=", parseInt(gameId, 10)]]],
+        [[["x_studio_game", "=", gameIdInt]]],
         { limit: 1 },
         sessionId
       );
@@ -66,7 +71,8 @@ export async function POST(request: Request) {
         await odooClient.callKw(
           "x_game_save",
           "create",
-          [[{ x_studio_game: parseInt(gameId, 10), x_studio_data: JSON.stringify(data) }]],
+          // x_name est OBLIGATOIRE sur ce modele Odoo -> on le fournit toujours.
+          [[{ x_name: "Save " + gameIdInt, x_studio_game: gameIdInt, x_studio_data: JSON.stringify(data) }]],
           {},
           sessionId
         );

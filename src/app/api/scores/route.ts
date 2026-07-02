@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { gameId, score } = body;
 
-    // Cohérence : x_studio_game est une relation -> un entier (ID Odoo), jamais un slug.
+    // Coherence : x_studio_game est une relation -> un entier (ID Odoo), jamais un slug.
     const gameIdInt = parseInt(gameId, 10);
     if (Number.isNaN(gameIdInt)) {
       return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
@@ -55,7 +55,8 @@ export async function POST(request: Request) {
       const result = await odooClient.callKw(
         "x_game_score",
         "create",
-        [[{ x_studio_game: gameIdInt, x_studio_score: score }]],
+        // x_name est OBLIGATOIRE sur ce modele Odoo -> on le fournit toujours.
+        [[{ x_name: "Score " + score, x_studio_game: gameIdInt, x_studio_score: score }]],
         {},
         sessionId
       );

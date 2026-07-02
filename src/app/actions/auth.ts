@@ -6,24 +6,34 @@ import { odooClient } from "@/lib/odoo";
 const SESSION_COOKIE_NAME = "arcade_session";
 const USER_COOKIE_NAME = "arcade_user";
 
-export async function setSessionCookie(sessionId: string, user?: any) {
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, sessionId, {
-    httpOnly: true,
+// Domaine de cookie optionnel. À définir (ex. ".theelsassisch.com") le jour où
+// l'app est servie sur un SOUS-DOMAINE du site : la session devient alors
+// "same-site" et cesse d'être un cookie tiers bloqué dans l'iframe.
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+
+// Options communes aux cookies de session.
+// - sameSite "none" + secure : requis pour un contexte d'iframe cross-site.
+// - partitioned (CHIPS) : autorise le cookie dans une iframe tierce sur
+//   Chrome/Edge/Firefox (partitionné par site parent) au lieu d'être bloqué.
+//   NB: Safari n'honore pas CHIPS -> la solution durable reste le sous-domaine.
+function baseCookieOptions() {
+  const opts: Record<string, unknown> = {
     secure: true,
     sameSite: "none",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
-  
+    maxAge: 60 * 60 * 24 * 7, // 7 jours
+    partitioned: true,
+  };
+  if (COOKIE_DOMAIN) opts.domain = COOKIE_DOMAIN;
+  return opts;
+}
+
+export async function setSessionCookie(sessionId: string, user?: any) {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, sessionId, { ...baseCookieOptions(), httpOnly: true } as any);
+
   if (user) {
-    cookieStore.set(USER_COOKIE_NAME, JSON.stringify(user), {
-      httpOnly: false,
-      secure: true,
-      sameSite: "none",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    cookieStore.set(USER_COOKIE_NAME, JSON.stringify(user), { ...baseCookieOptions(), httpOnly: false } as any);
   }
 }
 
@@ -49,7 +59,7 @@ export async function signInAction(formData: FormData) {
 
   try {
     const { user, sessionId } = await odooClient.authenticate(email, password);
-    
+
     if (sessionId) {
       await setSessionCookie(sessionId, user);
       return { success: true, user };
