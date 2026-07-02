@@ -1,6 +1,8 @@
 export class OdooClient {
   private url: string;
   private db: string;
+  // Session du compte de service (interne), mise en cache entre les requetes.
+  private serviceSessionId: string | null = null;
 
   constructor() {
     // On s'assure d'enlever le slash final s'il y en a un
@@ -14,13 +16,12 @@ export class OdooClient {
    */
   async jsonRpcCall(path: string, method: string, params: any = {}, sessionId?: string) {
     const endpoint = `${this.url}${path}`;
-    
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
 
     if (sessionId) {
-      // Pass the session ID to the Odoo backend
       headers["Cookie"] = `session_id=${sessionId}`;
     }
 
@@ -47,10 +48,9 @@ export class OdooClient {
       throw new Error(`Odoo RPC Error: ${data.error.message || JSON.stringify(data.error)}`);
     }
 
-    // Extract set-cookie for session_id (Fallback)
     const setCookie = response.headers.get("set-cookie");
     let newSessionId = null;
-    
+
     if (setCookie) {
       const match = setCookie.match(/session_id=([^;]+)/);
       if (match) {
@@ -74,16 +74,13 @@ export class OdooClient {
         password,
       }
     );
-    
-    // Les instances .odoo.com renvoient généralement la session_id directement dans le result.
-    // C'est beaucoup plus fiable que de parser le header Set-Cookie qui peut être bloqué.
+
     const finalSessionId = result.session_id || cookieSessionId;
 
     if (!finalSessionId) {
-        throw new Error("Impossible de récupérer l'ID de session depuis Odoo.");
+      throw new Error("Impossible de récupérer l'ID de session depuis Odoo.");
     }
 
-    // Result contains the user context (uid, name, etc.)
     return { user: result, sessionId: finalSessionId };
   }
 
@@ -103,6 +100,42 @@ export class OdooClient {
       sessionId
     );
     return result;
+  }
+
+  /**
+   * Session du COMPTE DE SERVICE (utilisateur interne dédié).
+   * Utilisée pour toutes les écritures/lectures des scores et sauvegardes,
+   * afin que les clients (comptes portail) n'aient jamais besoin d'un accès
+   * direct aux modèles Odoo. Mise en cache et ré-authentifiée si expirée.
+   */
+  async getServiceSession(): Promise<string> {
+    if (this.serviceSessionId) return this.serviceSessionId;
+
+    const login = process.env.ODOO_API_LOGIN;
+    const password = process.env.ODOO_API_PASSWORD;
+    if (!login || !password) {
+      throw new Error("Compte de service non configuré (ODOO_API_LOGIN / ODOO_API_PASSWORD manquants).");
+    }
+
+    const { sessionId } = await this.authenticate(login, password);
+    this.serviceSessionId = sessionId;
+    return sessionId;
+  }
+
+  /**
+   * call_kw via le compte de service, avec ré-authentification unique
+   * si la session a expiré.
+   */
+  async callKwService(model: string, method: string, args: any[] = [], kwargs: any = {}) {
+    try {
+      const sid = await this.getServiceSession();
+      return await this.callKw(model, method, args, kwargs, sid);
+    } catch (e) {
+      // La session de service est peut-être expirée : on la réinitialise et on réessaie une fois.
+      this.serviceSessionId = null;
+      const sid = await this.getServiceSession();
+      return await this.callKw(model, method, args, kwargs, sid);
+    }
   }
 }
 

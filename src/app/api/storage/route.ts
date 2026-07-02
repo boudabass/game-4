@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { odooClient } from "@/lib/odoo";
-import { getSessionCookie } from "@/app/actions/auth";
+import { getSessionCookie, getSessionUser } from "@/app/actions/auth";
 
 export async function GET(request: Request) {
   try {
     const sessionId = await getSessionCookie();
     if (!sessionId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await getSessionUser();
+    const uid = user?.uid;
+    if (!uid) {
+      return NextResponse.json({ error: "Utilisateur inconnu" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,12 +23,12 @@ export async function GET(request: Request) {
     }
 
     try {
-      const saves = await odooClient.callKw(
+      // Sauvegarde cloisonnée par utilisateur ET par jeu.
+      const saves = await odooClient.callKwService(
         "x_game_save",
         "search_read",
-        [[["x_studio_game", "=", parseInt(gameId, 10)]]],
-        { fields: ["id", "x_studio_data", "write_date"], limit: 1, order: "write_date desc" },
-        sessionId
+        [[["x_studio_game", "=", parseInt(gameId, 10)], ["x_studio_user", "=", uid]]],
+        { fields: ["id", "x_studio_data", "write_date"], limit: 1, order: "write_date desc" }
       );
       return NextResponse.json({ data: saves.length > 0 ? saves[0].x_studio_data : null });
     } catch (e) {
@@ -41,6 +47,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const user = await getSessionUser();
+    const uid = user?.uid;
+    if (!uid) {
+      return NextResponse.json({ error: "Utilisateur inconnu" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { gameId, data } = body;
 
@@ -50,31 +62,28 @@ export async function POST(request: Request) {
     }
 
     try {
-      const existing = await odooClient.callKw(
+      // Une sauvegarde par (jeu, utilisateur).
+      const existing = await odooClient.callKwService(
         "x_game_save",
         "search",
-        [[["x_studio_game", "=", gameIdInt]]],
-        { limit: 1 },
-        sessionId
+        [[["x_studio_game", "=", gameIdInt], ["x_studio_user", "=", uid]]],
+        { limit: 1 }
       );
 
       if (existing && existing.length > 0) {
-        await odooClient.callKw(
+        await odooClient.callKwService(
           "x_game_save",
           "write",
           [existing, { x_studio_data: JSON.stringify(data) }],
-          {},
-          sessionId
+          {}
         );
         return NextResponse.json({ success: true, updated: true });
       } else {
-        await odooClient.callKw(
+        await odooClient.callKwService(
           "x_game_save",
           "create",
-          // x_name est OBLIGATOIRE sur ce modele Odoo -> on le fournit toujours.
-          [[{ x_name: "Save " + gameIdInt, x_studio_game: gameIdInt, x_studio_data: JSON.stringify(data) }]],
-          {},
-          sessionId
+          [[{ x_name: "Save " + gameIdInt, x_studio_game: gameIdInt, x_studio_user: uid, x_studio_data: JSON.stringify(data) }]],
+          {}
         );
         return NextResponse.json({ success: true, created: true });
       }

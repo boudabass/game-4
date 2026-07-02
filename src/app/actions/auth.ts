@@ -43,6 +43,18 @@ export async function getSessionCookie() {
   return session?.value || null;
 }
 
+// Renvoie l'utilisateur client (uid, nom, ...) depuis le cookie arcade_user.
+export async function getSessionUser() {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(USER_COOKIE_NAME)?.value;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE_NAME);

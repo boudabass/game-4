@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { odooClient } from "@/lib/odoo";
-import { getSessionCookie } from "@/app/actions/auth";
+import { getSessionCookie, getSessionUser } from "@/app/actions/auth";
 
 export async function GET(request: Request) {
   try {
@@ -12,18 +12,18 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("gameId");
 
-    let domain = [];
+    let domain: any[] = [];
     if (gameId) {
       domain.push(["x_studio_game", "=", parseInt(gameId, 10)]);
     }
 
     try {
-      const scores = await odooClient.callKw(
+      // Lecture via le compte de service (le client portail n'a pas d'accès direct).
+      const scores = await odooClient.callKwService(
         "x_game_score",
         "search_read",
         [domain],
-        { fields: ["id", "x_studio_game", "x_studio_user", "x_studio_score", "create_date"], limit: 100, order: "x_studio_score desc" },
-        sessionId
+        { fields: ["id", "x_studio_game", "x_studio_user", "x_studio_score", "create_date"], limit: 100, order: "x_studio_score desc" }
       );
       return NextResponse.json({ scores });
     } catch (e) {
@@ -42,23 +42,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const user = await getSessionUser();
+    const uid = user?.uid;
+
     const body = await request.json();
     const { gameId, score } = body;
 
-    // Coherence : x_studio_game est une relation -> un entier (ID Odoo), jamais un slug.
     const gameIdInt = parseInt(gameId, 10);
     if (Number.isNaN(gameIdInt)) {
       return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
     }
 
+    const values: Record<string, unknown> = {
+      x_name: "Score " + score,
+      x_studio_game: gameIdInt,
+      x_studio_score: score,
+    };
+    if (uid) values.x_studio_user = uid;
+
     try {
-      const result = await odooClient.callKw(
+      // Écriture via le compte de service ; le score reste attribué au client (x_studio_user).
+      const result = await odooClient.callKwService(
         "x_game_score",
         "create",
-        // x_name est OBLIGATOIRE sur ce modele Odoo -> on le fournit toujours.
-        [[{ x_name: "Score " + score, x_studio_game: gameIdInt, x_studio_score: score }]],
-        {},
-        sessionId
+        [[values]],
+        {}
       );
       return NextResponse.json({ success: true, id: result[0] });
     } catch (e) {
