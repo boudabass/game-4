@@ -11,6 +11,6 @@ services:
       - NODE_ENV=production
       - PORT=3000
       # Variables d'environnement pour Odoo (à remplir dans le panel Coolify)
-      # - ODOO_URL=https://www.theelsassisch.com
-      # - ODOO_DB=theelsassisch
+      # - ODOO_URL=https://votre-instance.odoo.com
+      # - ODOO_DB=votre_base
     restart: unless-stopped

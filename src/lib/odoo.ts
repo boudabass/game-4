@@ -6,15 +6,19 @@ export class OdooClient {
 
   constructor() {
     // On s'assure d'enlever le slash final s'il y en a un
-    const rawUrl = process.env.ODOO_URL || "https://www.theelsassisch.com";
+    const rawUrl = process.env.ODOO_URL || "";
     this.url = rawUrl.replace(/\/$/, "");
-    this.db = process.env.ODOO_DB || "theelsassisch";
+    this.db = process.env.ODOO_DB || "";
   }
 
   /**
    * Generic JSON-RPC call helper
    */
   async jsonRpcCall(path: string, method: string, params: any = {}, sessionId?: string) {
+    if (!this.url || !this.db) {
+      throw new Error("Configuration manquante : définir ODOO_URL et ODOO_DB (voir .env.example).");
+    }
+
     const endpoint = `${this.url}${path}`;
 
     const headers: Record<string, string> = {

@@ -1,4 +1,4 @@
-# 🏛️ Architecture — Game Center (The Elsassisch)
+# 🏛️ Architecture — Game Center
 
 > **Document de référence de la vue d'ensemble.** Il décrit *comment tout s'assemble* :
 > la plateforme Next.js, le backend Odoo, les jeux p5.js, et le déploiement.
@@ -9,7 +9,7 @@
 
 ## 1. En une phrase
 
-Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée en **iframe** dans le site `theelsassisch.com`, avec **Odoo comme unique backend** (authentification, catalogue de jeux, scores, sauvegardes). Le tout est packagé en **Docker** et déployé via **Coolify**.
+Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée en **iframe** dans le site `monsite.com`, avec **Odoo comme unique backend** (authentification, catalogue de jeux, scores, sauvegardes). Le tout est packagé en **Docker** et déployé via **Coolify**.
 
 ---
 
@@ -17,7 +17,7 @@ Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  NAVIGATEUR DU CLIENT (dans une iframe sur theelsassisch.com)         │
+│  NAVIGATEUR DU CLIENT (dans une iframe sur monsite.com)         │
 │                                                                       │
 │   ┌───────────────────────────┐      ┌────────────────────────────┐  │
 │   │  PLATEFORME (React/Next)  │      │   JEU (iframe p5.js)        │  │
@@ -40,7 +40,7 @@ Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée
                            │  JSON-RPC (session_id dans un cookie)
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ODOO (SaaS, www.theelsassisch.com)  —  BACKEND UNIQUE               │
+│  ODOO (SaaS, votre-instance.odoo.com)  —  BACKEND UNIQUE               │
 │   Auth : /web/session/authenticate                                    │
 │   Modèles custom (Studio) :                                           │
 │     - x_game_release  (catalogue de jeux)                             │
@@ -143,7 +143,7 @@ public/games/
 
 ---
 
-## 7. Intégration iframe (site The Elsassisch)
+## 7. Intégration iframe (site parent)
 
 - `next.config.ts` pose l'en-tête **`Content-Security-Policy: frame-ancestors *;`** pour autoriser l'embarquement.
 - Les cookies en `sameSite: "none"; secure` permettent à la session de survivre dans le contexte iframe cross-site.

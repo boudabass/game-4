@@ -58,3 +58,7 @@ data/*
 
 # Garder le fichier exemple (placeholders, pas de secrets)
 !.env.example
+
+# Contexte local (contient la config réelle — ne pas publier)
+CLAUDE.md
+documentation/DOMAINE_COOKIES_SSO.md

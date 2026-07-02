@@ -6,7 +6,7 @@ import { odooClient } from "@/lib/odoo";
 const SESSION_COOKIE_NAME = "arcade_session";
 const USER_COOKIE_NAME = "arcade_user";
 
-// Domaine de cookie optionnel. À définir (ex. ".theelsassisch.com") le jour où
+// Domaine de cookie optionnel. À définir (ex. ".monsite.com") le jour où
 // l'app est servie sur un SOUS-DOMAINE du site : la session devient alors
 // "same-site" et cesse d'être un cookie tiers bloqué dans l'iframe.
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;

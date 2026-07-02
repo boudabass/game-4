@@ -15,10 +15,10 @@ Le projet avait subi beaucoup de mutations (Supabase → Odoo, lowdb abandonné,
 
 ## 2. Topologie des domaines (IMPORTANT)
 
-- **Site Odoo** : `theelsassisch.com` (héberge aussi le site web + le portail client).
-- **Coolify** : `theelsassisch.fr`.
-- **App arcade** : `arcade.theelsassisch.fr`.
-- **Intégration** : le site Odoo (`theelsassisch.com/arcade`) embarque l'app en **iframe**.
+- **Site Odoo** : `monsite.com` (héberge aussi le site web + le portail client).
+- **Coolify** : `monserveur.fr`.
+- **App arcade** : `arcade.monserveur.fr`.
+- **Intégration** : le site Odoo (`monsite.com/arcade`) embarque l'app en **iframe**.
 
 Conséquence majeure : l'app (`.fr`) et le site parent (`.com`) sont sur des **domaines différents** → dans l'iframe, les cookies de l'app sont des **cookies tiers** (cross-site). C'est la source de la plupart des soucis de session. Voir §6.
 
@@ -40,7 +40,7 @@ Conséquence majeure : l'app (`.fr`) et le site parent (`.com`) sont sur des **d
 
 ## 4. Ce qui NE marche PAS / limites connues
 
-- **Safari (et navigateurs qui bloquent tout cookie tiers)** : la session en iframe ne tient pas. Le correctif `Partitioned` (CHIPS) couvre Chrome/Edge/Firefox mais **pas Safari**. → Correctif durable = passer l'app sur un **sous-domaine de theelsassisch.com** (voir §7, TODO).
+- **Safari (et navigateurs qui bloquent tout cookie tiers)** : la session en iframe ne tient pas. Le correctif `Partitioned` (CHIPS) couvre Chrome/Edge/Firefox mais **pas Safari**. → Correctif durable = passer l'app sur un **sous-domaine de monsite.com** (voir §7, TODO).
 - **Pas de SSO** : le client doit se connecter à l'arcade même s'il est déjà connecté au site Odoo parent. Dépend du passage en sous-domaine.
 - **Jeux existants non migrés** : `similitude`, `elsass-farm`, `elsass-frost`, `cerebro`, `test-personnage` dupliquent chacun leur propre `core/`/`systems/` (GameState, SaveManager…). Ils ne sont PAS encore branchés sur `engine/v1`. Ce sont des tests.
 - **`cerebro`** : la release Odoo (id 4) pointe vers `/games/cerebro/v2/` alors que le code n'a que `cerebro/v1` → URL cassée.
@@ -126,7 +126,7 @@ Groupes Odoo (référence) : Role/User = id 1, Role/Administrator = id 4, Role/P
 
 ## 10. TODO (prochaines étapes)
 
-- [ ] Passer l'app sur un **sous-domaine de theelsassisch.com** (DNS + Coolify) → règle Safari + prérequis SSO. Puis définir `COOKIE_DOMAIN=.theelsassisch.com`.
+- [ ] Passer l'app sur un **sous-domaine de monsite.com** (DNS + Coolify) → règle Safari + prérequis SSO. Puis définir `COOKIE_DOMAIN=.monsite.com`.
 - [ ] **SSO** avec la session Odoo du site parent (une fois le sous-domaine en place).
 - [ ] **Migrer un jeu pilote** (ex. similitude) vers `engine/v1` (supprimer ses copies locales).
 - [ ] **Sortir le moteur city-builder** de `system/` (vers `games/citybuilder/` ou suppression).

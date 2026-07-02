@@ -72,7 +72,7 @@ export default function LoginPage() {
                   id="email" 
                   name="email"
                   type="email" 
-                  placeholder="joueur@theelsassisch.com" 
+                  placeholder="votre@email.com" 
                   required 
                   className="pl-10 bg-slate-950/50 border-white/10 focus:border-indigo-500 text-white placeholder:text-slate-600"
                 />
