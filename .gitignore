@@ -55,3 +55,6 @@ data/*
 
 !data/db.json
 .dyad/
+
+# Garder le fichier exemple (placeholders, pas de secrets)
+!.env.example
