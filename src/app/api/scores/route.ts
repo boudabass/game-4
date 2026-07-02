@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("gameId");
-    
+
     let domain = [];
     if (gameId) {
       domain.push(["x_studio_game", "=", parseInt(gameId, 10)]);
@@ -45,11 +45,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { gameId, score } = body;
 
+    // Cohérence : x_studio_game est une relation -> un entier (ID Odoo), jamais un slug.
+    const gameIdInt = parseInt(gameId, 10);
+    if (Number.isNaN(gameIdInt)) {
+      return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
+    }
+
     try {
       const result = await odooClient.callKw(
         "x_game_score",
         "create",
-        [[{ x_studio_game: gameId, x_studio_score: score }]],
+        [[{ x_studio_game: gameIdInt, x_studio_score: score }]],
         {},
         sessionId
       );

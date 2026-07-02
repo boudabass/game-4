@@ -6,19 +6,27 @@ import Link from 'next/link';
 import { odooClient } from "@/lib/odoo";
 import { cookies } from "next/headers";
 
+// Injecte l'ID numérique de la release Odoo dans l'URL de l'iframe (?gid=).
+// C'est ce que system.js lit comme source de verite pour scores et sauvegardes.
+function buildGameUrl(rawUrl: string | undefined | false, releaseId: number | string): string {
+    const base = rawUrl || `/games/unknown/index.html`;
+    const separator = base.includes("?") ? "&" : "?";
+    return `${base}${separator}gid=${releaseId}`;
+}
+
 export default async function PlayPage({ params }: { params: Promise<{ gameId: string }> }) {
     const { gameId } = await params;
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('arcade_session')?.value;
     const userCookie = cookieStore.get('arcade_user')?.value;
-    
+
     let game = null;
     let user = null;
 
     if (userCookie) {
         try {
             user = JSON.parse(userCookie);
-        } catch(e) {}
+        } catch (e) {}
     }
 
     try {
@@ -54,11 +62,11 @@ export default async function PlayPage({ params }: { params: Promise<{ gameId: s
                     <h1 className="font-bold text-lg">{game.x_name}</h1>
                 </div>
             </div>
-            
+
             <div className="flex-grow bg-black relative">
                 <GamePlayer
                   gameName={game.x_name}
-                  gameUrl={game.x_studio_url || `/games/unknown/index.html`}
+                  gameUrl={buildGameUrl(game.x_studio_url, game.id)}
                 />
             </div>
         </div>

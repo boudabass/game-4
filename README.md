@@ -1,96 +1,98 @@
-# Game Center Seniors
+# 🎮 Game Center — The Elsassisch
 
-Bienvenue sur le Game Center, une plateforme de jeux web conçue pour être simple, accessible et amusante, spécialement pensée pour nos aînés.
+Plateforme de jeux web gratuite pour les clients de **The Elsassisch**. Une arcade de petits jeux (p5.js), embarquée en iframe sur `theelsassisch.com`, avec **Odoo** comme unique backend.
 
----
-
-##  Partie 1 : Présentation (Pour Tous)
-
-### 🎯 Notre Mission !
-
-Offrir un espace de divertissement numérique clair et facile d'accès. Chaque jeu est présenté de manière lisible, avec de gros boutons pour lancer une partie en un seul clic. L'objectif est de s'amuser sans se perdre dans des menus compliqués.
-
-### ✨ Fonctionnalités Principales
-
-*   **Bibliothèque de Jeux Visuelle :** Parcourez les jeux disponibles via une grille simple avec des images et des descriptions claires.
-*   **Lancement Instantané :** Cliquez sur "JOUER" et la partie commence immédiatement, sans installation ni configuration.
-*   **Tableau des Records :** Chaque jeu affiche le meilleur score à battre, ajoutant un petit défi amical.
-*   **Interface Administrateur Sécurisée :** Un panneau de contrôle protégé par mot de passe permet de gérer facilement les jeux de la plateforme.
-
-### 🏗️ Comment ça Marche ?
-
-L'application repose sur une philosophie de simplicité :
-1.  Les **jeux** sont des fichiers statiques (souvent des projets p5.js) stockés directement sur le serveur.
-2.  Les **scores** et les informations sur les jeux sont centralisés dans une base de données très légère (un simple fichier JSON), ce qui rend le système robuste et facile à maintenir.
+> 📖 Pour la vue d'ensemble technique complète, voir **[`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md)**.
 
 ---
 
-## Partie 2 : Guide Technique (Pour les Développeurs)
+## Partie 1 : Présentation
 
-Cette section détaille comment lancer, gérer et modifier l'application.
+Un espace de divertissement clair et accessible. L'utilisateur se connecte avec son **compte client Odoo**, parcourt le catalogue de jeux, joue en un clic, et ses scores et sauvegardes sont conservés dans le cloud (Odoo).
 
-### 📋 Prérequis
+**Fonctionnalités**
+- Catalogue de jeux visuel (`/games`)
+- Lancement instantané dans une iframe (`/play/[id]`)
+- Scores & classements par jeu (`/scores`), synchronisés avec Odoo
+- Sauvegardes de partie dans le cloud (reprise sur n'importe quel appareil)
+- Connexion via compte Odoo (`/login`), profil (`/profile`), tableau de bord (`/dashboard`)
 
-*   **Docker & Docker Compose :** Indispensables pour lancer l'environnement de développement et de production.
-*   **Node.js :** Utile pour la gestion des dépendances si vous modifiez le code source de l'application Next.js.
+---
 
-### 🚀 Lancement en Local avec Docker
+## Partie 2 : Guide technique
 
-1.  **Configuration de l'Environnement :**
-    Copiez le fichier d'exemple `.env.example` vers un nouveau fichier nommé `.env`.
-    ```bash
-    cp .env.example .env
-    ```
-    Ouvrez `.env` et remplissez les variables d'environnement `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Elles sont **obligatoires** pour que l'authentification du panneau d'administration fonctionne.
+### Stack
+- **Frontend** : Next.js 15 (App Router) + TypeScript + Tailwind CSS + shadcn/ui
+- **Jeux** : p5.js + p5.play v3 (chargés via CDN), en JavaScript ES6, dans `public/games/`
+- **Backend** : **Odoo** (SaaS) via JSON-RPC — authentification, catalogue, scores, sauvegardes.
+  **Aucune base locale** (pas de lowdb/`db.json`), **aucun Supabase**.
+- **Déploiement** : Docker (`output: standalone`) → **Coolify**, déclenché par un push GitHub sur `main`.
 
-2.  **Démarrer l'Application :**
-    Exécutez la commande suivante à la racine du projet :
-    ```bash
-    docker compose up -d
-    ```
-    Cette commande va :
-    *   Construire l'image Docker de l'application Next.js.
-    *   Démarrer un conteneur.
-    *   Mapper le port `3000` de votre machine au port `3000` du conteneur.
-    *   Monter les volumes pour la persistance des données et des jeux.
+### Prérequis
+- **Node.js** (pour le développement) et **pnpm**
+- **Docker & Docker Compose** (pour lancer comme en production)
+- Accès à l'instance **Odoo** (les modèles custom `x_game_release`, `x_game_score`, `x_game_save` doivent exister)
 
-3.  **Accéder à l'Application :**
-    *   **Accueil public :** [http://localhost:3000](http://localhost:3000)
-    *   **Panneau d'administration :** [http://localhost:3000/admin](http://localhost:3000/admin)
+### Configuration
+Copier `.env.example` vers `.env.local` et renseigner :
 
-4.  **Arrêter l'Application :**
-    ```bash
-    docker compose down
-    ```
+```bash
+ODOO_URL="https://www.theelsassisch.com"   # URL de l'instance Odoo (sans slash final)
+ODOO_DB="theelsassisch"                     # nom de la base Odoo
+```
 
-### 🔧 Gérer et Modifier l'Application
+> `.env*` est gitignoré : aucune de ces valeurs n'est commitée.
 
-La gestion de l'application se divise en deux aspects : le contenu (les jeux) et le code (la plateforme Next.js).
+### Lancement en développement
 
-#### 1. Gérer les Jeux (via l'Interface d'Admin)
+```bash
+pnpm install
+pnpm dev
+# http://localhost:3000
+```
 
-C'est la méthode privilégiée pour toute gestion de contenu. Connectez-vous sur `/admin` pour :
+### Lancement via Docker (comme en production)
 
-*   **Créer un nouveau jeu :** Crée automatiquement le dossier et l'entrée en base de données.
-*   **Ajouter une version :** Permet de gérer plusieurs versions d'un même jeu (ex: `v1`, `v2`).
-*   **Uploader des fichiers :** Déposez vos fichiers `sketch.js`, `index.html`, images, sons, etc. directement dans le bon dossier.
-*   **Générer `index.html` :** Le système peut générer un fichier `index.html` de base pour les jeux p5.js ou **injecter intelligemment l'API de score** dans un `index.html` existant sans l'écraser.
-*   **Modifier les Métadonnées :** Changez le nom, la description et la résolution native d'un jeu.
+```bash
+docker compose up -d --build
+# http://localhost:3000
+docker compose down   # pour arrêter
+```
 
-Les fichiers que vous uploadez sont stockés dans `public/games/`, qui est un volume Docker persistant.
+### Gérer les jeux
 
-#### 2. Modifier le Code Source de la Plateforme
+Les jeux se gèrent **directement dans Odoo** (il n'y a plus de panneau `/admin` dans l'app) :
+1. Déposer les fichiers du jeu dans `public/games/<jeu>/<version>/` (voir le template dans [`documentation/GAME_WORKFLOW.md`](documentation/GAME_WORKFLOW.md)).
+2. Créer un enregistrement dans le modèle Odoo **`x_game_release`** : renseigner `x_name` et `x_studio_url` (ex. `/games/elsass-farm/v2/index.html`).
+3. Reporter l'**ID numérique** généré par Odoo dans le `index.html` du jeu :
+   ```html
+   <script>window.DyadGame = { id: 'ID_ODOO', version: 'v2' };</script>
+   ```
 
-Si vous souhaitez modifier l'application Next.js elle-même :
+### Structure du code
 
-*   **Structure des Dossiers Clés :**
-    *   `src/app/` : Contient les pages principales (accueil, admin, page de jeu).
-    *   `src/app/api/` : Logique des routes d'API (ex: gestion des scores).
-    *   `src/app/actions/` : Fonctions serveur pour la gestion des jeux (`game-manager.ts`).
-    *   `src/lib/database.ts` : Définit le schéma de la base de données `lowdb`.
-    *   `src/components/` : Composants React réutilisables.
+```
+src/app/            Pages + API (voir ARCHITECTURE.md §6)
+src/app/api/        Route Handlers : auth/me, games, scores, storage → Odoo
+src/app/actions/    Server Actions (auth : login/logout + cookies)
+src/lib/odoo.ts     Client JSON-RPC Odoo
+src/components/      Composants React (auth-provider, game-player, ui/…)
+public/games/       Jeux p5.js + système mutualisé (public/games/system/)
+documentation/      Docs (architecture, workflow, patterns, design des jeux)
+```
 
-*   **Base de Données (`lowdb`) :**
-    *   Le fichier `data/db.json` est la source de vérité unique pour les scores et les métadonnées des jeux.
-    *   Il est géré par un volume Docker, donc les données sont persistantes entre les redémarrages du conteneur.
-    *   Les interactions avec ce fichier se font via les fonctions dans `src/lib/database.ts` et les routes API.
+### ⚠️ À savoir
+Toute modification de `package.json` **impose** de régénérer `pnpm-lock.yaml` (`pnpm install --lockfile-only`), sinon le build Docker échoue sur `--frozen-lockfile`.
+
+---
+
+## Documentation
+
+| Fichier | Contenu |
+|---|---|
+| [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) | Vue d'ensemble : plateforme, Odoo, jeux, flux, déploiement |
+| [`AI_RULES.md`](AI_RULES.md) | Règles strictes d'architecture (source de vérité pour l'IA et les devs) |
+| [`documentation/developer_guide.md`](documentation/developer_guide.md) | Guide technique détaillé (données Odoo, intégration jeu) |
+| [`documentation/GAME_WORKFLOW.md`](documentation/GAME_WORKFLOW.md) | Processus pas à pas de création d'un jeu |
+| [`documentation/TROUBLESHOOTING.md`](documentation/TROUBLESHOOTING.md) | Erreurs connues p5.play et solutions |
+| [`documentation/DOC_AUDIT.md`](documentation/DOC_AUDIT.md) | État de la documentation (à jour / obsolète) |

@@ -7,13 +7,31 @@
 (function () {
     console.log("🔌 GameSystem Hub Loaded");
 
-    // 1. Validation de la configuration
-    const config = window.DyadGame || window.__GAME_CONFIG__;
+    // 1. Résolution de la configuration
+    // L'ID numérique de la release Odoo (x_game_release.id) est injecté par la
+    // plateforme via le paramètre d'URL ?gid=. C'est la SOURCE DE VÉRITÉ.
+    // Un éventuel window.DyadGame.id (slug hérité) n'est utilisé qu'en repli.
+    let gid = null;
+    try {
+        const raw = new URLSearchParams(window.location.search).get('gid');
+        if (raw !== null && raw.trim() !== '' && !Number.isNaN(Number(raw))) {
+            gid = Number(raw);
+        }
+    } catch (e) { /* location indisponible : on ignore */ }
 
-    if (!config) {
-        console.error("❌ GameSystem Error: Configuration not found.");
+    const legacy = window.DyadGame || window.__GAME_CONFIG__ || {};
+    const finalId = gid !== null ? gid : (legacy.id ?? null);
+    const version = legacy.version || 'v1';
+
+    if (finalId === null || finalId === undefined) {
+        console.error("❌ GameSystem Error: aucun identifiant de jeu (ni ?gid= ni window.DyadGame.id).");
         return;
     }
+
+    // Normalisation : tout code existant qui lit window.DyadGame.id récupère
+    // désormais l'ID numérique Odoo (répare les SaveManager locaux hérités).
+    window.DyadGame = { ...legacy, id: finalId, version };
+    const config = window.DyadGame;
 
     console.log(`🎮 Game Detected: ${config.id} (${config.version})`);
 
@@ -49,7 +67,7 @@
             }
         },
 
-        // --- NOUVEAU MODULE : SAUVEGARDE (JSON) ---
+        // --- MODULE : SAUVEGARDE (JSON) ---
         Save: {
             // Écrire une sauvegarde complète
             write: async (gameData) => {
@@ -66,8 +84,6 @@
 
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     console.log("[GameSystem] ✅ Save successful.");
-
-                    // Petit feedback visuel ignoré car le menu est supprimé
                     return true;
                 } catch (e) {
                     console.error("[GameSystem] ❌ Save failed:", e);
@@ -88,7 +104,7 @@
                         return null;
                     }
 
-                    console.log(`[GameSystem] ✅ Data loaded (from ${new Date(json.updatedAt).toLocaleTimeString()})`);
+                    console.log("[GameSystem] ✅ Data loaded.");
                     return json.data;
                 } catch (e) {
                     console.error("[GameSystem] ❌ Load failed:", e);
