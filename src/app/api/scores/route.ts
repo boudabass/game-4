@@ -18,12 +18,13 @@ export async function GET(request: Request) {
     }
 
     try {
-      // Lecture via le compte de service (le client portail n'a pas d'accès direct).
-      const scores = await odooClient.callKwService(
+      // Lecture avec la session du client (le groupe Portail a un accès en lecture).
+      const scores = await odooClient.callKw(
         "x_game_score",
         "search_read",
         [domain],
-        { fields: ["id", "x_studio_game", "x_studio_user", "x_studio_score", "create_date"], limit: 100, order: "x_studio_score desc" }
+        { fields: ["id", "x_studio_game", "x_studio_user", "x_studio_score", "create_date"], limit: 100, order: "x_studio_score desc" },
+        sessionId
       );
       return NextResponse.json({ scores });
     } catch (e) {
@@ -58,15 +59,16 @@ export async function POST(request: Request) {
       x_studio_game: gameIdInt,
       x_studio_score: score,
     };
+    // Attribue le score au client (aussi utilise par la regle d'enregistrement).
     if (uid) values.x_studio_user = uid;
 
     try {
-      // Écriture via le compte de service ; le score reste attribué au client (x_studio_user).
-      const result = await odooClient.callKwService(
+      const result = await odooClient.callKw(
         "x_game_score",
         "create",
         [[values]],
-        {}
+        {},
+        sessionId
       );
       return NextResponse.json({ success: true, id: result[0] });
     } catch (e) {

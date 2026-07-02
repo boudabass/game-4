@@ -23,12 +23,14 @@ export async function GET(request: Request) {
     }
 
     try {
-      // Sauvegarde cloisonnée par utilisateur ET par jeu.
-      const saves = await odooClient.callKwService(
+      // Sauvegarde cloisonnee par (jeu, utilisateur). La regle d'enregistrement
+      // Odoo garantit aussi qu'un client ne voit que ses propres sauvegardes.
+      const saves = await odooClient.callKw(
         "x_game_save",
         "search_read",
         [[["x_studio_game", "=", parseInt(gameId, 10)], ["x_studio_user", "=", uid]]],
-        { fields: ["id", "x_studio_data", "write_date"], limit: 1, order: "write_date desc" }
+        { fields: ["id", "x_studio_data", "write_date"], limit: 1, order: "write_date desc" },
+        sessionId
       );
       return NextResponse.json({ data: saves.length > 0 ? saves[0].x_studio_data : null });
     } catch (e) {
@@ -62,28 +64,30 @@ export async function POST(request: Request) {
     }
 
     try {
-      // Une sauvegarde par (jeu, utilisateur).
-      const existing = await odooClient.callKwService(
+      const existing = await odooClient.callKw(
         "x_game_save",
         "search",
         [[["x_studio_game", "=", gameIdInt], ["x_studio_user", "=", uid]]],
-        { limit: 1 }
+        { limit: 1 },
+        sessionId
       );
 
       if (existing && existing.length > 0) {
-        await odooClient.callKwService(
+        await odooClient.callKw(
           "x_game_save",
           "write",
           [existing, { x_studio_data: JSON.stringify(data) }],
-          {}
+          {},
+          sessionId
         );
         return NextResponse.json({ success: true, updated: true });
       } else {
-        await odooClient.callKwService(
+        await odooClient.callKw(
           "x_game_save",
           "create",
           [[{ x_name: "Save " + gameIdInt, x_studio_game: gameIdInt, x_studio_user: uid, x_studio_data: JSON.stringify(data) }]],
-          {}
+          {},
+          sessionId
         );
         return NextResponse.json({ success: true, created: true });
       }
