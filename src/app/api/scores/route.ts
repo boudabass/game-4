@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     }
 
     try {
-      // Lecture avec la session du client (le groupe Portail a un accès en lecture).
+      // Classement : une ligne par joueur (meilleur score), lisible par tous.
       const scores = await odooClient.callKw(
         "x_game_score",
         "search_read",
@@ -45,6 +45,9 @@ export async function POST(request: Request) {
 
     const user = await getSessionUser();
     const uid = user?.uid;
+    if (!uid) {
+      return NextResponse.json({ error: "Utilisateur inconnu" }, { status: 401 });
+    }
 
     const body = await request.json();
     const { gameId, score } = body;
@@ -54,23 +57,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
     }
 
-    const values: Record<string, unknown> = {
-      x_name: "Score " + score,
-      x_studio_game: gameIdInt,
-      x_studio_score: score,
-    };
-    // Attribue le score au client (aussi utilise par la regle d'enregistrement).
-    if (uid) values.x_studio_user = uid;
-
     try {
+      // UPSERT : une seule ligne de score par (jeu, joueur), on garde le MEILLEUR.
+      const existing = await odooClient.callKw(
+        "x_game_score",
+        "search_read",
+        [[["x_studio_game", "=", gameIdInt], ["x_studio_user", "=", uid]]],
+        { fields: ["id", "x_studio_score"], limit: 1 },
+        sessionId
+      );
+
+      if (existing && existing.length > 0) {
+        const current = existing[0].x_studio_score || 0;
+        if (score > current) {
+          await odooClient.callKw(
+            "x_game_score",
+            "write",
+            [[existing[0].id], { x_studio_score: score, x_name: "Score " + score }],
+            {},
+            sessionId
+          );
+          return NextResponse.json({ success: true, updated: true, best: score });
+        }
+        // Le nouveau score n'est pas meilleur : on ne crée rien.
+        return NextResponse.json({ success: true, updated: false, best: current });
+      }
+
+      // Premier score de ce joueur pour ce jeu.
       const result = await odooClient.callKw(
         "x_game_score",
         "create",
-        [[values]],
+        [[{ x_name: "Score " + score, x_studio_game: gameIdInt, x_studio_score: score, x_studio_user: uid }]],
         {},
         sessionId
       );
-      return NextResponse.json({ success: true, id: result[0] });
+      return NextResponse.json({ success: true, created: true, id: result[0], best: score });
     } catch (e) {
       console.error("Failed to post score to Odoo:", e);
       return NextResponse.json({ error: "Failed to save score" }, { status: 500 });
