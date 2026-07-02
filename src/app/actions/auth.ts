@@ -73,8 +73,15 @@ export async function signInAction(formData: FormData) {
     const { user, sessionId } = await odooClient.authenticate(email, password);
 
     if (sessionId) {
-      await setSessionCookie(sessionId, user);
-      return { success: true, user };
+      // IMPORTANT : ne stocker qu'un cookie MINIMAL (l'objet session Odoo complet
+      // est trop volumineux -> cookie tronqué/rejeté, surtout en iframe).
+      const slimUser = {
+        uid: user?.uid,
+        name: user?.name,
+        username: user?.username,
+      };
+      await setSessionCookie(sessionId, slimUser);
+      return { success: true, user: slimUser };
     } else {
       return { success: false, error: "Identifiants incorrects ou échec de l'authentification" };
     }
