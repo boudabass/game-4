@@ -147,12 +147,18 @@ function difficultyTier(row) {
     return constrain(floor(row / 10), 0, 5);
 }
 
+// Écart minimum garanti entre deux véhicules/tonneaux consécutifs : le
+// joueur doit TOUJOURS pouvoir se glisser dans cet espace, même à la
+// difficulté maximale. Seule la vitesse augmente avec le tier, jamais au
+// point de rendre un passage impossible.
 function makeRoadLane(row) {
     const tier = difficultyTier(row);
     const dir = random() < 0.5 ? 1 : -1;
     const speed = (1 + tier * 0.35 + random(-0.15, 0.25)); // px/frame à SCALE=1
-    const spacing = max(colW * 1.7, colW * (3.0 - tier * 0.2) + random(-0.3, 0.3) * colW);
-    const objW = colW * random(0.85, 1.25);
+    const objW = colW * random(0.55, 0.8);           // véhicule : moins d'une colonne
+    const minGap = colW * max(1.5, 2.3 - tier * 0.15); // espace vide garanti
+    const gap = minGap + random(0, colW * 0.4);
+    const spacing = objW + gap;
     const offset = random(spacing);
     const count = ceil((width * 2.2) / spacing) + 2;
 
@@ -168,8 +174,10 @@ function makeWaterLane(row) {
     const tier = difficultyTier(row);
     const dir = random() < 0.5 ? 1 : -1;
     const speed = (0.7 + tier * 0.25 + random(-0.1, 0.2));
-    const spacing = max(colW * 2.2, colW * (3.6 - tier * 0.15) + random(-0.3, 0.3) * colW);
-    const objW = colW * random(1.4, 2.1); // tonneaux généreux : plus indulgent
+    const objW = colW * random(1.3, 1.8);            // tonneaux généreux : plus indulgent
+    const minGap = colW * max(1.0, 1.8 - tier * 0.12);
+    const gap = minGap + random(0, colW * 0.3);
+    const spacing = objW + gap;
     const offset = random(spacing);
     const count = ceil((width * 2.2) / spacing) + 2;
 
@@ -221,9 +229,14 @@ function updateGame() {
     checkBretzel();
 }
 
+// Hitbox du joueur : nettement plus étroite que la case pour coller à la
+// silhouette dessinée (~0.5 x colonne) et laisser une marge de tolérance
+// visuelle (on préfère pardonner un frôlement plutôt que tuer à tort).
+const PLAYER_HALF_HITBOX = 0.24; // en fraction de colW
+
 function playerFootprint() {
     const px = screenXForCol(player.colF);
-    return { left: px - colW * 0.42, right: px + colW * 0.42 };
+    return { left: px - colW * PLAYER_HALF_HITBOX, right: px + colW * PLAYER_HALF_HITBOX };
 }
 
 function checkCurrentLane() {
@@ -232,8 +245,9 @@ function checkCurrentLane() {
 
     if (lane.type === "road") {
         const fp = playerFootprint();
+        const margin = colW * 0.08; // tolérance : hitbox véhicule légèrement rétrécie
         for (const obj of lane.objects) {
-            if (obj.x < fp.right && obj.x + obj.w > fp.left) {
+            if (obj.x + margin < fp.right && obj.x + obj.w - margin > fp.left) {
                 killPlayer();
                 return;
             }
