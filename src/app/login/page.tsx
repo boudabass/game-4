@@ -18,9 +18,9 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   // ?expired=1 : la session Odoo a expiré, on explique pourquoi on est là.
-  const sessionExpired = searchParams.get("expired") === "1";
+  const sessionExpired = searchParams?.get("expired") === "1";
   // ?next=/games : page à réouvrir après connexion (chemins internes uniquement).
-  const rawNext = searchParams.get("next") || "";
+  const rawNext = searchParams?.get("next") || "";
   const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
