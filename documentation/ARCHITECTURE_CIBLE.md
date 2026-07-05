@@ -2,7 +2,11 @@
 
 > **But** : rendre la base *solide* avant de développer les vrais jeux.
 > Ce document décrit la fondation visée, pourquoi, et un plan de migration **incrémental et non-cassant**.
-> Statut : **proposition à valider**. Rien n'est encore implémenté.
+> Statut : socle engine/v1 + template en place (03/07/2026) ; reste la refonte
+> des jeux un par un. NB 05/07/2026 : le backend de données est passé d'Odoo à
+> PostgreSQL (voir `MIGRATION_POSTGRES.md`) — les mentions Odoo ci-dessous
+> valent pour l'époque ; l'ID numérique injecté via `?gid=` est désormais
+> l'ID de la table `game`.
 > Date : 2 juillet 2026.
 
 ---

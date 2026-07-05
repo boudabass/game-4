@@ -1,5 +1,18 @@
 # Migration : sortir les données de jeu d'Odoo → PostgreSQL sur Coolify
 
+> ✅ **RÉALISÉE le 05/07/2026.** Écarts par rapport au plan ci-dessous :
+> - Phase 2 (migration des données) **sautée** : il n'y avait que des données de test.
+> - Phase 3 : les modèles Studio et tous leurs restes (menus, actions, règles,
+>   champs) ont été supprimés d'Odoo le 05/07/2026. Reste à confirmer avec
+>   Emilie que la ligne 16 €/mois disparaît de la facture.
+> - Gestion du catalogue : **option B retenue** → page `/admin` (réservée à
+>   `ADMIN_UID`), avec en bonus la détection automatique des jeux présents
+>   dans `public/games/` et l'accès admin aux jeux masqués.
+> - Piège rencontré : `DATABASE_URL` doit finir par `?sslmode=disable`
+>   (certificat auto-signé du Postgres Coolify ; réseau interne, SSL inutile).
+> Ce document reste utile comme trace du raisonnement. L'état courant est
+> décrit dans `ARCHITECTURE.md`.
+
 > Rédigé le 03/07/2026. Objectif : supprimer les 3 modèles personnalisés Odoo
 > (`x_game_release`, `x_game_score`, `x_game_save`) pour arrêter la ligne
 > "Maintenance modules supplémentaires : 16 €/mois" (facturée par lignes de
@@ -123,7 +136,7 @@ Décision à prendre en fin de Phase 1 ; l'option B peut venir plus tard.
 ## Ce qui ne change PAS
 - Login client = compte portail Odoo (un seul compte pour site + arcade).
 - Les jeux, le socle system/engine/v1, le template, les URLs, le ?gid=.
-- Le déploiement Docker/Coolify, le domaine arcade.theelsassisch.com.
+- Le déploiement Docker/Coolify, le domaine arcade.monsite.com.
 
 ## Gains
 - −16 €/mois (−192 €/an) après suppression des modèles Studio.

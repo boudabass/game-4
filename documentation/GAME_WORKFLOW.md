@@ -18,11 +18,11 @@ Il doit être consulté avant de commencer toute tâche de création ou de modif
 
 ### Phase 1 : Initialisation & Enregistrement
 1. **Création du dossier** : Créer le dossier physique `public/games/{gameId}/{version}/`.
-2. **Enregistrement dans Odoo** :
-   * Connectez-vous à l'instance Odoo.
-   * Ajoutez un enregistrement dans le modèle `x_game_release`.
-   * Configurez le nom (`x_name`) et l'URL pointant vers votre jeu (`x_studio_url`), par exemple : `/games/elsass-farm/v2/index.html`.
-   * Notez l'**ID numérique** généré par Odoo pour cet enregistrement.
+2. **Enregistrement au catalogue (page /admin)** :
+   * Connectez-vous à l'arcade avec le compte admin et ouvrez `/admin`.
+   * Le jeu apparaît dans « Jeux détectés dans le dossier » → un clic **Ajouter** (ou utilisez le formulaire manuel).
+   * L'**ID numérique** attribué est celui utilisé dans `/play/<id>` et injecté en `?gid=`.
+   * Laissez le jeu **masqué** tant qu'il n'est pas prêt : l'admin peut y jouer, pas les clients.
 3. **HTML setup** : Créer `index.html` et configurer l'ID dans l'objet global :
    ```javascript
    window.DyadGame = { id: 'VOTRE_ID_NUMERIQUE_ODOO', version: 'v1' };
@@ -49,5 +49,5 @@ Il doit être consulté avant de commencer toute tâche de création ou de modif
 
 *   ✅ **DO** : Utiliser `allSprites.draw()` entre `camera.on()` et `camera.off()` pour un contrôle parfait du rendu.
 *   ✅ **DO** : Gérer les dimensions de manière responsive en écoutant le redimensionnement du canvas de p5.js.
-*   ❌ **DON'T** : Utiliser le `localStorage` du navigateur pour les données de progression (utiliser l'API Cloud `GameSystem.Save` qui synchronise avec Odoo).
+*   ❌ **DON'T** : Utiliser le `localStorage` du navigateur pour les données de progression (utiliser l'API Cloud `GameSystem.Save` qui synchronise avec PostgreSQL).
 *   ❌ **DON'T** : Tenter de modifier un fichier `db.json` local, la base de données locale a été entièrement supprimée.

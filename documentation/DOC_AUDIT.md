@@ -1,6 +1,9 @@
 # 🔍 Audit de la documentation
 
 > État de chaque document au **2 juillet 2026**, après finalisation de la migration vers Odoo.
+> ⚠️ **05/07/2026** : migration **PostgreSQL** effectuée (Odoo = login seul). `ARCHITECTURE.md`,
+> `developer_guide.md`, `GAME_WORKFLOW.md`, `TROUBLESHOOTING.md`, `JOURNAL_FONDATION.md` et
+> `MIGRATION_POSTGRES.md` ont été remis à jour ce jour-là ; les statuts ci-dessous datent du 02/07.
 > Objectif : savoir quoi croire. Beaucoup de docs ont été écrites au fil de mutations successives ;
 > ce fichier signale ce qui est fiable, ce qui est obsolète, et ce qui décrit une **intention de design**
 > (pas forcément le code réellement livré).

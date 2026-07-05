@@ -105,9 +105,10 @@ Si tu ajoutes un modèle custom que le portail doit pouvoir écrire (comme score
 2. **Droits d'accès** (Réglages → Technique → Sécurité → Droits d'accès) : créer une ligne pour le groupe **Role / Portal** avec les permissions minimales (ex. Lecture + Création ; ajouter Écriture seulement si upsert/mise à jour nécessaire ; jamais Suppression sauf besoin).
 3. **Règle d'enregistrement** (Réglages → Technique → Sécurité → Règles d'enregistrement) : pour confiner chaque client à SES données. Domaine `[('x_studio_user', '=', user.id)]`. ⚠️ **Ajouter le groupe** dans la section GROUPES (sinon la règle est « Globale » et s'applique à tout le monde). Cocher uniquement les opérations à restreindre (ex. pour un classement lisible par tous : restreindre seulement l'Écriture, laisser la Lecture ouverte).
 
-Config actuelle (référence) :
-- `x_game_score` / Portal : Lecture ✓, Création ✓, Écriture ✓ (pour l'upsert), Suppression ✗. Règle WRITE-only `[('x_studio_user','=',user.id)]` (lecture ouverte pour le classement).
-- `x_game_save` / Portal : Lecture ✓, Création ✓, Écriture ✓, Suppression ✗. Règle RWCD `[('x_studio_user','=',user.id)]` (privé).
+Config d'époque (obsolète depuis le 05/07/2026 — les modèles x_game_* n'existent plus,
+le cloisonnement par joueur est désormais fait par les routes /api/* avec l'uid du jeton signé) :
+- `x_game_score` / Portal : Lecture ✓, Création ✓, Écriture ✓, Suppression ✗.
+- `x_game_save` / Portal : Lecture ✓, Création ✓, Écriture ✓, Suppression ✗.
 
 Groupes Odoo (référence) : Role/User = id 1, Role/Administrator = id 4, Role/Portal = id 10.
 
@@ -119,18 +120,44 @@ Groupes Odoo (référence) : Role/User = id 1, Role/Administrator = id 4, Role/P
 2. Dans `index.html` : charger `system.js` puis `engine/v1/*` puis les scripts du jeu.
 3. Coder le gameplay dans `sketch.js` (machine d'états switch/case, pas `states` de p5.play — voir TROUBLESHOOTING).
 4. Utiliser `Engine.Save` (gather/apply) et `GameSystem.Score.submit()` — jamais de `fetch` direct.
-5. Créer la release dans Odoo (`x_game_release` : `x_name` + `x_studio_url = /games/<mon-jeu>/v1/index.html`). L'ID est injecté via `?gid=`, rien à coder en dur.
-6. Pousser (GitHub Desktop) → Coolify redéploie → tester sur `/play/<id>`.
+5. Ajouter le jeu au catalogue via **`/admin`** (il apparaît dans « Jeux détectés dans le dossier » après déploiement). L'ID est injecté via `?gid=`, rien à coder en dur. Le laisser **masqué** le temps des tests (jouable par l'admin seul).
+6. Pousser (GitHub Desktop) → attendre l'Action GitHub verte → **Redeploy** dans Coolify → tester sur `/play/<id>`.
 
 ---
 
 ## 10. TODO (prochaines étapes)
 
-- [ ] Passer l'app sur un **sous-domaine de monsite.com** (DNS + Coolify) → règle Safari + prérequis SSO. Puis définir `COOKIE_DOMAIN=.monsite.com`.
-- [ ] **SSO** avec la session Odoo du site parent (une fois le sous-domaine en place).
-- [ ] **Migrer un jeu pilote** (ex. similitude) vers `engine/v1` (supprimer ses copies locales).
-- [ ] **Sortir le moteur city-builder** de `system/` (vers `games/citybuilder/` ou suppression).
-- [ ] **Mettre à jour Next** (CVE-2025-66478).
-- [ ] Corriger la release **cerebro** (v2 → v1) ou créer le dossier v2.
-- [ ] Supprimer les vieilles lignes de test dans `x_game_score`.
+- [x] Passer l'app sur un **sous-domaine de monsite.com** → fait le 02/07/2026 (`COOKIE_DOMAIN` défini, cookies first-party dans l'iframe).
+- [ ] **SSO** avec la session du site parent — impossible tant qu'Odoo est en SaaS (voir doc domaine/cookies) ; auto-hébergement prévu à ~1 an.
+- [x] **Sortir le moteur city-builder** de `system/` → fait le 03/07/2026 (déplacé dans `test-system/v1/`).
+- [x] **Mettre à jour Next** (CVE-2025-66478) → fait le 03/07/2026 (15.3.6).
+- [x] Corriger la release **cerebro** (v2 → v1) → fait le 03/07/2026.
+- [x] Supprimer les vieilles lignes de test de scores → réglé par la migration (base repartie de zéro).
+- [ ] **Refaire les jeux DE ZÉRO un par un** sur le socle `engine/v1` + template responsive (décision du 03/07/2026 : pas de migration-bidouille des jeux de test).
 - [ ] Faire un **premier vrai jeu** complet à partir du template.
+
+---
+
+## 11. Migration PostgreSQL (05/07/2026)
+
+**Décision** : sortir catalogue/scores/saves d'Odoo (16 €/mois de maintenance des
+modèles Studio + limites de requêtes SaaS) vers un **PostgreSQL sur Coolify**.
+Odoo ne sert plus qu'à vérifier les identifiants portail **au login**.
+
+**Ce qui a été fait** (détail : `MIGRATION_POSTGRES.md`) :
+- `src/lib/db.ts` (pool pg, schéma auto), `src/lib/session.ts` (cookie signé HMAC,
+  7 jours — c'est l'app qui décide de la durée désormais).
+- Routes `/api/*` et pages sur PostgreSQL ; upsert atomiques `ON CONFLICT`.
+- Page **`/admin`** (uid `ADMIN_UID`) : catalogue, détection auto des jeux du
+  dossier, publication/masquage ; l'admin voit et teste les jeux masqués.
+- Ménage Odoo complet : modèles, champs, menus, actions, règles supprimés.
+
+**Leçons apprises** :
+- `DATABASE_URL` : URL **interne** Coolify + `?sslmode=disable` (cert auto-signé).
+- Le déploiement est en **deux temps** : Action GitHub (build image, quelques
+  minutes) **puis** Redeploy Coolify. Redéployer trop tôt = ancienne version.
+- Après changement du format de session, l'ancien cookie ne vaut plus rien :
+  il faut se **déconnecter/reconnecter** (sinon 404 sur /admin, pages vides).
+- Le stockage **jsonb** renvoie un objet (et non plus une chaîne comme le champ
+  texte Odoo) : la comparaison local/cloud d'`Engine.Save` (`_savedAt`)
+  fonctionne enfin comme prévu.

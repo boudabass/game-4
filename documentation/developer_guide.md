@@ -1,49 +1,40 @@
-# 📘 Guide Technique & Architecture - Game Center (Odoo Edition)
+# 📘 Guide Technique & Architecture - Game Center
 
-Ce document est la référence technique unique pour la plateforme. Il définit comment l'application est structurée, comment les données sont synchronisées avec Odoo, et comment les jeux doivent être codés pour s'intégrer au système.
+Ce document est la référence technique unique pour la plateforme. Il définit comment l'application est structurée, comment les données sont stockées dans PostgreSQL, et comment les jeux doivent être codés pour s'intégrer au système.
 
 ---
 
-## 1. Architecture des Données & Écosystème Odoo
+## 1. Architecture des Données (PostgreSQL) & Login (Odoo)
 
-La plateforme a entièrement migré son backend et son authentification vers **Odoo**. Plus aucun fichier local (`db.json` via Lowdb) ni service tiers (`Supabase`) n'est utilisé.
+> Mise à jour 05/07/2026 : les données ont quitté Odoo pour **PostgreSQL**
+> (hébergé sur Coolify, réseau interne). Odoo ne sert plus qu'au **login**.
 
-### A. Authentification sécurisée (Odoo RPC)
-L'authentification passe directement par l'API JSON-RPC d'Odoo via l'endpoint `/web/session/authenticate`.
-1. **Connexion** : L'utilisateur soumet ses identifiants sur la page de `/login`.
-2. **Session** : L'action serveur (`signInAction`) valide les identifiants auprès d'Odoo et récupère un `session_id`.
-3. **Cookies de session** :
-   * `arcade_session` : Stocke le `session_id` d'Odoo de manière sécurisée (`httpOnly`, `secure`, `sameSite: "none"`).
-   * `arcade_user` : Contient les informations de profil de l'utilisateur (UID, nom, email, etc.).
+### A. Authentification (Odoo au login, puis session signée)
+1. **Login** : `signInAction` vérifie les identifiants portail via l'API JSON-RPC d'Odoo (`/web/session/authenticate`). C'est le seul appel à Odoo.
+2. **Session** : l'app signe un jeton HMAC-SHA256 (`src/lib/session.ts`, secret `SESSION_SECRET`, payload `{uid, name, username, exp}`, 7 jours).
+3. **Cookies** :
+   * `arcade_session` : le jeton signé (`httpOnly`, `secure`, `sameSite: "none"`, `partitioned`). Seule preuve d'identité.
+   * `arcade_user` : métadonnées d'affichage (jamais une preuve d'identité).
 
-### B. Modèles de Données Odoo (Studio / Custom Models)
-La persistance est assurée par trois modèles personnalisés configurés sur l'instance Odoo :
+### B. Tables PostgreSQL (`src/lib/db.ts`, schéma auto-créé)
 
-#### 1. Catalogue de Jeux (`x_game_release`)
-Ce modèle remplace le fichier local `db.json`. Il répertorie tous les jeux disponibles sur la plateforme.
-* **Champs clés** :
-  * `id` : Identifiant unique auto-incrémenté (utilisé dans les URLs `/play/[id]`).
-  * `x_name` : Le nom d'affichage du jeu.
-  * `x_studio_description` : Description textuelle du jeu.
-  * `x_studio_url` : Chemin local ou URL externe de l'iframe (ex: `/games/elsass-farm/v2/index.html`).
+#### 1. Catalogue (`game`)
+  * `id` : ID numérique du jeu — celui de `/play/[id]` et du `?gid=` injecté dans l'iframe.
+  * `name`, `description` : affichage.
+  * `url` : chemin de l'iframe (ex : `/games/elsass-farm/v2/index.html`).
+  * `published` : masqué = invisible pour les clients, mais visible/jouable pour l'admin (`ADMIN_UID`).
 
-#### 2. Scores & Classements (`x_game_score`)
-Stocke les performances des joueurs.
-* **Champs clés** :
-  * `id` : ID unique du score.
-  * `x_studio_game` : ID de la release associée (`x_game_release`).
-  * `x_studio_user` : ID de l'utilisateur Odoo ayant réalisé le score.
-  * `x_studio_score` : Valeur entière du score.
-  * `create_date` : Date de création (gérée automatiquement par Odoo).
+#### 2. Scores (`score`)
+  * Clé primaire `(game_id, user_id)` : **une ligne par jeu et par joueur** (le meilleur score, upsert `ON CONFLICT`).
+  * `user_name` : nom affiché, copié du jeton de session à l'écriture.
+  * `score`, `updated_at`.
 
-#### 3. Sauvegardes de Partie Cloud (`x_game_save`)
-Permet aux jeux de persister leur état de jeu (ex: inventaire, position, temps) directement dans le cloud Odoo par utilisateur.
-* **Champs clés** :
-  * `id` : ID unique de la sauvegarde.
-  * `x_studio_game` : ID du jeu associé.
-  * `x_studio_user` : ID de l'utilisateur (lié automatiquement via la session Odoo).
-  * `x_studio_data` : Chaîne de caractères JSON sérialisée contenant l'état complet du jeu.
-  * `write_date` : Date de dernière modification (utilisée pour charger la version la plus récente).
+#### 3. Sauvegardes cloud (`save`)
+  * Clé primaire `(game_id, user_id)` : une sauvegarde par jeu et par joueur (upsert).
+  * `data` : **jsonb** — l'objet de sauvegarde est stocké et renvoyé tel quel (ce que `Engine.Save` attend).
+  * `updated_at`.
+
+Le catalogue se gère via la page **`/admin`** (réservée à `ADMIN_UID`) : détection automatique des jeux de `public/games/`, ajout en 1 clic, publication/masquage.
 
 ---
 
@@ -114,11 +105,11 @@ Lors du Game Over ou de la victoire, le score est envoyé via un appel API :
 async function handleGameOver(finalScore) {
     if (window.GameSystem?.Score) {
         const success = await window.GameSystem.Score.submit(finalScore);
-        if (success) console.log("Score enregistré sur Odoo !");
+        if (success) console.log("Score enregistré !");
     }
 }
 ```
-*Le backend Next.js intercepte l'appel `/api/scores`, extrait le cookie de session Odoo, et effectue un appel RPC `create` sur le modèle `x_game_score`.*
+*Le backend Next.js intercepte l'appel `/api/scores`, vérifie le jeton signé `arcade_session`, et fait un upsert SQL sur la table `score` (le meilleur score est conservé).*
 
 ### C. Sauvegarde & Chargement Cloud (Saves)
 Pour sauvegarder l'état de progression d'un joueur :

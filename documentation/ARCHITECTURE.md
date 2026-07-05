@@ -1,23 +1,23 @@
 # 🏛️ Architecture — Game Center
 
 > **Document de référence de la vue d'ensemble.** Il décrit *comment tout s'assemble* :
-> la plateforme Next.js, le backend Odoo, les jeux p5.js, et le déploiement.
+> la plateforme Next.js, PostgreSQL, le login Odoo, les jeux p5.js, et le déploiement.
 > Pour le détail du développement de jeu, voir `developer_guide.md` et `GAME_WORKFLOW.md`.
-> Dernière mise à jour : 2 juillet 2026 (après finalisation de la migration vers Odoo).
+> Dernière mise à jour : 5 juillet 2026 (migration PostgreSQL terminée).
 
 ---
 
 ## 1. En une phrase
 
-Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée en **iframe** dans le site `monsite.com`, avec **Odoo comme unique backend** (authentification, catalogue de jeux, scores, sauvegardes). Le tout est packagé en **Docker** et déployé via **Coolify**.
+Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée en **iframe** dans le site `monsite.com`, avec **PostgreSQL comme backend de données** (catalogue, scores, sauvegardes) et **Odoo pour la seule authentification** (comptes portail, vérifiés au login). Le tout est packagé en **Docker** et déployé via **Coolify**.
 
 ---
 
-## 2. Les trois briques
+## 2. Les briques
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  NAVIGATEUR DU CLIENT (dans une iframe sur monsite.com)         │
+│  NAVIGATEUR DU CLIENT (dans une iframe sur monsite.com)              │
 │                                                                       │
 │   ┌───────────────────────────┐      ┌────────────────────────────┐  │
 │   │  PLATEFORME (React/Next)  │      │   JEU (iframe p5.js)        │  │
@@ -25,153 +25,157 @@ Une **plateforme web Next.js** héberge une arcade de **jeux p5.js**, embarquée
 │   │  AuthProvider + UI         │      │   + system.js (GameSystem)  │  │
 │   └────────────┬──────────────┘      └──────────────┬─────────────┘  │
 └────────────────┼────────────────────────────────────┼────────────────┘
-                 │  fetch same-origin (cookie de session transmis)
+                 │  fetch same-origin (cookie arcade_session transmis)
                  ▼                                      ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  SERVEUR NEXT.JS  (conteneur Docker, déployé par Coolify)            │
 │                                                                       │
 │   Server Actions        Route Handlers (/api/*)                       │
 │   - actions/auth.ts     - /api/auth/me    - /api/scores               │
-│                         - /api/games      - /api/storage              │
-│                          │                                            │
-│                          ▼                                            │
-│                  src/lib/odoo.ts  (client JSON-RPC)                    │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │  JSON-RPC (session_id dans un cookie)
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  ODOO (SaaS, votre-instance.odoo.com)  —  BACKEND UNIQUE               │
-│   Auth : /web/session/authenticate                                    │
-│   Modèles custom (Studio) :                                           │
-│     - x_game_release  (catalogue de jeux)                             │
-│     - x_game_score    (scores / classements)                          │
-│     - x_game_save     (sauvegardes cloud)                             │
-└─────────────────────────────────────────────────────────────────────┘
+│   - admin/actions.ts    - /api/games      - /api/storage              │
+│         │                        │                                     │
+│         │ (login uniquement)     │ (toutes les données)                │
+│         ▼                        ▼                                     │
+│   src/lib/odoo.ts          src/lib/db.ts (pool pg)                     │
+│   src/lib/session.ts (signature/vérification HMAC du cookie)           │
+└───────────┬──────────────────────────┬──────────────────────────────┘
+            │ JSON-RPC (au login SEULEMENT)│ SQL (réseau interne Coolify)
+            ▼                              ▼
+┌──────────────────────────┐   ┌─────────────────────────────────────┐
+│  ODOO (SaaS)             │   │  POSTGRESQL (Coolify, non exposé)    │
+│  /web/session/authenticate│   │  Tables : game / score / save        │
+│  (comptes portail)        │   │  Schéma auto-créé par src/lib/db.ts  │
+└──────────────────────────┘   └─────────────────────────────────────┘
 ```
 
 ### A. La plateforme (Next.js 15, App Router)
-Le code applicatif vit dans `src/`. Elle sert les pages, l'UI, et expose une petite API interne qui fait le pont vers Odoo.
+Le code applicatif vit dans `src/`. Elle sert les pages, l'UI, et expose une petite API interne branchée sur PostgreSQL.
 
 ### B. Les jeux (p5.js, statiques)
-Chaque jeu est un ensemble de fichiers statiques dans `public/games/<jeu>/<version>/`. Ils sont servis **par le même serveur Next.js** (même origine), ce qui est essentiel : le cookie de session est donc transmis automatiquement quand un jeu appelle l'API.
+Chaque jeu est un ensemble de fichiers statiques dans `public/games/<jeu>/<version>/`. Ils sont servis **par le même serveur Next.js** (même origine) : le cookie de session est transmis automatiquement quand un jeu appelle l'API.
 
-### C. Odoo (backend unique)
-Instance Odoo SaaS. On n'a **pas la main sur le code Odoo** : la personnalisation se fait via **Odoo Studio** (modèles `x_...` et champs `x_studio_...`). Odoo gère l'authentification et stocke toutes les données.
+### C. PostgreSQL (données) + Odoo (login)
+- **PostgreSQL** tourne sur Coolify, en **réseau interne** (aucun port public). Il stocke le catalogue, les scores et les sauvegardes. Le schéma est créé automatiquement au premier appel (`CREATE TABLE IF NOT EXISTS` dans `src/lib/db.ts`).
+- **Odoo** (SaaS) ne sert plus qu'à **vérifier les identifiants portail au moment du login**. Aucun modèle custom, aucune donnée de jeu côté Odoo (les 3 modèles Studio `x_game_*` ont été supprimés le 05/07/2026).
 
 ---
 
-## 3. Flux d'authentification
+## 3. Flux d'authentification (session signée)
 
-1. L'utilisateur saisit **l'identifiant + mot de passe d'un compte client Odoo** sur `/login`.
-2. La **Server Action** `signInAction` (`src/app/actions/auth.ts`) appelle `odooClient.authenticate()`.
-3. `src/lib/odoo.ts` fait un POST JSON-RPC vers `/web/session/authenticate` et récupère un **`session_id`**.
-4. Deux cookies sont posés (`sameSite: "none"; secure` — obligatoire pour fonctionner dans l'iframe) :
-   * **`arcade_session`** — le `session_id` Odoo, en **`httpOnly`** (jamais accessible au JS du navigateur). Sert à tous les appels RPC serveur.
-   * **`arcade_user`** — métadonnées du profil (uid, nom, email), lisible côté client pour l'UI.
-5. Côté client, `AuthProvider` (`src/components/auth-provider.tsx`) appelle `/api/auth/me` pour connaître l'utilisateur courant.
+1. L'utilisateur saisit **l'identifiant + mot de passe de son compte portail Odoo** sur `/login`.
+2. La **Server Action** `signInAction` (`src/app/actions/auth.ts`) appelle `odooClient.authenticate()` (`src/lib/odoo.ts`) : un POST JSON-RPC vers `/web/session/authenticate`. C'est le **seul** moment où Odoo est appelé.
+3. Si les identifiants sont bons, **l'app signe elle-même un jeton de session** (`src/lib/session.ts`) : HMAC-SHA256 avec le secret `SESSION_SECRET`, payload `{ uid, name, username, exp }`, durée **7 jours**.
+4. Deux cookies sont posés (`sameSite: "none"; secure; partitioned` — obligatoire dans l'iframe) :
+   * **`arcade_session`** — le jeton signé, en **`httpOnly`**. C'est la **seule preuve d'identité** : signature et expiration vérifiées à chaque requête (`getSessionUser()`).
+   * **`arcade_user`** — métadonnées (uid, nom), lisible côté client **pour l'affichage uniquement**.
+5. Côté client, `AuthProvider` appelle `/api/auth/me` (qui vérifie le jeton signé).
 
-> ⚠️ **Règle de sécurité** : le front ne parle **jamais** directement à Odoo. Tout passe par les Server Actions / Route Handlers, qui seuls lisent le cookie `arcade_session`. On ne stocke jamais la session dans `localStorage`.
+> ⚠️ **Règles de sécurité** : le front ne parle jamais directement à la base ; l'uid utilisé par les routes vient **toujours** du jeton signé (jamais du client ni du cookie `arcade_user`) ; on ne stocke jamais la session dans `localStorage`.
 
 ---
 
 ## 4. Flux de données (scores & sauvegardes)
 
-Le pont entre un jeu (dans l'iframe) et Odoo passe par `public/games/system/system.js`, qui expose l'objet global **`window.GameSystem`**.
+Le pont entre un jeu (dans l'iframe) et la base passe par `public/games/system/system.js` (objet global **`window.GameSystem`**), l'ID du jeu étant injecté par la plateforme via `?gid=` dans l'URL de l'iframe.
 
-| Action jeu | Appel `GameSystem` | Route Next.js | Opération Odoo |
+| Action jeu | Appel `GameSystem` | Route Next.js | Opération SQL |
 |---|---|---|---|
-| Envoyer un score | `GameSystem.Score.submit(score)` | `POST /api/scores` | `create` sur `x_game_score` |
-| Lire le classement | `GameSystem.Score.getLeaderboard()` | `GET /api/scores?gameId=` | `search_read` sur `x_game_score` |
-| Sauvegarder | `GameSystem.Save.write(data)` | `POST /api/storage` | `create` ou `write` sur `x_game_save` |
-| Charger | `GameSystem.Save.read()` | `GET /api/storage?gameId=` | `search_read` sur `x_game_save` |
+| Envoyer un score | `GameSystem.Score.submit(score)` | `POST /api/scores` | upsert `ON CONFLICT` sur `score` (garde le meilleur) |
+| Lire le classement | `GameSystem.Score.getLeaderboard()` | `GET /api/scores?gameId=` | `SELECT … ORDER BY score DESC` |
+| Sauvegarder | `GameSystem.Save.write(data)` | `POST /api/storage` | upsert `ON CONFLICT` sur `save` (jsonb) |
+| Charger | `GameSystem.Save.read()` | `GET /api/storage?gameId=` | `SELECT data FROM save` |
 
-Chaque route (`src/app/api/*`) : lit le cookie `arcade_session` → si absent, renvoie 401 → sinon appelle `odooClient.callKw(...)` avec la session. La déduplication des sauvegardes est gérée côté route `/api/storage` (une sauvegarde par jeu et par utilisateur : `write` si elle existe, sinon `create`).
-
----
-
-## 5. Les modèles Odoo (le schéma)
-
-Trois modèles custom, configurés dans Odoo Studio :
-
-**`x_game_release`** — le catalogue de jeux
-- `id` — utilisé dans les URLs `/play/[id]`
-- `x_name` — nom affiché
-- `x_studio_description` — description
-- `x_studio_url` — chemin de l'iframe (ex. `/games/elsass-farm/v2/index.html`)
-
-**`x_game_score`** — scores / classements
-- `x_studio_game` (relation vers release), `x_studio_user` (relation user), `x_studio_score` (entier), `create_date`
-
-**`x_game_save`** — sauvegardes cloud
-- `x_studio_game`, `x_studio_user`, `x_studio_data` (JSON sérialisé en texte), `write_date` (sert à charger la version la plus récente)
+Chaque route lit et vérifie le jeton `arcade_session` → si invalide, 401 → sinon exécute la requête avec l'uid du jeton. L'upsert est **atomique** (fini le search+write en deux temps de l'époque Odoo).
 
 ---
 
-## 6. Cartographie du code
+## 5. Le schéma PostgreSQL
+
+Défini dans `src/lib/db.ts`, créé automatiquement au premier appel :
+
+**`game`** — le catalogue
+- `id` (identity, modifiable à la création via /admin) — utilisé dans `/play/[id]` et injecté en `?gid=`
+- `name`, `description`, `url` (chemin de l'iframe, ex. `/games/elsass-farm/v2/index.html`)
+- `published` (booléen) — un jeu masqué est invisible pour les clients, mais reste visible et jouable pour l'admin
+- `created_at`
+
+**`score`** — classements
+- PK `(game_id, user_id)` → une seule ligne par jeu et par joueur (le meilleur score)
+- `user_name` (copié du jeton à l'écriture), `score`, `updated_at`
+
+**`save`** — sauvegardes cloud
+- PK `(game_id, user_id)`, `data` (**jsonb**), `updated_at`
+- FK vers `game` en `ON DELETE CASCADE` (supprimer un jeu purge ses scores/saves)
+
+---
+
+## 6. Gestion du catalogue : /admin
+
+Page réservée à l'uid `ADMIN_UID` (404 pour tout le monde d'autre ; chaque action serveur re-vérifie).
+
+- **Jeux détectés dans le dossier** : scan de `public/games/` (`src/lib/games-fs.ts`) → les jeux présents sur le disque mais absents du catalogue s'ajoutent en 1 clic.
+- Ajout manuel, modification, **Publier/Masquer**, suppression.
+- L'admin voit les jeux masqués (badge « Masqué ») dans le catalogue et le dashboard, et peut y jouer.
+
+---
+
+## 7. Cartographie du code
 
 ```
 src/
 ├── app/
 │   ├── page.tsx                 # Accueil
-│   ├── login/page.tsx           # Connexion (compte Odoo)
-│   ├── games/page.tsx           # Catalogue
-│   ├── play/[gameId]/page.tsx   # Lance un jeu dans l'iframe (GamePlayer)
+│   ├── login/page.tsx           # Connexion (compte portail Odoo)
+│   ├── games/page.tsx           # Catalogue (admin : voit aussi les masqués)
+│   ├── play/[gameId]/page.tsx   # Lance un jeu (admin : peut tester les masqués)
 │   ├── dashboard/page.tsx       # Tableau de bord utilisateur
-│   ├── profile/page.tsx         # Profil
+│   ├── profile/page.tsx         # Profil (ses scores)
 │   ├── scores/page.tsx          # Classements
-│   ├── actions/auth.ts          # Server Actions : login/logout + cookies
+│   ├── admin/                   # Gestion du catalogue (ADMIN_UID uniquement)
+│   │   ├── page.tsx             #   liste + détection dossier
+│   │   └── actions.ts           #   ajout/modif/publication/suppression
+│   ├── actions/auth.ts          # Server Actions : login/logout + cookies signés
 │   └── api/
-│       ├── auth/me/route.ts     # Renvoie l'utilisateur courant (via cookie)
-│       ├── games/route.ts       # Liste les jeux depuis Odoo
-│       ├── scores/route.ts      # GET/POST scores → x_game_score
-│       └── storage/route.ts     # GET/POST sauvegardes → x_game_save
-├── components/
-│   ├── auth-provider.tsx        # Contexte d'auth côté client
-│   ├── game-player.tsx          # Iframe + mise à l'échelle du jeu
-│   ├── iframe-resizer.tsx       # postMessage ARCADE_RESIZE vers le parent
-│   └── ui/                      # Composants shadcn/ui
+│       ├── auth/me/route.ts     # Utilisateur courant (jeton vérifié)
+│       ├── games/route.ts       # Catalogue publié
+│       ├── scores/route.ts      # GET/POST scores → table score
+│       └── storage/route.ts     # GET/POST sauvegardes → table save
+├── components/                  # auth-provider, game-shell, ui/ (shadcn)
 ├── lib/
-│   └── odoo.ts                  # Client JSON-RPC Odoo (authenticate, callKw)
-└── middleware.ts               # (voir §8 — actuellement passe-tout)
+│   ├── db.ts                    # Pool pg + création auto du schéma
+│   ├── session.ts               # Signature/vérification HMAC du cookie
+│   ├── games-fs.ts              # Détection des jeux dans public/games/
+│   └── odoo.ts                  # Client Odoo réduit à authenticate()
+└── middleware.ts                # Redirige vers /login si cookie absent
 
 public/games/
-├── system/                      # Cœur mutualisé (GameSystem, UI, moteur)
-│   └── system.js                # Pont GameSystem (Score, Save, Lifecycle…)
-├── elsass-farm/{v1,v2}/         # Jeux (chaque version = un dossier)
-├── elsass-frost/v1/  cerebro/v1/  similitude/v1/  …
+├── system/                      # Socle mutualisé (system.js + engine/v1)
+├── _template/v1/                # Template de jeu minimal
+├── elsass-farm/  elsass-frost/  cerebro/  similitude/  …
 ```
 
 ---
 
-## 7. Intégration iframe (site parent)
+## 8. Intégration iframe (site parent)
 
-- `next.config.ts` pose l'en-tête **`Content-Security-Policy: frame-ancestors *;`** pour autoriser l'embarquement.
-- Les cookies en `sameSite: "none"; secure` permettent à la session de survivre dans le contexte iframe cross-site.
-- `IframeResizer` mesure la hauteur du contenu et envoie un `postMessage({ type: "ARCADE_RESIZE", height })` au site parent pour qu'il ajuste la hauteur de l'iframe (évite le double scroll).
-
----
-
-## 8. Déploiement
-
-- **Docker** : `Dockerfile` multi-étapes, build en mode **`output: "standalone"`** (image légère). Installation des dépendances avec **`pnpm install --frozen-lockfile`**.
-- **CI/CD** : `.github/workflows/main.yaml` → un push sur `main` déclenche le redéploiement **Coolify**.
-- **Variables d'environnement** (dans `.env.local`, jamais commité) : `ODOO_URL`, `ODOO_DB`.
-
-> ⚠️ **Conséquence pratique** : toute modification de `package.json` **impose** de régénérer `pnpm-lock.yaml`, sinon le build Docker échoue sur `--frozen-lockfile`.
+- `next.config.ts` pose **`Content-Security-Policy: frame-ancestors *;`** pour autoriser l'embarquement.
+- Cookies `sameSite: "none"; secure; partitioned` + app servie sur un **sous-domaine du site** → cookies first-party dans l'iframe (Safari OK). Détail : `DOMAINE_COOKIES_SSO.md` (non versionné).
 
 ---
 
-## 9. Points d'attention connus (dette technique)
+## 9. Déploiement (EN DEUX TEMPS — important)
 
-- **Middleware non protecteur** : `src/middleware.ts` laisse actuellement passer toutes les requêtes. La sécurité repose uniquement sur la vérification du cookie dans chaque route API. Les pages (`/games`, `/play/…`) ne sont pas protégées au niveau middleware.
-- **Gestion de l'expiration de session** : la règle visée est « si Odoo renvoie une session expirée → purger les cookies → rediriger vers `/login` ». À vérifier que c'est bien appliqué partout.
-- **Petit bug cosmétique** : dans `system.js`, `Save.read()` logue `json.updatedAt` alors que l'API renvoie `write_date` → la date affichée en console est « Invalid Date ». Sans impact fonctionnel.
+- **Docker** : `Dockerfile` multi-étapes, build **`output: "standalone"`**, `pnpm install --frozen-lockfile`.
+- **CI/CD** : un push sur `main` déclenche l'Action GitHub (`.github/workflows/main.yaml`) qui **construit et pousse l'image** sur ghcr.io (quelques minutes). **Puis** Coolify doit **redéployer** pour tirer la nouvelle image. Si on redéploie avant la fin de l'Action, on relance l'ancienne version.
+- **Variables d'environnement** (Coolify / `.env.local`, jamais commité) : `ODOO_URL`, `ODOO_DB`, `DATABASE_URL` (URL interne, avec `?sslmode=disable`), `SESSION_SECRET`, `ADMIN_UID`, `COOKIE_DOMAIN`.
+
+> ⚠️ Toute modification de `package.json` **impose** de régénérer `pnpm-lock.yaml`, sinon le build échoue sur `--frozen-lockfile`.
 
 ---
 
 ## 10. Historique des mutations (pour mémoire)
 
-Le projet a connu plusieurs bascules successives avant d'arriver à l'architecture actuelle :
-1. **Auth Supabase + stockage lowdb/SQLite (`db.json`)** → abandonnés.
-2. Migration **complète vers Odoo** (auth + données).
-3. **Juillet 2026** : nettoyage des résidus (dépendances `@supabase/*` retirées, `sql-wasm.wasm` et `data/` supprimés, `.env`/`.env.example` remis à jour). Le projet est désormais 100 % Odoo.
+1. **Auth Supabase + stockage lowdb/SQLite** → abandonnés.
+2. Migration **complète vers Odoo** (auth + données via 3 modèles Studio).
+3. **02/07/2026** : sous-domaine + cookies first-party dans l'iframe.
+4. **05/07/2026** : **migration PostgreSQL** — les données quittent Odoo (fin des 16 €/mois de maintenance Studio et des limites de requêtes SaaS) ; Odoo réduit au login ; session signée HMAC ; page /admin ; modèles Studio supprimés d'Odoo. Détail : `MIGRATION_POSTGRES.md`.
