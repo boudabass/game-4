@@ -87,12 +87,18 @@ function draw() {
 // Génération des lignes
 // ---------------------------------------------------------------------
 
+// Rang le plus haut déjà généré. BUG CORRIGÉ : l'ancienne version
+// repartait de la ligne 0 à chaque appel pour trouver "la prochaine ligne
+// non générée" — dès qu'une ligne basse était supprimée par pruneLanesBelow
+// (ligne 7 = premier élagage, PRUNE_BEHIND=6), elle regénérait TOUTES les
+// lignes de 0 à maxRow, y compris celle où le joueur se trouvait, avec de
+// nouveaux véhicules placés au hasard pile sous ses pieds → mort assurée.
+let highestGeneratedRow = -1;
+
 function ensureLanesUpTo(maxRow) {
-    let start = 0;
-    // trouve la prochaine ligne non générée
-    while (lanes[start] !== undefined) start++;
-    for (let r = start; r <= maxRow; r++) {
+    for (let r = highestGeneratedRow + 1; r <= maxRow; r++) {
         lanes[r] = makeLane(r);
+        highestGeneratedRow = r;
     }
 }
 
@@ -486,6 +492,7 @@ function insideBtn(mx, my) {
 
 function startGame() {
     lanes = {};
+    highestGeneratedRow = -1;
     player = { row: 0, colF: floor(COLS / 2) };
     rowsCrossed = 0;
     bretzels = 0;
