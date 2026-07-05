@@ -10,8 +10,11 @@ window.CigogneConfig = {
     hitboxRatio: 0.5,    // hitbox réduite par rapport au sprite (marges transparentes du 256x256 exclues)
     colors: {
         bg: "#87ceeb",
-        pipe: "#2f855a",
-        pipeEdge: "#22543d",
+        wallFacade: "#f0e6d2",  // façade colombage (crème)
+        beam: "#5c3a21",        // poutres bois foncé
+        roof: "#b5533c",        // tuiles de toit
+        roofEdge: "#7a3a28",    // avant-toit / bord qui dépasse
+        window: "#2b3a42",      // vitre foncée
         text: "#0f172a",
         button: "#4f46e5",
         buttonText: "#ffffff"

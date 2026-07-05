@@ -171,14 +171,60 @@ function drawGround() {
 }
 
 function drawPipes() {
-    noStroke();
     for (const p of pipes) {
-        fill(C.colors.pipe);
-        rect(p.x, 0, p.w, p.gapY);
-        rect(p.x, p.gapY + p.gapH, p.w, groundY - (p.gapY + p.gapH));
-        fill(C.colors.pipeEdge);
-        rect(p.x - u(0.5), p.gapY - u(2), p.w + u(1), u(2));
-        rect(p.x - u(0.5), p.gapY + p.gapH, p.w + u(1), u(2));
+        drawColombageHaut(p.x, p.w, p.gapY);
+        drawColombageBas(p.x, p.gapY + p.gapH, p.w, groundY - (p.gapY + p.gapH));
+    }
+}
+
+// obstacle du haut : avant-toit d'un batiment vu depuis la rue
+function drawColombageHaut(x, w, h) {
+    const beamT = u(1.2);
+
+    noStroke();
+    fill(C.colors.roof);
+    rect(x, 0, w, h);
+
+    // poutres verticales laterales du pan de mur
+    fill(C.colors.beam);
+    rect(x, 0, beamT, h);
+    rect(x + w - beamT, 0, beamT, h);
+
+    // bord du toit qui depasse (avant-toit)
+    fill(C.colors.roofEdge);
+    rect(x - u(1), h - beamT, w + u(2), beamT * 1.5);
+}
+
+// obstacle du bas : facade a colombage vue depuis la rue
+function drawColombageBas(x, y, w, h) {
+    const beamT = u(1.2);
+
+    noStroke();
+    fill(C.colors.wallFacade);
+    rect(x, y, w, h);
+
+    // poutre horizontale en haut de la facade
+    fill(C.colors.beam);
+    rect(x, y, w, beamT);
+    // poutres verticales laterales
+    rect(x, y, beamT, h);
+    rect(x + w - beamT, y, beamT, h);
+
+    // croix de saint andre (diagonales) si assez de hauteur
+    if (h > u(10)) {
+        stroke(C.colors.beam);
+        strokeWeight(beamT);
+        line(x + beamT, y + beamT, x + w - beamT, y + h);
+        line(x + w - beamT, y + beamT, x + beamT, y + h);
+        noStroke();
+    }
+
+    // petite fenetre pres du haut de la facade
+    if (h > u(14)) {
+        const winW = w * 0.35;
+        const winH = u(4);
+        fill(C.colors.window);
+        rect(x + w / 2 - winW / 2, y + beamT * 2, winW, winH);
     }
 }
 
