@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,19 +11,17 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User, Shield, Trophy } from "lucide-react";
 
 export function UserNav() {
     const { user, role, isLoading, signOut } = useAuth();
-    const router = useRouter();
 
     const handleSignOut = async () => {
         await signOut();
     };
 
-    if (isLoading) return <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200"></div>;
+    if (isLoading) return <div className="h-8 w-24 animate-pulse rounded-md bg-slate-200"></div>;
 
     if (!user) {
         return (
@@ -34,18 +31,13 @@ export function UserNav() {
         );
     }
 
-    // Initials
     const email = user.email || "U";
-    const initials = email.substring(0, 2).toUpperCase();
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={undefined} alt={email} />
-                        <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
+                <Button variant="ghost" size="sm">
+                    Mon espace
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
