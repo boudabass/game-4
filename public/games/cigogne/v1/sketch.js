@@ -190,9 +190,11 @@ function spawnPipe() {
 }
 
 function checkCollision(p) {
-    const bx = bird.x - bird.size / 2;
-    const by = bird.y - bird.size / 2;
-    const bs = bird.size;
+    // hitbox réduite : le sprite 256x256 a des marges transparentes autour
+    // du corps, on ne prend qu'un carré central proportionnel à bird.size
+    const bs = bird.size * C.hitboxRatio;
+    const bx = bird.x - bs / 2;
+    const by = bird.y - bs / 2;
 
     const hitsX = bx + bs > p.x && bx < p.x + p.w;
     if (!hitsX) return false;
