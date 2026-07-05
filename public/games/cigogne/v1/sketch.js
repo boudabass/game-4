@@ -17,8 +17,12 @@ let score = 0;
 let best = 0;
 let btn = null;
 
-let birdImg = null;
+let birdImg = null; // spritesheet vol (8 frames, 256x256)
 let bird = { x: 0, y: 0, vy: 0, size: 0, angle: 0 };
+
+const SPRITE_TAILLE = 256;
+const SPRITE_NB_FRAMES = 8;
+let spriteFrame = 0;
 let pipes = []; // { x, gapY, gapH, passed }
 let lastPipeAt = 0;
 let groundY = 0;
@@ -28,7 +32,7 @@ function u(n) {
 }
 
 function preload() {
-    birdImg = loadImage("assets/cigogne.png");
+    birdImg = loadImage("assets/cigogne_vol.png");
 }
 
 function setup() {
@@ -62,6 +66,9 @@ async function boot() {
 
 function draw() {
     background(C.colors.bg);
+    if (frameCount % 5 === 0) {
+        spriteFrame = (spriteFrame + 1) % SPRITE_NB_FRAMES;
+    }
     switch (state) {
         case STATE.MENU: drawMenu(); break;
         case STATE.GAME: drawGame(); break;
@@ -80,7 +87,11 @@ function drawMenu() {
     // cigogne posée qui flotte doucement (aperçu du sprite)
     const size = u(C.birdSizePct);
     const bob = sin(millis() / 300) * u(1.5);
-    image(birdImg, width / 2, height / 2 + u(8) + bob, size, size);
+    image(
+        birdImg,
+        width / 2, height / 2 + u(8) + bob, size, size,
+        spriteFrame * SPRITE_TAILLE, 0, SPRITE_TAILLE, SPRITE_TAILLE
+    );
 
     drawButton("JOUER", height / 2 + u(24));
 }
@@ -131,7 +142,11 @@ function drawGame() {
     push();
     translate(bird.x, bird.y);
     rotate(radians(bird.angle));
-    image(birdImg, 0, 0, bird.size, bird.size);
+    image(
+        birdImg,
+        0, 0, bird.size, bird.size,
+        spriteFrame * SPRITE_TAILLE, 0, SPRITE_TAILLE, SPRITE_TAILLE
+    );
     pop();
 
     fill(C.colors.text);
