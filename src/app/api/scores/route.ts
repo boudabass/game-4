@@ -1,34 +1,37 @@
 import { NextResponse } from "next/server";
-import { odooClient } from "@/lib/odoo";
-import { getSessionCookie, getSessionUser } from "@/app/actions/auth";
+import { query } from "@/lib/db";
+import { getSessionUser } from "@/app/actions/auth";
 
 export async function GET(request: Request) {
   try {
-    const sessionId = await getSessionCookie();
-    if (!sessionId) {
+    const user = await getSessionUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("gameId");
 
-    let domain: any[] = [];
-    if (gameId) {
-      domain.push(["x_studio_game", "=", parseInt(gameId, 10)]);
-    }
-
     try {
       // Classement : une ligne par joueur (meilleur score), lisible par tous.
-      const scores = await odooClient.callKw(
-        "x_game_score",
-        "search_read",
-        [domain],
-        { fields: ["id", "x_studio_game", "x_studio_user", "x_studio_score", "create_date"], limit: 100, order: "x_studio_score desc" },
-        sessionId
-      );
-      return NextResponse.json({ scores });
+      let rows;
+      if (gameId) {
+        const gameIdInt = parseInt(gameId, 10);
+        if (Number.isNaN(gameIdInt)) {
+          return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
+        }
+        ({ rows } = await query(
+          "SELECT game_id, user_id, user_name, score, updated_at FROM score WHERE game_id = $1 ORDER BY score DESC LIMIT 100",
+          [gameIdInt]
+        ));
+      } else {
+        ({ rows } = await query(
+          "SELECT game_id, user_id, user_name, score, updated_at FROM score ORDER BY score DESC LIMIT 100"
+        ));
+      }
+      return NextResponse.json({ scores: rows });
     } catch (e) {
-      console.warn("Odoo fetch failed, returning empty scores array:", e);
+      console.warn("DB fetch failed, returning empty scores array:", e);
       return NextResponse.json({ scores: [] });
     }
   } catch (error) {
@@ -38,62 +41,38 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const sessionId = await getSessionCookie();
-    if (!sessionId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const user = await getSessionUser();
-    const uid = user?.uid;
-    if (!uid) {
-      return NextResponse.json({ error: "Utilisateur inconnu" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { gameId, score } = body;
 
     const gameIdInt = parseInt(gameId, 10);
-    if (Number.isNaN(gameIdInt)) {
-      return NextResponse.json({ error: "gameId invalide" }, { status: 400 });
+    const scoreInt = Math.round(Number(score));
+    if (Number.isNaN(gameIdInt) || !Number.isFinite(scoreInt)) {
+      return NextResponse.json({ error: "gameId ou score invalide" }, { status: 400 });
     }
 
     try {
-      // UPSERT : une seule ligne de score par (jeu, joueur), on garde le MEILLEUR.
-      const existing = await odooClient.callKw(
-        "x_game_score",
-        "search_read",
-        [[["x_studio_game", "=", gameIdInt], ["x_studio_user", "=", uid]]],
-        { fields: ["id", "x_studio_score"], limit: 1 },
-        sessionId
+      // UPSERT atomique : une seule ligne par (jeu, joueur), on garde le MEILLEUR.
+      // Le nom affiché vient de la session signée (pas du client).
+      const { rows } = await query<{ best: string }>(
+        `INSERT INTO score (game_id, user_id, user_name, score)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (game_id, user_id) DO UPDATE
+           SET score      = GREATEST(score.score, EXCLUDED.score),
+               user_name  = EXCLUDED.user_name,
+               updated_at = CASE WHEN EXCLUDED.score > score.score THEN now() ELSE score.updated_at END
+         RETURNING score AS best`,
+        [gameIdInt, user.uid, user.name, scoreInt]
       );
 
-      if (existing && existing.length > 0) {
-        const current = existing[0].x_studio_score || 0;
-        if (score > current) {
-          await odooClient.callKw(
-            "x_game_score",
-            "write",
-            [[existing[0].id], { x_studio_score: score, x_name: "Score " + score }],
-            {},
-            sessionId
-          );
-          return NextResponse.json({ success: true, updated: true, best: score });
-        }
-        // Le nouveau score n'est pas meilleur : on ne crée rien.
-        return NextResponse.json({ success: true, updated: false, best: current });
-      }
-
-      // Premier score de ce joueur pour ce jeu.
-      const result = await odooClient.callKw(
-        "x_game_score",
-        "create",
-        [[{ x_name: "Score " + score, x_studio_game: gameIdInt, x_studio_score: score, x_studio_user: uid }]],
-        {},
-        sessionId
-      );
-      return NextResponse.json({ success: true, created: true, id: result[0], best: score });
+      const best = Number(rows[0]?.best ?? scoreInt);
+      return NextResponse.json({ success: true, updated: best === scoreInt, best });
     } catch (e) {
-      console.error("Failed to post score to Odoo:", e);
+      console.error("Failed to save score:", e);
       return NextResponse.json({ error: "Failed to save score" }, { status: 500 });
     }
   } catch (error) {

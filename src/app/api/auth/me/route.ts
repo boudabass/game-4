@@ -1,28 +1,22 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getSessionUser } from '@/app/actions/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('arcade_session')?.value;
-  const userCookie = cookieStore.get('arcade_user')?.value;
+  // Session signée vérifiée côté serveur (plus fiable que le cookie arcade_user).
+  const sessionUser = await getSessionUser();
 
-  if (!sessionCookie || !userCookie) {
+  if (!sessionUser) {
     return NextResponse.json({ user: null });
   }
 
-  try {
-    const userData = JSON.parse(userCookie);
-    // Map Odoo user structure to our LocalUser structure expected by frontend
-    const user = {
-      id: userData.uid.toString(),
-      email: userData.username || '',
-      name: userData.name || '',
-      role: userData.is_admin ? 'admin' : 'user'
-    };
-    return NextResponse.json({ user });
-  } catch (e) {
-    return NextResponse.json({ user: null });
-  }
+  // Structure LocalUser attendue par le frontend.
+  const user = {
+    id: sessionUser.uid.toString(),
+    email: sessionUser.username || '',
+    name: sessionUser.name || '',
+    role: 'user',
+  };
+  return NextResponse.json({ user });
 }

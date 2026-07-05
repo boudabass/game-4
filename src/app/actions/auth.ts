@@ -2,13 +2,16 @@
 
 import { cookies } from "next/headers";
 import { odooClient } from "@/lib/odoo";
+import { signSession, verifySession, type SessionUser } from "@/lib/session";
 
 const SESSION_COOKIE_NAME = "arcade_session";
 const USER_COOKIE_NAME = "arcade_user";
 
-// Domaine de cookie optionnel. À définir (ex. ".monsite.com") le jour où
-// l'app est servie sur un SOUS-DOMAINE du site : la session devient alors
-// "same-site" et cesse d'être un cookie tiers bloqué dans l'iframe.
+// Durée de la session (c'est NOUS qui décidons maintenant, plus Odoo).
+const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 jours
+
+// Domaine de cookie optionnel (ex. ".monsite.com") : la session devient
+// "same-site" dans l'iframe quand l'app est servie sur un sous-domaine.
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 
 // Options communes aux cookies de session.
@@ -21,38 +24,32 @@ function baseCookieOptions() {
     secure: true,
     sameSite: "none",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 jours
+    maxAge: SESSION_MAX_AGE,
     partitioned: true,
   };
   if (COOKIE_DOMAIN) opts.domain = COOKIE_DOMAIN;
   return opts;
 }
 
-export async function setSessionCookie(sessionId: string, user?: any) {
+export async function setSessionCookie(token: string, user?: any) {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, sessionId, { ...baseCookieOptions(), httpOnly: true } as any);
+  cookieStore.set(SESSION_COOKIE_NAME, token, { ...baseCookieOptions(), httpOnly: true } as any);
 
   if (user) {
+    // Cookie lisible côté client, pour l'affichage uniquement (jamais une
+    // preuve d'identité : seule la signature d'arcade_session fait foi).
     cookieStore.set(USER_COOKIE_NAME, JSON.stringify(user), { ...baseCookieOptions(), httpOnly: false } as any);
   }
 }
 
-export async function getSessionCookie() {
+/**
+ * Renvoie l'utilisateur AUTHENTIFIÉ (signature HMAC + expiration vérifiées),
+ * ou null si la session est absente/invalide/expirée.
+ */
+export async function getSessionUser(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  const session = cookieStore.get(SESSION_COOKIE_NAME);
-  return session?.value || null;
-}
-
-// Renvoie l'utilisateur client (uid, nom, ...) depuis le cookie arcade_user.
-export async function getSessionUser() {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(USER_COOKIE_NAME)?.value;
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  return verifySession(token);
 }
 
 export async function clearSessionCookie() {
@@ -70,21 +67,20 @@ export async function signInAction(formData: FormData) {
   }
 
   try {
-    const { user, sessionId } = await odooClient.authenticate(email, password);
+    // Odoo n'est appelé QU'ICI : simple vérification des identifiants portail.
+    const { user } = await odooClient.authenticate(email, password);
 
-    if (sessionId) {
-      // IMPORTANT : ne stocker qu'un cookie MINIMAL (l'objet session Odoo complet
-      // est trop volumineux -> cookie tronqué/rejeté, surtout en iframe).
-      const slimUser = {
-        uid: user?.uid,
-        name: user?.name,
-        username: user?.username,
-      };
-      await setSessionCookie(sessionId, slimUser);
-      return { success: true, user: slimUser };
-    } else {
-      return { success: false, error: "Identifiants incorrects ou échec de l'authentification" };
-    }
+    const slimUser = {
+      uid: user?.uid,
+      name: user?.name,
+      username: user?.username,
+    };
+
+    // C'est l'app qui signe la session (HMAC) : plus de dépendance à la
+    // validité de la session Odoo entre deux logins.
+    const token = signSession(slimUser, SESSION_MAX_AGE);
+    await setSessionCookie(token, slimUser);
+    return { success: true, user: slimUser };
   } catch (error: any) {
     console.error("Auth error:", error);
     return { success: false, error: error.message || "Erreur lors de l'authentification" };

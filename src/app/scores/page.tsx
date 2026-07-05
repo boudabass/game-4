@@ -1,30 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Trophy, Medal, AlertCircle } from "lucide-react"
-import { odooClient, isSessionExpired } from "@/lib/odoo"
-import { cookies } from "next/headers"
+import { query } from "@/lib/db"
+import { getSessionUser } from "@/app/actions/auth"
 import { redirect } from "next/navigation"
 
 export default async function ScoresPage() {
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get('arcade_session')?.value;
-    
+    // Session signée (HMAC) : invalide ou expirée -> retour au login.
+    const user = await getSessionUser();
+    if (!user) redirect("/login?expired=1&next=/scores");
+
     let scores: any[] = [];
-    let sessionExpired = false;
     try {
-        if (sessionId) {
-            scores = await odooClient.callKw(
-                "x_game_score",
-                "search_read",
-                [[]],
-                { fields: ["id", "x_studio_game", "x_studio_score", "create_date"], limit: 50, order: "x_studio_score desc" },
-                sessionId
-            );
-        }
+        // Classement global : meilleur score par joueur et par jeu.
+        const { rows } = await query(
+            "SELECT s.game_id, s.user_id, s.user_name, s.score, g.name AS game_name FROM score s JOIN game g ON g.id = s.game_id ORDER BY s.score DESC LIMIT 50"
+        );
+        scores = rows;
     } catch(e) {
-        if (isSessionExpired(e)) sessionExpired = true;
+        console.warn("Could not fetch scores", e);
     }
-    // Session Odoo expirée : direction la page de connexion, avec retour ici.
-    if (sessionExpired) redirect("/login?expired=1&next=/scores");
 
     return (
         <div className="container mx-auto py-8 animate-in fade-in duration-500">
@@ -43,9 +37,9 @@ export default async function ScoresPage() {
                     ) : (
                         <div className="space-y-4">
                             {scores.map((score, idx) => (
-                                <div key={score.id} className="flex justify-between p-2 border-b">
-                                    <span>#{idx + 1} - Jeu ID: {score.x_studio_game?.[1] || score.x_studio_game}</span>
-                                    <span className="font-bold">{score.x_studio_score}</span>
+                                <div key={`${score.game_id}-${score.user_id}`} className="flex justify-between p-2 border-b">
+                                    <span>#{idx + 1} - {score.game_name} — {score.user_name || "Joueur"}</span>
+                                    <span className="font-bold">{score.score}</span>
                                 </div>
                             ))}
                         </div>

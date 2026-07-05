@@ -1,25 +1,21 @@
 import { NextResponse } from "next/server";
-import { odooClient } from "@/lib/odoo";
-import { getSessionCookie } from "@/app/actions/auth";
+import { query } from "@/lib/db";
+import { getSessionUser } from "@/app/actions/auth";
 
 export async function GET() {
   try {
-    const sessionId = await getSessionCookie();
-    if (!sessionId) {
+    const user = await getSessionUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-      const games = await odooClient.callKw(
-        "x_game_release",
-        "search_read",
-        [[]],
-        { fields: ["id", "x_name", "x_studio_description", "x_studio_url"] },
-        sessionId
+      const { rows: games } = await query(
+        "SELECT id, name, description, url FROM game WHERE published ORDER BY id"
       );
       return NextResponse.json({ games });
     } catch (e) {
-      console.warn("Odoo fetch failed, returning empty games array:", e);
+      console.warn("DB fetch failed, returning empty games array:", e);
       return NextResponse.json({ games: [] });
     }
   } catch (error) {

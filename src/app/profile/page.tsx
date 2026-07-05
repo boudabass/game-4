@@ -1,45 +1,28 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Trophy, Clock, Target, Gamepad2, Medal } from "lucide-react"
-import { odooClient, isSessionExpired } from "@/lib/odoo"
-import { cookies } from "next/headers"
+import { query } from "@/lib/db"
+import { getSessionUser } from "@/app/actions/auth"
 import { redirect } from "next/navigation"
 
 export default async function ProfilePage() {
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get('arcade_session')?.value;
-    const userCookie = cookieStore.get('arcade_user')?.value;
-
-    if (!sessionId) {
-        redirect('/login')
-    }
-
-    let user;
-    try {
-        user = userCookie ? JSON.parse(userCookie) : null;
-    } catch(e) {}
-
-    if (!user) {
-        redirect('/login')
-    }
+    // Session signée (HMAC) : invalide ou expirée -> retour au login.
+    const user = await getSessionUser();
+    if (!user) redirect("/login?expired=1&next=/profile");
 
     let userScores: any[] = [];
-    let sessionExpired = false;
     try {
-        userScores = await odooClient.callKw(
-            "x_game_score",
-            "search_read",
-            [[]], 
-            { fields: ["id", "x_studio_game", "x_studio_score", "create_date"] },
-            sessionId
+        // Uniquement MES scores (une ligne par jeu = meilleur score).
+        const { rows } = await query(
+            "SELECT s.game_id, s.score, s.updated_at, g.name AS game_name FROM score s JOIN game g ON g.id = s.game_id WHERE s.user_id = $1 ORDER BY s.score DESC",
+            [user.uid]
         );
+        userScores = rows;
     } catch(e) {
-        if (isSessionExpired(e)) sessionExpired = true;
+        console.warn("Could not fetch scores", e);
     }
-    // Session Odoo expirée : direction la page de connexion, avec retour ici.
-    if (sessionExpired) redirect("/login?expired=1&next=/profile");
 
     const totalGamesPlayed = userScores.length;
-    const highestScore = userScores.length > 0 ? Math.max(...userScores.map(s => s.x_studio_score)) : 0;
+    const highestScore = userScores.length > 0 ? Math.max(...userScores.map(s => Number(s.score))) : 0;
 
     return (
         <div className="container mx-auto py-8 animate-in fade-in duration-500">
@@ -50,7 +33,7 @@ export default async function ProfilePage() {
                     </CardHeader>
                     <CardContent>
                         <p className="font-bold">{user.name}</p>
-                        <p className="text-sm text-slate-500">{user.email}</p>
+                        <p className="text-sm text-slate-500">{user.username}</p>
                     </CardContent>
                 </Card>
                 <Card className="md:col-span-3">

@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import { GameShell } from '@/components/game-shell';
-import { odooClient, isSessionExpired } from "@/lib/odoo";
+import { query } from "@/lib/db";
+import { getSessionUser } from "@/app/actions/auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 
 // Injecte l'ID numérique de la release Odoo dans l'URL de l'iframe (?gid=).
 // C'est ce que system.js lit comme source de verite pour scores et sauvegardes.
@@ -14,32 +14,25 @@ function buildGameUrl(rawUrl: string | undefined | false, releaseId: number | st
 
 export default async function PlayPage({ params }: { params: Promise<{ gameId: string }> }) {
     const { gameId } = await params;
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get('arcade_session')?.value;
 
+    // Session signée (HMAC) : invalide ou expirée -> retour au login.
+    const user = await getSessionUser();
+    if (!user) redirect(`/login?expired=1&next=/play/${gameId}`);
+
+    const gameIdInt = parseInt(gameId, 10);
     let game = null;
-    let sessionExpired = false;
 
     try {
-        if (sessionId) {
-            const games = await odooClient.callKw(
-                "x_game_release",
-                "search_read",
-                [[["id", "=", parseInt(gameId, 10)]]],
-                { fields: ["id", "x_name", "x_studio_url"] },
-                sessionId
+        if (!Number.isNaN(gameIdInt)) {
+            const { rows } = await query(
+                "SELECT id, name, url FROM game WHERE id = $1 AND published",
+                [gameIdInt]
             );
-            if (games && games.length > 0) {
-                game = games[0];
-            }
+            if (rows.length > 0) game = rows[0];
         }
     } catch (e) {
-        if (isSessionExpired(e)) sessionExpired = true;
-        else console.error(e);
+        console.error(e);
     }
-
-    // Session Odoo expirée : direction la page de connexion, avec retour ici.
-    if (sessionExpired) redirect(`/login?expired=1&next=/play/${gameId}`);
 
     if (!game) {
         notFound();
@@ -50,8 +43,8 @@ export default async function PlayPage({ params }: { params: Promise<{ gameId: s
     return (
         <div className="h-[100dvh]">
             <GameShell
-                gameName={game.x_name}
-                gameUrl={buildGameUrl(game.x_studio_url, game.id)}
+                gameName={game.name}
+                gameUrl={buildGameUrl(game.url, game.id)}
             />
         </div>
     );

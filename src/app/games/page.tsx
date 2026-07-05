@@ -2,32 +2,24 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Play, Info, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { odooClient, isSessionExpired } from "@/lib/odoo"
-import { cookies } from "next/headers"
+import { query } from "@/lib/db"
+import { getSessionUser } from "@/app/actions/auth"
 import { redirect } from "next/navigation"
 
 export default async function GamesPage() {
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get('arcade_session')?.value;
-    
+    // Session signée (HMAC) : invalide ou expirée -> retour au login.
+    const user = await getSessionUser();
+    if (!user) redirect("/login?expired=1&next=/games");
+
     let games: any[] = [];
-    let sessionExpired = false;
     try {
-        if (sessionId) {
-            games = await odooClient.callKw(
-                "x_game_release",
-                "search_read",
-                [[]],
-                { fields: ["id", "x_name", "x_studio_description", "x_studio_url"] },
-                sessionId
-            );
-        }
+        const { rows } = await query(
+            "SELECT id, name, description, url FROM game WHERE published ORDER BY id"
+        );
+        games = rows;
     } catch (e) {
-        if (isSessionExpired(e)) sessionExpired = true;
-        else console.warn("Could not fetch games", e);
+        console.warn("Could not fetch games", e);
     }
-    // Session Odoo expirée : direction la page de connexion, avec retour ici.
-    if (sessionExpired) redirect("/login?expired=1&next=/games");
 
     return (
         <div className="container mx-auto py-8 animate-in fade-in duration-500">
@@ -62,14 +54,14 @@ export default async function GamesPage() {
                             <CardHeader className="pb-3">
                                 <div className="flex justify-between items-start">
                                     <CardTitle className="text-xl font-bold group-hover:text-indigo-600 transition-colors">
-                                        {game.x_name}
+                                        {game.name}
                                     </CardTitle>
                                 </div>
                             </CardHeader>
                             
                             <CardContent className="flex-grow">
                                 <p className="text-slate-600 text-sm line-clamp-3">
-                                    {game.x_studio_description || "Aucune description disponible pour ce jeu."}
+                                    {game.description || "Aucune description disponible pour ce jeu."}
                                 </p>
                             </CardContent>
                             

@@ -1,46 +1,29 @@
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Card, CardFooter, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Play, Trophy, Star, ArrowRight, LogOut } from "lucide-react"
 import Link from "next/link"
-import { odooClient, isSessionExpired } from "@/lib/odoo"
-import { signOutAction } from "@/app/actions/auth"
+import { query } from "@/lib/db"
+import { signOutAction, getSessionUser } from "@/app/actions/auth"
 
 export default async function DashboardPage() {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('arcade_session')?.value;
-    const userCookie = cookieStore.get('arcade_user')?.value;
-
-    if (!sessionCookie) {
-        redirect('/login')
-    }
-
-    let user;
-    try {
-        user = userCookie ? JSON.parse(userCookie) : { name: 'Joueur' };
-    } catch(e) {
-        redirect('/login');
+    // Session signée (HMAC) : invalide ou expirée -> retour au login.
+    const user = await getSessionUser();
+    if (!user) {
+        redirect("/login?expired=1&next=/dashboard");
     }
 
     let latestGames: any[] = [];
-    let sessionExpired = false;
     try {
-      latestGames = await odooClient.callKw(
-        "x_game_release",
-        "search_read",
-        [[]],
-        { fields: ["id", "x_name", "x_studio_description", "x_studio_url"], limit: 3, order: "create_date desc" },
-        sessionCookie
+      const { rows } = await query(
+        "SELECT id, name FROM game WHERE published ORDER BY created_at DESC LIMIT 3"
       );
+      latestGames = rows;
     } catch (e: any) {
-      if (isSessionExpired(e)) sessionExpired = true;
-      else console.warn("Could not fetch games", e);
+      console.warn("Could not fetch games", e);
     }
-    // Session Odoo expirée : direction la page de connexion, avec retour ici.
-    if (sessionExpired) redirect("/login?expired=1&next=/dashboard");
 
-    const userName = user.name || user.email?.split('@')[0] || "Joueur"
+    const userName = user.name || user.username?.split('@')[0] || "Joueur"
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700 container mx-auto py-8">
@@ -78,7 +61,7 @@ export default async function DashboardPage() {
                                             <Play className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-slate-800">{game.x_name}</h4>
+                                            <h4 className="font-bold text-slate-800">{game.name}</h4>
                                             <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">v1.0</span>
                                         </div>
                                     </div>
