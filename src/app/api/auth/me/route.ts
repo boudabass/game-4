@@ -12,11 +12,14 @@ export async function GET() {
   }
 
   // Structure LocalUser attendue par le frontend.
+  // Le rôle admin est déterminé côté serveur (ADMIN_UID) : il pilote
+  // l'affichage du lien "Admin Panel" dans le menu utilisateur.
+  const isAdmin = !!process.env.ADMIN_UID && String(sessionUser.uid) === process.env.ADMIN_UID;
   const user = {
     id: sessionUser.uid.toString(),
     email: sessionUser.username || '',
     name: sessionUser.name || '',
-    role: 'user',
+    role: isAdmin ? 'admin' : 'user',
   };
   return NextResponse.json({ user });
 }
