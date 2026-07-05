@@ -22,13 +22,16 @@ export default async function PlayPage({ params }: { params: Promise<{ gameId: s
     const gameIdInt = parseInt(gameId, 10);
     let game = null;
 
+    // L'admin peut tester un jeu encore masqué ; les clients ont un 404.
+    const isAdmin = !!process.env.ADMIN_UID && String(user.uid) === process.env.ADMIN_UID;
+
     try {
         if (!Number.isNaN(gameIdInt)) {
             const { rows } = await query(
-                "SELECT id, name, url FROM game WHERE id = $1 AND published",
+                "SELECT id, name, url, published FROM game WHERE id = $1",
                 [gameIdInt]
             );
-            if (rows.length > 0) game = rows[0];
+            if (rows.length > 0 && (rows[0].published || isAdmin)) game = rows[0];
         }
     } catch (e) {
         console.error(e);

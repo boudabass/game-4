@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings, Plus, Eye, EyeOff, Trash2, Play } from "lucide-react";
+import { Settings, Plus, Eye, EyeOff, Trash2, Play, FolderSearch } from "lucide-react";
 import { query } from "@/lib/db";
+import { detectGames } from "@/lib/games-fs";
 import { getSessionUser } from "@/app/actions/auth";
 import {
   addGameAction,
@@ -36,6 +37,11 @@ export default async function AdminPage() {
     console.warn("Could not fetch games", e);
   }
 
+  // Jeux présents dans public/games/ mais pas encore au catalogue
+  // (comparaison sans la partie ?query des URLs enregistrées).
+  const knownUrls = new Set(games.map((g) => String(g.url).split("?")[0]));
+  const detected = detectGames().filter((d) => !knownUrls.has(d.url));
+
   return (
     <div className="container mx-auto py-8 space-y-8 animate-in fade-in duration-500">
       <div className="border-b pb-6">
@@ -48,6 +54,35 @@ export default async function AdminPage() {
           <code className="bg-slate-100 px-1 rounded">?gid=</code> injecté dans son iframe.
         </p>
       </div>
+
+      {/* Jeux détectés dans le dossier public/games */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderSearch className="w-5 h-5 text-indigo-600" /> Jeux détectés dans le dossier
+          </CardTitle>
+          <CardDescription>
+            Trouvés dans <code>public/games/</code> et pas encore au catalogue. Un clic pour les ajouter (ils arrivent en « Publié » : masque-les ensuite si besoin).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {detected.length === 0 ? (
+            <p className="text-slate-400 italic">Rien à ajouter : tous les jeux du dossier sont déjà au catalogue.</p>
+          ) : (
+            detected.map((d) => (
+              <form key={d.url} action={addGameAction} className="flex flex-wrap items-center gap-3 border rounded-lg p-3">
+                <input type="hidden" name="url" value={d.url} />
+                <code className="text-xs bg-slate-100 px-2 py-1 rounded">{d.url}</code>
+                <Input name="name" defaultValue={d.suggestedName} className="w-48" required />
+                <Input name="id" type="number" placeholder="ID (auto)" className="w-28" />
+                <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                  <Plus className="w-4 h-4 mr-1" /> Ajouter
+                </Button>
+              </form>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       {/* Ajout d'un jeu */}
       <Card>
