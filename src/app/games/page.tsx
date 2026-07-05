@@ -11,10 +11,15 @@ export default async function GamesPage() {
     const user = await getSessionUser();
     if (!user) redirect("/login?expired=1&next=/games");
 
+    // L'admin voit aussi les jeux masqués (pour les tester avant publication).
+    const isAdmin = !!process.env.ADMIN_UID && String(user.uid) === process.env.ADMIN_UID;
+
     let games: any[] = [];
     try {
         const { rows } = await query(
-            "SELECT id, name, description, url FROM game WHERE published ORDER BY id"
+            isAdmin
+                ? "SELECT id, name, description, url, published FROM game ORDER BY id"
+                : "SELECT id, name, description, url, published FROM game WHERE published ORDER BY id"
         );
         games = rows;
     } catch (e) {
@@ -56,6 +61,11 @@ export default async function GamesPage() {
                                     <CardTitle className="text-xl font-bold group-hover:text-indigo-600 transition-colors">
                                         {game.name}
                                     </CardTitle>
+                                    {!game.published && (
+                                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                                            Masqué
+                                        </span>
+                                    )}
                                 </div>
                             </CardHeader>
                             

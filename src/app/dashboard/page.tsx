@@ -13,10 +13,15 @@ export default async function DashboardPage() {
         redirect("/login?expired=1&next=/dashboard");
     }
 
+    // L'admin voit aussi les jeux masqués (pour les tester avant publication).
+    const isAdmin = !!process.env.ADMIN_UID && String(user.uid) === process.env.ADMIN_UID;
+
     let latestGames: any[] = [];
     try {
       const { rows } = await query(
-        "SELECT id, name FROM game WHERE published ORDER BY created_at DESC LIMIT 3"
+        isAdmin
+          ? "SELECT id, name FROM game ORDER BY created_at DESC LIMIT 3"
+          : "SELECT id, name FROM game WHERE published ORDER BY created_at DESC LIMIT 3"
       );
       latestGames = rows;
     } catch (e: any) {
