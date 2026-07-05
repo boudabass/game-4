@@ -7,7 +7,7 @@ window.CigogneConfig = {
     pipeSpeed: 3,        // vitesse de défilement des obstacles
     pipeSpawnMs: 1600,   // intervalle d'apparition des obstacles
     birdSizePct: 8,      // taille de la cigogne en % du plus petit côté
-    hitboxRatio: 0.3,    // hitbox réduite par rapport au sprite (marges transparentes du 256x256 exclues)
+    hitboxRatio: 0.5,    // hitbox réduite par rapport au sprite (marges transparentes du 256x256 exclues)
     colors: {
         bg: "#87ceeb",
         pipe: "#2f855a",
