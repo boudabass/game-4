@@ -58,7 +58,7 @@ export function UserNav() {
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                        <Link href="/profile" className="cursor-pointer">
+                        <Link href="/scores" className="cursor-pointer">
                             <Trophy className="mr-2 h-4 w-4" />
                             <span>Mes Scores</span>
                         </Link>
