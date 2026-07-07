@@ -9,7 +9,7 @@ export default function LandingPage() {
   const { user, isLoading } = useAuth();
 
   return (
-    <div className="relative h-screen bg-white text-slate-900 flex flex-col items-center justify-center px-6 overflow-hidden">
+    <div className="relative min-h-[800px] bg-white text-slate-900 flex flex-col items-center justify-center px-6 overflow-hidden">
       {/* Bouton connexion / dashboard, en haut à droite */}
       <div className="absolute top-6 right-6 z-10">
         {!isLoading && user ? (
