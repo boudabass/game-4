@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Elsass Frost — Game Center</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- 1. Librairie p5 -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/p5.js"></script>
+
+    <!-- 2. Config plateforme (repli ; en production l'ID vient de ?gid=) -->
+    <script>window.DyadGame = { id: 'elsass-frost', version: 'v2' };</script>
+    <script src="../../system/system.js"></script>
+
+    <!-- 3. Socle partagé (engine v1) -->
+    <script src="../../system/engine/v1/LoadingManager.js"></script>
+    <script src="../../system/engine/v1/SaveManager.js"></script>
+
+    <!-- 4. Le jeu -->
+    <script src="config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/time.js"></script>
+    <script src="js/grid.js"></script>
+    <script src="js/buildings.js"></script>
+    <script src="js/sim.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/main.js"></script>
+</head>
+<body>
+    <!-- Loader plateforme -->
+    <div id="engine-loader">
+        <div>Chargement…</div>
+        <div id="engine-loader-track"><div id="engine-loader-bar"></div></div>
+        <div id="engine-loader-status"></div>
+    </div>
+
+    <!-- ÉCRAN MENU -->
+    <div id="screen-menu" class="screen hidden">
+        <h1 class="game-title">❄️ ELSASS FROST</h1>
+        <p class="game-sub">La ville ne doit pas mourir.</p>
+        <p id="menu-best" class="menu-best"></p>
+        <button id="btn-continue" class="btn primary hidden">CONTINUER LA PARTIE</button>
+        <button id="btn-new" class="btn">NOUVELLE PARTIE</button>
+    </div>
+
+    <!-- ÉCRAN FIN DE PARTIE -->
+    <div id="screen-over" class="screen hidden">
+        <h1 class="game-title small">LA VILLE EST TOMBÉE</h1>
+        <p id="over-reason" class="over-reason"></p>
+        <div class="score-box">
+            <div class="score-row"><span>❄️ Jours survécus</span><b id="over-days"></b></div>
+            <div class="score-row"><span>👥 Pic de population</span><b id="over-pop"></b></div>
+            <div class="score-row"><span>🏗️ Bâtiments construits</span><b id="over-built"></b></div>
+            <div class="score-sep"></div>
+            <div class="score-row eq"><span id="over-detail"></span></div>
+            <div class="score-row total"><span>SCORE</span><b id="over-score"></b></div>
+        </div>
+        <button id="btn-replay" class="btn primary">REJOUER</button>
+        <button id="btn-back-menu" class="btn">MENU</button>
+    </div>
+
+    <!-- UI EN JEU -->
+    <div id="game-ui" class="hidden">
+
+        <!-- HUD haut -->
+        <div id="top-hud">
+            <div class="hud-group">
+                <div class="res" title="Charbon"><span>⚫</span><b id="val-coal">0</b></div>
+                <div class="res" title="Bois"><span>🪵</span><b id="val-wood">0</b></div>
+                <div class="res" title="Acier"><span>🔩</span><b id="val-steel">0</b></div>
+                <div class="res" title="Noyaux de vapeur"><span>🔋</span><b id="val-cores">0</b></div>
+            </div>
+
+            <div id="temp-gauge" title="Température extérieure">
+                <span id="temp-val">-20°C</span>
+            </div>
+
+            <div class="hud-group">
+                <div class="res" title="Vivres"><span>🥩</span><b id="val-rawFood">0</b></div>
+                <div class="res" title="Rations"><span>🍲</span><b id="val-rations">0</b></div>
+                <div class="res pop-btn" id="btn-pop" title="Population"><span>👥</span><b id="val-pop">0</b></div>
+            </div>
+        </div>
+
+        <!-- Sous-HUD : temps + prévisions -->
+        <div id="sub-hud">
+            <div class="time-box">
+                <span id="day-counter">JOUR 1</span>
+                <span id="clock">08:00</span>
+                <span class="speed-btns">
+                    <button id="speed-0" title="Pause (espace)">⏸</button>
+                    <button id="speed-1" class="active" title="Vitesse normale">▶</button>
+                    <button id="speed-2" title="Rapide">▶▶</button>
+                    <button id="speed-3" title="Très rapide">▶▶▶</button>
+                </span>
+            </div>
+            <div class="forecast" title="Prévisions sur 5 jours">
+                <span id="forecast-0"></span><span id="forecast-1"></span><span id="forecast-2"></span><span id="forecast-3"></span><span id="forecast-4"></span>
+            </div>
+        </div>
+
+        <!-- Toasts -->
+        <div id="toasts"></div>
+
+        <!-- Barre basse -->
+        <div id="bottom-bar">
+            <div class="tool-group">
+                <button id="btn-build" class="tool" title="Construire">🔨</button>
+                <button id="btn-road" class="tool" title="Routes (1 bois)">🛤️</button>
+                <button id="btn-demolish" class="tool" title="Démolir">❌</button>
+            </div>
+            <div class="gauges">
+                <div class="gauge" title="Espoir">
+                    <div id="fill-hope" class="fill hope"></div><label>Espoir</label>
+                </div>
+                <div class="gauge" title="Mécontentement">
+                    <div id="fill-discontent" class="fill discontent"></div><label>Mécontentement</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Étagère de construction -->
+        <div id="build-shelf" class="hidden">
+            <div id="build-tabs"></div>
+            <div id="build-items"></div>
+        </div>
+
+        <!-- Panneau détail bâtiment -->
+        <div id="detail-panel" class="hidden">
+            <div class="dp-head">
+                <span id="detail-icon">🏠</span>
+                <h3 id="detail-name">BÂTIMENT</h3>
+                <button id="detail-close">✕</button>
+            </div>
+            <p id="detail-desc"></p>
+            <div id="detail-temp" class="detail-temp"></div>
+            <div id="detail-extra" class="detail-extra"></div>
+            <div id="detail-staff-row" class="staff-row hidden">
+                <span id="detail-staff-label">👷 Ouvriers</span>
+                <span class="staff-ctl">
+                    <button id="detail-staff-minus">−</button>
+                    <b id="detail-staff-val">0/0</b>
+                    <button id="detail-staff-plus">+</button>
+                </span>
+            </div>
+            <div id="gen-controls" class="gen-controls hidden">
+                <span>Puissance</span>
+                <span class="staff-ctl">
+                    <button id="gen-minus">−</button>
+                    <b id="gen-level">Niv 1</b>
+                    <button id="gen-plus">+</button>
+                </span>
+            </div>
+            <button id="detail-demolish" class="btn danger">DÉMANTELER (50% remboursé)</button>
+        </div>
+
+        <!-- Panneau population -->
+        <div id="pop-panel" class="hidden">
+            <div class="dp-head">
+                <span>👥</span><h3>POPULATION</h3>
+                <button id="pop-close">✕</button>
+            </div>
+            <div class="pp-row"><span>👷 Ouvriers</span><b id="pp-workers">0</b></div>
+            <div class="pp-row"><span>🧑‍🔬 Ingénieurs</span><b id="pp-engineers">0</b></div>
+            <div class="pp-row"><span>🧒 Enfants</span><b id="pp-children">0</b></div>
+            <div class="pp-row"><span>🤒 Malades</span><b id="pp-sick">0</b></div>
+            <div class="pp-sep"></div>
+            <div class="pp-row"><span>👷 Disponibles</span><b id="pp-free-workers">0</b></div>
+            <div class="pp-row"><span>🧑‍🔬 Disponibles</span><b id="pp-free-engineers">0</b></div>
+            <div class="pp-row"><span>🏠 Logement</span><b id="pp-housing">0</b></div>
+            <div class="pp-row"><span>⚰️ Décès</span><b id="pp-deaths">0</b></div>
+        </div>
+
+        <!-- Modale dilemme -->
+        <div id="event-modal" class="hidden">
+            <div class="event-box">
+                <div class="ev-head"><span id="ev-icon">⚠️</span><h3 id="ev-title"></h3></div>
+                <p id="ev-text"></p>
+                <button id="ev-choice-a" class="btn primary"></button>
+                <button id="ev-choice-b" class="btn"></button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
