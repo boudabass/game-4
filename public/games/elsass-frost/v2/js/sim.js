@@ -23,10 +23,15 @@ window.EFSim = {
 
         this.produce();
         this.burnCoal();
+        window.EFTasks.tick();
+
+        // Fin de saison imminente (23h59 -> minuit) : résoudre les tâches
+        // "à tenir" AVANT de passer au jour suivant.
+        if (S.hour === 23 && S.minute === 59) window.EFTasks.resolveSeasonEnd();
 
         const t = window.EFTime.advanceMinute();
         if (t.newHour) this.tickHour();
-        if (t.newDay) this.tickDay();
+        if (t.newDay) { this.tickDay(); window.EFTasks.assign(); }
 
         // Repas du soir à 18h00
         if (S.hour === 18 && S.minute === 0) this.mealTime();
@@ -51,7 +56,10 @@ window.EFSim = {
             if (def.staff && b.staff <= 0) continue;
 
             const eff = def.staff ? b.staff / def.staff : 1;
-            const bonus = window.EFGrid.isConnected(i) ? 1 + C.ROAD_BONUS : 1;
+            let bonus = window.EFGrid.isConnected(i) ? 1 + C.ROAD_BONUS : 1;
+            // Effet de saison sur ce bâtiment (été fertile, hiver rude...)
+            const season = window.EFTime.seasonOf(S.day);
+            if (season.prod && season.prod[b.type]) bonus *= season.prod[b.type];
 
             // Vérifier la consommation d'intrants au prorata
             let ok = true;
@@ -112,7 +120,7 @@ window.EFSim = {
             housedLeft -= occupants;
             if (occupants <= 0) continue;
             const lvl = window.EFBuildings.tempLevel(window.EFBuildings.innerTemp(h));
-            const pHour = lvl.sickPerDay / 24;
+            const pHour = lvl.sickPerDay / 24 * window.EFTime.seasonOf(S.day).sickMult;
             for (let i = 0; i < occupants; i++)
                 if (Math.random() < pHour) newSick++;
             // Guérison passive au chaud
@@ -174,12 +182,11 @@ window.EFSim = {
         S.flags.hungerToday = false;
         S.flags.homelessToday = false;
         this.maybeNewcomers();
-        if (S.outsideTemp <= (window.EFState.forecast[0] ? S.outsideTemp : S.outsideTemp)) {
-            // Info tempête : si demain chute de 10° ou plus, prévenir
-            const f = S.forecast;
-            if (f.length > 1 && f[1].temp <= f[0].temp - 10)
-                this.notify("🌨️", "Tempête en approche : " + f[1].temp + "°C demain !");
-        }
+        // Annonce de la nouvelle saison
+        const season = window.EFTime.seasonOf(S.day);
+        const year = window.EFTime.yearOf(S.day);
+        this.notify(season.icon, season.name + " — Année " + year +
+            " (" + window.EFTime.tempOfDay(S.day) + "°C)");
     },
 
     // ---------- REPAS (18h) ----------
@@ -252,6 +259,9 @@ window.EFSim = {
     maybeNewcomers: function () {
         const C = window.EFConfig, S = window.EFState;
         if (S.hope < C.NEWCOMERS_MIN_HOPE) return;
+        const arrivals = window.EFTime.seasonOf(S.day).arrivals;
+        if (arrivals <= 0) return;                       // hiver : personne
+        if (Math.random() > arrivals) return;            // automne : moins souvent
         if (!S.nextNewcomersDay)
             S.nextNewcomersDay = S.day + C.NEWCOMERS_EVERY_MIN +
                 Math.floor(Math.random() * (C.NEWCOMERS_EVERY_MAX - C.NEWCOMERS_EVERY_MIN + 1));
@@ -273,7 +283,9 @@ window.EFSim = {
         if (S.day < C.EVENT_FIRST_DAY) return;
         if (S.day === S.lastEventDay) return;
         if (Math.random() > C.EVENT_CHANCE) return;
-        const pool = C.EVENTS.filter(e => !S.usedEvents.includes(e.id));
+        const seasonId = window.EFTime.seasonOf(S.day).id;
+        const pool = C.EVENTS.filter(e => !S.usedEvents.includes(e.id) &&
+            (!e.season || e.season === seasonId));
         if (pool.length === 0) { S.usedEvents = []; return; }
         const ev = pool[Math.floor(Math.random() * pool.length)];
         S.lastEventDay = S.day;
@@ -324,9 +336,11 @@ window.EFSim = {
     },
 
     // ---------- SCORE COMPOSITE ----------
-    // SCORE = jours x 100 + pic de population x 25 + bâtiments construits x 15
+    // SCORE = jours x 100 + tâches réussies x 200 + pic de population x 25
+    //         + bâtiments construits x 15
     finalScore: function () {
         const W = window.EFConfig.SCORE_WEIGHTS, S = window.EFState;
-        return S.day * W.days + S.peakPop * W.peakPop + S.builtTotal * W.built;
+        return S.day * W.days + S.tasksDone * W.tasks +
+            S.peakPop * W.peakPop + S.builtTotal * W.built;
     }
 };

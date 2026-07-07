@@ -72,21 +72,24 @@ window.EFUI = {
         for (const key in C.BUILDINGS) {
             const def = C.BUILDINGS[key];
             if (def.noBuild || def.cat !== this.activeCat) continue;
+            const unlocked = window.EFBuildings.isUnlocked(key);
             const item = document.createElement("div");
-            item.className = "build-item";
+            item.className = "build-item" + (unlocked ? "" : " sealed");
             item.dataset.type = key;
             const cost = def.cost ? Object.entries(def.cost)
                 .map(([k, v]) => v + " " + this.resIcon(k)).join(" ") : "—";
-            item.innerHTML = '<div class="bi-icon">' + def.icon + '</div>' +
+            item.innerHTML = '<div class="bi-icon">' + (unlocked ? def.icon : "🔒") + '</div>' +
                 '<div class="bi-name">' + def.name + '</div>' +
-                '<div class="bi-cost">' + cost + '</div>';
-            item.title = def.desc;
-            item.addEventListener("click", () => {
-                const I = window.EFInput;
-                if (I.mode === "build" && I.buildType === key) I.setMode(null);
-                else I.setMode("build", key);
-                this.refreshShelfSelection();
-            });
+                '<div class="bi-cost">' + (unlocked ? cost : "À débloquer") + '</div>';
+            item.title = unlocked ? def.desc : "Débloqué en accomplissant les tâches.";
+            if (unlocked) {
+                item.addEventListener("click", () => {
+                    const I = window.EFInput;
+                    if (I.mode === "build" && I.buildType === key) I.setMode(null);
+                    else I.setMode("build", key);
+                    this.refreshShelfSelection();
+                });
+            }
             row.appendChild(item);
         }
         this.refreshShelfSelection();
@@ -96,7 +99,9 @@ window.EFUI = {
         const I = window.EFInput;
         document.querySelectorAll(".build-item").forEach(el => {
             el.classList.toggle("active", I.mode === "build" && I.buildType === el.dataset.type);
-            el.classList.toggle("locked", !window.EFBuildings.canAfford(el.dataset.type));
+            el.classList.toggle("locked",
+                window.EFBuildings.isUnlocked(el.dataset.type) &&
+                !window.EFBuildings.canAfford(el.dataset.type));
         });
     },
 
@@ -119,7 +124,9 @@ window.EFUI = {
         for (const k of ["coal", "wood", "steel", "cores", "rawFood", "rations"])
             this.setText("val-" + k, String(Math.floor(S.res[k])));
         this.setText("val-pop", S.totalPop() + (S.sick >= 1 ? " (🤒" + Math.round(S.sick) + ")" : ""));
-        this.setText("day-counter", "JOUR " + S.day);
+        const season = window.EFTime.seasonOf(S.day);
+        const year = window.EFTime.yearOf(S.day);
+        this.setText("day-counter", season.icon + " " + season.name + " · An " + year);
         this.setText("clock", window.EFTime.clock());
         this.setText("temp-val", S.outsideTemp + "°C");
         this.setText("gen-level", S.generatorLevel === 0 ? "OFF" : "Niv " + S.generatorLevel);
@@ -135,8 +142,9 @@ window.EFUI = {
             if (el && f[i]) {
                 if (this._cache["fc" + i] !== f[i].temp + "/" + f[i].day) {
                     this._cache["fc" + i] = f[i].temp + "/" + f[i].day;
-                    el.textContent = f[i].temp + "°";
-                    el.title = "Jour " + f[i].day;
+                    el.textContent = f[i].icon + " " + f[i].temp + "°";
+                    el.title = window.EFTime.seasonOf(f[i].day).name +
+                        " — Année " + window.EFTime.yearOf(f[i].day);
                     const prev = i > 0 ? f[i - 1].temp : f[i].temp;
                     el.classList.toggle("trend-down", f[i].temp <= prev - 8);
                 }
@@ -150,6 +158,9 @@ window.EFUI = {
 
         // Panneau détail ouvert : rafraîchir la température/staff en direct
         if (this.selectedBuilding >= 0) this.fillDetail();
+
+        // Panneau des tâches
+        this.updateTasks();
 
         // Toasts en attente
         const q = window.EFSim.msgQueue;
@@ -273,6 +284,36 @@ window.EFUI = {
         window.EFSim.resolveEvent(choice);
     },
 
+    // ---------- PANNEAU DES TÂCHES ----------
+    updateTasks: function () {
+        const S = window.EFState;
+        if (!S.tasks) return;
+        for (const key of ["main", "side"]) {
+            const t = S.tasks[key];
+            const box = this.$("task-" + key);
+            if (!t) { box.classList.add("hidden"); continue; }
+            box.classList.remove("hidden");
+            const p = window.EFTasks.progress(t);
+            const status = t.done ? "done" : (t.failed ? "failed" : "");
+            const sig = key + t.def.title + p.cur + "/" + p.goal + status + window.EFTasks.hoursLeft();
+            if (this._cache["task" + key] === sig) continue;
+            this._cache["task" + key] = sig;
+            box.className = "task " + key + " " + status;
+            const unit = p.unit || "";
+            const goalTxt = p.keepBelow ? "≤ " + p.goal + unit : p.cur + unit + " / " + p.goal + unit;
+            const cur = p.keepBelow ? p.cur + unit + " (" + goalTxt + ")" : goalTxt;
+            box.querySelector(".task-icon").textContent = t.done ? "✅" : (t.failed ? "❌" : t.def.icon);
+            box.querySelector(".task-title").textContent = t.def.title;
+            box.querySelector(".task-progress").textContent =
+                t.done ? "Accompli !" : (t.failed ? "Échoué" : cur + " · " + window.EFTasks.hoursLeft() + "h");
+            const fill = box.querySelector(".task-fill");
+            let ratio = p.goal > 0 ? Math.min(1, p.cur / p.goal) : (p.cur <= p.goal ? 1 : 0);
+            if (p.keepBelow) ratio = t.done ? 1 : Math.max(0, 1 - (p.cur / Math.max(1, p.goal)) * 0.5);
+            if (t.done) ratio = 1;
+            fill.style.width = Math.round(ratio * 100) + "%";
+        }
+    },
+
     // ---------- TOASTS ----------
     toast: function (msg) {
         const box = this.$("toasts");
@@ -293,13 +334,15 @@ window.EFUI = {
 
     fillGameOver: function () {
         const S = window.EFState, W = window.EFConfig.SCORE_WEIGHTS;
+        const year = window.EFTime.yearOf(S.day);
         this.setText("over-reason", S.gameOverReason);
-        this.setText("over-days", String(S.day));
+        this.setText("over-days", S.day + " (an " + year + ")");
+        this.setText("over-tasks", String(S.tasksDone));
         this.setText("over-pop", String(S.peakPop));
         this.setText("over-built", String(S.builtTotal));
         this.setText("over-detail",
-            S.day + "×" + W.days + " + " + S.peakPop + "×" + W.peakPop +
-            " + " + S.builtTotal + "×" + W.built);
+            S.day + "×" + W.days + " + " + S.tasksDone + "×" + W.tasks + " + " +
+            S.peakPop + "×" + W.peakPop + " + " + S.builtTotal + "×" + W.built);
         this.setText("over-score", String(window.EFSim.finalScore()));
     }
 };

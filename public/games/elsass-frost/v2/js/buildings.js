@@ -3,6 +3,11 @@
  */
 window.EFBuildings = {
 
+    // Le bâtiment est-il débloqué ?
+    isUnlocked: function (type) {
+        return window.EFState.unlocked.includes(type);
+    },
+
     // Coût affiché/débité d'un bâtiment
     canAfford: function (type) {
         const def = window.EFConfig.BUILDINGS[type];
@@ -31,6 +36,7 @@ window.EFBuildings = {
         const C = window.EFConfig, S = window.EFState;
         const def = C.BUILDINGS[type];
         if (!def || def.noBuild) return false;
+        if (!this.isUnlocked(type)) return false;
         if (def.unique && S.buildings.some(b => b.type === type)) return false;
         if (!window.EFGrid.canPlace(x, y, def.w, def.h)) return false;
         if (!this.canAfford(type)) return false;

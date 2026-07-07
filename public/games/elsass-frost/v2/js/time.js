@@ -1,74 +1,68 @@
 /*
- * time.js — Avancée du temps + génération météo sans fin.
- * La météo est générée jour par jour (pas de seed nécessaire : l'historique
- * généré est stocké dans EFState.weather et sérialisé avec la sauvegarde).
+ * time.js — Avancée du temps + météo SAISONNIÈRE.
+ * 1 saison = 1 jour de jeu (24h). Année = 4 jours.
+ * Température du jour = base de la saison + aggravation annuelle + bruit,
+ * puis une variation jour/nuit est appliquée chaque heure.
+ * Les températures générées sont stockées dans EFState.weather.temps
+ * (sérialisées avec la sauvegarde : pas besoin de seed).
  */
 window.EFTime = {
 
-    // Initialise la météo d'une nouvelle partie
-    initWeather: function () {
-        const C = window.EFConfig.WEATHER;
-        const S = window.EFState;
-        S.weather = {
-            base: C.START_TEMP,        // température de fond (dérive lente)
-            stormCount: 0,             // nombre de tempêtes passées
-            nextStormDay: 4 + Math.floor(Math.random() * (C.STORM_EVERY_MAX - C.STORM_EVERY_MIN + 1)),
-            stormLeft: 0,              // jours de tempête restants
-            stormDrop: 0,              // intensité de la tempête en cours
-            temps: {}                  // {day: temp} déjà générés
-        };
-        // Jours 1 à 3 : stables pour laisser le joueur s'installer
-        S.weather.temps[1] = C.START_TEMP;
-        S.weather.temps[2] = C.START_TEMP;
-        S.weather.temps[3] = C.START_TEMP - 2;
-        this.refreshForecast();
-        S.outsideTemp = S.weather.temps[1];
+    // Saison d'un jour donné (index 0-3) et année (1+)
+    seasonIdx: function (day) { return (day - 1) % 4; },
+    yearOf: function (day) { return Math.floor((day - 1) / 4) + 1; },
+    seasonOf: function (day) {
+        return window.EFConfig.SEASONS[this.seasonIdx(day)];
     },
 
-    // Retourne (et génère si besoin) la température d'un jour donné
-    tempOfDay: function (day) {
-        const C = window.EFConfig.WEATHER;
-        const W = window.EFState.weather;
-        if (W.temps[day] !== undefined) return W.temps[day];
-        // Générer tous les jours manquants dans l'ordre
-        let last = Math.max(...Object.keys(W.temps).map(Number));
-        while (last < day) {
-            last++;
-            // Dérive de fond + bruit
-            W.base += C.DRIFT_PER_DAY + (Math.random() * 2 - 1) * C.NOISE * 0.4;
-            let t = W.base + (Math.random() * 2 - 1) * C.NOISE;
+    initWeather: function () {
+        const S = window.EFState;
+        S.weather = { temps: {} };
+        S.outsideTemp = this.tempOfDay(1);
+        this.refreshForecast();
+    },
 
-            // Gestion des tempêtes
-            if (W.stormLeft > 0) {
-                t -= W.stormDrop;
-                W.stormLeft--;
-                if (W.stormLeft === 0) {
-                    // Fin de tempête : on planifie la suivante (la chute de la
-                    // tempête est transitoire, la base continue sa dérive lente)
-                    W.nextStormDay = last + C.STORM_EVERY_MIN +
-                        Math.floor(Math.random() * (C.STORM_EVERY_MAX - C.STORM_EVERY_MIN + 1));
-                }
-            } else if (last >= W.nextStormDay) {
-                W.stormCount++;
-                W.stormDrop = C.STORM_BASE_DROP + W.stormCount * C.STORM_GROWTH;
-                W.stormLeft = C.STORM_DURATION;
-                t -= W.stormDrop;
-            }
-            W.temps[last] = Math.round(t);
-        }
+    // Température de base (avant variation diurne) d'un jour donné
+    tempOfDay: function (day) {
+        const S = window.EFState;
+        if (!S.weather) S.weather = { temps: {} };
+        const W = S.weather;
+        if (W.temps[day] !== undefined) return W.temps[day];
+        const season = this.seasonOf(day);
+        const year = this.yearOf(day);
+        const t = season.temp + season.driftPerYear * (year - 1) +
+            (Math.random() * 2 - 1) * season.noise;
+        W.temps[day] = Math.round(t);
         return W.temps[day];
     },
 
-    // Met à jour EFState.forecast (jour courant + 4 suivants)
+    // Variation jour/nuit : nuit plus froide, après-midi plus doux
+    diurnal: function (hour) {
+        const D = window.EFConfig.DIURNAL;
+        if (hour >= 22 || hour < 6) return D.NIGHT;
+        if (hour >= 13 && hour < 17) return D.AFTERNOON;
+        return 0;
+    },
+
+    // Température extérieure effective (mise à jour chaque heure par la sim)
+    currentTemp: function () {
+        const S = window.EFState;
+        return this.tempOfDay(S.day) + this.diurnal(S.hour);
+    },
+
+    // Prévisions : jour courant + 4 suivants (avec icône de saison)
     refreshForecast: function () {
         const S = window.EFState;
         S.forecast = [];
         for (let d = S.day; d < S.day + 5; d++) {
-            S.forecast.push({ day: d, temp: this.tempOfDay(d) });
+            S.forecast.push({
+                day: d,
+                temp: this.tempOfDay(d),
+                icon: this.seasonOf(d).icon
+            });
         }
     },
 
-    // Vrai pendant les heures de travail
     isWorkTime: function () {
         const S = window.EFState, C = window.EFConfig;
         return S.hour >= C.WORK_START && S.hour < C.WORK_END;
@@ -79,7 +73,7 @@ window.EFTime = {
         return S.hour >= 21 || S.hour < 6;
     },
 
-    // Avance d'une minute de jeu. Retourne des drapeaux pour la simulation.
+    // Avance d'une minute de jeu
     advanceMinute: function () {
         const S = window.EFState;
         const out = { newHour: false, newDay: false };
@@ -92,17 +86,15 @@ window.EFTime = {
                 S.hour = 0;
                 S.day++;
                 out.newDay = true;
-                S.outsideTemp = this.tempOfDay(S.day);
                 this.refreshForecast();
             }
+            S.outsideTemp = this.currentTemp();
         }
         return out;
     },
 
     clock: function () {
         const S = window.EFState;
-        const h = String(S.hour).padStart(2, "0");
-        const m = String(S.minute).padStart(2, "0");
-        return h + ":" + m;
+        return String(S.hour).padStart(2, "0") + ":" + String(S.minute).padStart(2, "0");
     }
 };

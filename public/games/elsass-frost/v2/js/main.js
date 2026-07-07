@@ -47,6 +47,7 @@ function efStartGame(fromSave) {
         window.EFState.reset();
         window.EFTime.initWeather();
         window.EFGrid.rebuild();
+        window.EFTasks.assign();
     }
     window.EFCamera.center();
     window.EFInput.setMode(null);
@@ -135,21 +136,6 @@ function efHandleTap(tx, ty) {
         const idx = window.EFGrid.buildingAt(tx, ty);
         if (idx >= 0) window.EFUI.showDetail(idx);
         else window.EFUI.hideDetail();
-    }
-}
-
-// Raccourcis clavier (desktop)
-function keyPressed() {
-    if (efState !== EF_STATE.GAME) return;
-    const S = window.EFState;
-    if (key === " ") window.EFUI.setSpeed(S.speed === 0 ? S.lastSpeed : 0);
-    if (key === "1") window.EFUI.setSpeed(1);
-    if (key === "2") window.EFUI.setSpeed(2);
-    if (key === "3") window.EFUI.setSpeed(3);
-    if (keyCode === ESCAPE) {
-        window.EFInput.setMode(null);
-        window.EFUI.toggleShelf(false);
-        window.EFUI.hideDetail();
     }
 }
 

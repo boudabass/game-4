@@ -25,6 +25,7 @@
     <script src="js/grid.js"></script>
     <script src="js/buildings.js"></script>
     <script src="js/sim.js"></script>
+    <script src="js/tasks.js"></script>
     <script src="js/input.js"></script>
     <script src="js/render.js"></script>
     <script src="js/ui.js"></script>
@@ -54,6 +55,7 @@
         <p id="over-reason" class="over-reason"></p>
         <div class="score-box">
             <div class="score-row"><span>❄️ Jours survécus</span><b id="over-days"></b></div>
+            <div class="score-row"><span>📜 Tâches accomplies</span><b id="over-tasks"></b></div>
             <div class="score-row"><span>👥 Pic de population</span><b id="over-pop"></b></div>
             <div class="score-row"><span>🏗️ Bâtiments construits</span><b id="over-built"></b></div>
             <div class="score-sep"></div>
@@ -101,6 +103,26 @@
             </div>
             <div class="forecast" title="Prévisions sur 5 jours">
                 <span id="forecast-0"></span><span id="forecast-1"></span><span id="forecast-2"></span><span id="forecast-3"></span><span id="forecast-4"></span>
+            </div>
+        </div>
+
+        <!-- Panneau des tâches (haut gauche) -->
+        <div id="task-panel">
+            <div id="task-main" class="task main hidden">
+                <span class="task-icon"></span>
+                <div class="task-body">
+                    <div class="task-title"></div>
+                    <div class="task-progress"></div>
+                    <div class="task-bar"><div class="task-fill"></div></div>
+                </div>
+            </div>
+            <div id="task-side" class="task side hidden">
+                <span class="task-icon"></span>
+                <div class="task-body">
+                    <div class="task-title"></div>
+                    <div class="task-progress"></div>
+                    <div class="task-bar"><div class="task-fill"></div></div>
+                </div>
             </div>
         </div>
 

@@ -242,3 +242,27 @@ canvas { display: block; position: fixed; inset: 0; z-index: 0; }
 .ev-head h3 { margin: 0; }
 #ev-text { color: var(--muted); margin: 0; }
 .event-box .btn { min-width: 0; width: 100%; }
+
+/* ---------- Panneau des tâches ---------- */
+#task-panel {
+    position: fixed; left: var(--pad); top: clamp(96px, 21vmin, 150px); z-index: 9;
+    display: flex; flex-direction: column; gap: var(--pad);
+    width: min(58vw, 250px); pointer-events: none;
+}
+.task {
+    display: flex; gap: .5em; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: var(--radius); padding: var(--pad); pointer-events: auto;
+}
+.task.side { opacity: .85; }
+.task.done { border-color: var(--ok); }
+.task.failed { border-color: var(--discontent); opacity: .7; }
+.task-icon { font-size: var(--fs-big); line-height: 1; }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-weight: 700; font-size: .85em; }
+.task.side .task-title::after { content: " (bonus)"; color: var(--muted); font-weight: 400; }
+.task-progress { color: var(--muted); font-size: .78em; margin: 2px 0; }
+.task-bar { height: 5px; background: #182638; border-radius: 99px; overflow: hidden; }
+.task-fill { height: 100%; width: 0%; background: var(--accent); transition: width .3s; }
+.task.done .task-fill { background: var(--ok); }
+.task.failed .task-fill { background: var(--discontent); }

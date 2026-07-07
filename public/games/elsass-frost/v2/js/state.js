@@ -38,6 +38,11 @@ window.EFState = {
     peakPop: 0,
     builtTotal: 0,
 
+    // Tâches (voir tasks.js) et bâtiments débloqués
+    tasks: null,
+    tasksDone: 0,
+    unlocked: [],
+
     // Événements
     lastEventDay: 0,
     usedEvents: [],      // ids récents pour éviter les répétitions
@@ -63,7 +68,7 @@ window.EFState = {
         this.minute = 0;
         this.speed = 1;
         this.lastSpeed = 1;
-        this.outsideTemp = C.WEATHER.START_TEMP;
+        this.outsideTemp = C.SEASONS[0].temp;
         this.forecast = [];
         this.weather = null;
         this.generatorLevel = 1;
@@ -71,6 +76,9 @@ window.EFState = {
         this.roads = [];
         this.peakPop = this.totalPop();
         this.builtTotal = 0;
+        this.tasks = null;
+        this.tasksDone = 0;
+        this.unlocked = C.START_UNLOCKED.slice();
         this.lastEventDay = 0;
         this.usedEvents = [];
         this.pendingEvent = null;

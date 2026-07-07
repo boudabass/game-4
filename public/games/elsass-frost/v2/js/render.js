@@ -26,7 +26,9 @@ window.EFRender = {
         const p0 = cam.worldToScreen(0, 0);
         const size = N * T * cam.zoom;
         noStroke();
-        fill(214, 224, 232); // neige
+        // Teinte du sol selon la saison (hiver blanc, été plus végétal...)
+        const tint = window.EFTime.seasonOf(S.day).groundTint;
+        fill(tint[0], tint[1], tint[2]);
         rect(p0.x, p0.y, size, size);
 
         // --- Halo de chaleur du générateur ---

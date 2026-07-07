@@ -29,7 +29,8 @@ window.EFSaveGame = {
                 buildings: S.buildings, roads: S.roads,
                 peakPop: S.peakPop, builtTotal: S.builtTotal,
                 lastEventDay: S.lastEventDay, usedEvents: S.usedEvents,
-                nextNewcomersDay: S.nextNewcomersDay || 0
+                nextNewcomersDay: S.nextNewcomersDay || 0,
+                tasks: S.tasks, tasksDone: S.tasksDone, unlocked: S.unlocked
             };
         }
         return data;
@@ -68,6 +69,10 @@ window.EFSaveGame = {
         S.lastEventDay = c.lastEventDay || 0;
         S.usedEvents = c.usedEvents || [];
         S.nextNewcomersDay = c.nextNewcomersDay || 0;
+        S.tasksDone = c.tasksDone || 0;
+        S.unlocked = c.unlocked || window.EFConfig.START_UNLOCKED.slice();
+        S.tasks = c.tasks || null;
+        if (!S.tasks) window.EFTasks.assign();
         window.EFTime.refreshForecast();
         window.EFGrid.rebuild();
         return true;
