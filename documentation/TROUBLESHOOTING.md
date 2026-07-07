@@ -103,3 +103,11 @@ Ce document recense les erreurs rencontrées lors du développement et les solut
 ### 🔴 Session invalide après un redéploiement avec nouveau SESSION_SECRET
 *   **Cause :** changer `SESSION_SECRET` invalide toutes les sessions signées.
 *   **Solution :** c'est normal — tout le monde doit se reconnecter. Ne changer le secret qu'en connaissance de cause.
+
+### 🔴 Une page "descend" à l'infini dans l'iframe Odoo (boucle d'agrandissement)
+*   **Symptôme :** la page charge puis grandit/descend sans jamais s'arrêter (déjà vu deux fois : 29/06/2026 sur l'ancienne landing page, 07/07/2026 sur la nouvelle landing page refaite).
+*   **Cause :** une page hors `/play/*` utilise une classe Tailwind relative au viewport (`h-screen`, `min-h-screen`, `min-h-[80vh]`, etc.). Or `IframeResizer` (`src/components/iframe-resizer.tsx`) mesure la hauteur du `body` de cette page et l'envoie à Odoo via `postMessage({ type: "ARCADE_RESIZE" })`, qui agrandit l'iframe en conséquence. Comme `layout-wrapper.tsx` ajoute un header (`MainNav`/`UserNav`) + padding au-dessus du contenu sur ces pages, le contenu dépasse toujours la hauteur de l'iframe. Cette hauteur `vh` se recalcule alors sur la **nouvelle** hauteur d'iframe (plus grande), dépasse à nouveau → nouvelle mesure → nouvel agrandissement → boucle infinie.
+*   **Solution validée :** ne jamais utiliser d'unité relative au viewport (`h-screen`, `min-h-screen`, `100vh`, `100dvh`) sur une page hors `/play/*`. Utiliser une hauteur fixe en pixels à la place, ex. `min-h-[800px]`.
+    *   Seule exception : `src/app/play/[gameId]/page.tsx` peut utiliser `h-[100dvh]`, car `IframeResizer` ignore la mesure de contenu sur ces pages (`ARCADE_MODE: "game"` → c'est Odoo qui fixe la hauteur de l'iframe à la hauteur d'écran du visiteur, pas de feedback loop possible).
+    *   Le seuil de sécurité de 30px dans `iframe-resizer.tsx` (`ResizeObserver`) ne suffit pas à casser cette boucle-là : chaque itération grandit de bien plus que 30px.
+*   **Fix du 07/07/2026 :** `src/app/page.tsx`, `h-screen` → `min-h-[800px]` (commit `9350f30`).
