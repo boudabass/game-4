@@ -69,47 +69,78 @@
     <!-- UI EN JEU -->
     <div id="game-ui" class="hidden">
 
-        <!-- HUD haut -->
+        <!-- ===== HUD HAUT (structure v1 : deux ailes + thermomètre central) ===== -->
         <div id="top-hud">
-            <div class="hud-group">
-                <div class="res" title="Charbon"><span>⚫</span><b id="val-coal">0</b></div>
-                <div class="res" title="Bois"><span>🪵</span><b id="val-wood">0</b></div>
-                <div class="res" title="Acier"><span>🔩</span><b id="val-steel">0</b></div>
-                <div class="res" title="Noyaux de vapeur"><span>🔋</span><b id="val-cores">0</b></div>
-            </div>
+            <div class="hud-wrap">
+                <!-- Aile gauche -->
+                <div class="hud-col left">
+                    <div class="hud-row res-row">
+                        <div class="res-item" title="Charbon">
+                            <span class="icon">⚫</span>
+                            <span class="res-info"><b id="val-coal" class="value">0</b><span class="label">Charbon</span></span>
+                        </div>
+                        <div class="res-item" title="Bois">
+                            <span class="icon">🪵</span>
+                            <span class="res-info"><b id="val-wood" class="value">0</b><span class="label">Bois</span></span>
+                        </div>
+                        <div class="res-item" title="Acier">
+                            <span class="icon">🏗️</span>
+                            <span class="res-info"><b id="val-steel" class="value">0</b><span class="label">Acier</span></span>
+                        </div>
+                        <div class="res-item" title="Noyaux de vapeur">
+                            <span class="icon">🔋</span>
+                            <span class="res-info"><b id="val-cores" class="value">0</b><span class="label">Noyaux</span></span>
+                        </div>
+                    </div>
+                    <div class="hud-row sub-row time-row">
+                        <span id="day-counter" class="day-counter">🌱 PRINTEMPS · AN 1</span>
+                        <span id="clock" class="clock">08:00</span>
+                        <span class="speed-btns">
+                            <button id="speed-0" title="Pause">||</button>
+                            <button id="speed-1" class="active" title="Vitesse normale">&gt;</button>
+                            <button id="speed-2" title="Rapide">&gt;&gt;</button>
+                            <button id="speed-3" title="Très rapide">&gt;&gt;&gt;</button>
+                        </span>
+                    </div>
+                </div>
 
-            <div id="temp-gauge" title="Température extérieure">
-                <span id="temp-val">-20°C</span>
-            </div>
+                <!-- Thermomètre central -->
+                <div class="hud-anchor">
+                    <div id="temp-gauge" title="Température extérieure">
+                        <span id="temp-val">-20°</span>
+                    </div>
+                </div>
 
-            <div class="hud-group">
-                <div class="res" title="Vivres"><span>🥩</span><b id="val-rawFood">0</b></div>
-                <div class="res" title="Rations"><span>🍲</span><b id="val-rations">0</b></div>
-                <div class="res pop-btn" id="btn-pop" title="Population"><span>👥</span><b id="val-pop">0</b></div>
+                <!-- Aile droite -->
+                <div class="hud-col right">
+                    <div class="hud-row res-row">
+                        <div class="res-item" title="Vivres">
+                            <span class="icon">🥩</span>
+                            <span class="res-info"><b id="val-rawFood" class="value">0</b><span class="label">Vivres</span></span>
+                        </div>
+                        <div class="res-item" title="Rations">
+                            <span class="icon">🍲</span>
+                            <span class="res-info"><b id="val-rations" class="value">0</b><span class="label">Plats</span></span>
+                        </div>
+                        <div class="res-item" title="Population">
+                            <span class="icon">👥</span>
+                            <span class="res-info"><b id="val-pop" class="value">0</b><span class="label">Citoyens</span></span>
+                        </div>
+                    </div>
+                    <div class="hud-row sub-row weather-row">
+                        <span class="forecast" title="Prévisions sur 5 jours">
+                            <span id="forecast-0"></span><span id="forecast-1"></span><span id="forecast-2"></span><span id="forecast-3"></span><span id="forecast-4"></span>
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Sous-HUD : temps + prévisions -->
-        <div id="sub-hud">
-            <div class="time-box">
-                <span id="day-counter">JOUR 1</span>
-                <span id="clock">08:00</span>
-                <span class="speed-btns">
-                    <button id="speed-0" title="Pause (espace)">⏸</button>
-                    <button id="speed-1" class="active" title="Vitesse normale">▶</button>
-                    <button id="speed-2" title="Rapide">▶▶</button>
-                    <button id="speed-3" title="Très rapide">▶▶▶</button>
-                </span>
-            </div>
-            <div class="forecast" title="Prévisions sur 5 jours">
-                <span id="forecast-0"></span><span id="forecast-1"></span><span id="forecast-2"></span><span id="forecast-3"></span><span id="forecast-4"></span>
-            </div>
-        </div>
-
-        <!-- Panneau des tâches (haut gauche) -->
+        <!-- Panneau des tâches (bas gauche, style OBJECTIFS v1) -->
         <div id="task-panel">
+            <h4 class="task-header">OBJECTIFS</h4>
             <div id="task-main" class="task main hidden">
-                <span class="task-icon"></span>
+                <span class="task-icon-frame"><span class="task-icon"></span></span>
                 <div class="task-body">
                     <div class="task-title"></div>
                     <div class="task-progress"></div>
@@ -117,7 +148,7 @@
                 </div>
             </div>
             <div id="task-side" class="task side hidden">
-                <span class="task-icon"></span>
+                <span class="task-icon-frame"><span class="task-icon"></span></span>
                 <div class="task-body">
                     <div class="task-title"></div>
                     <div class="task-progress"></div>
@@ -129,12 +160,11 @@
         <!-- Toasts -->
         <div id="toasts"></div>
 
-        <!-- Barre basse -->
+        <!-- ===== BARRE BASSE (style v1 : boutons circulaires + jauges) ===== -->
         <div id="bottom-bar">
-            <div class="tool-group">
-                <button id="btn-build" class="tool" title="Construire">🔨</button>
-                <button id="btn-road" class="tool" title="Routes (1 bois)">🛤️</button>
-                <button id="btn-demolish" class="tool" title="Démolir">❌</button>
+            <div class="action-group">
+                <button id="btn-build" class="action-circle" title="Construire">🔨</button>
+                <button id="btn-road" class="action-circle sub" title="Routes (1 bois)">🟫</button>
             </div>
             <div class="gauges">
                 <div class="gauge" title="Espoir">
@@ -143,6 +173,10 @@
                 <div class="gauge" title="Mécontentement">
                     <div id="fill-discontent" class="fill discontent"></div><label>Mécontentement</label>
                 </div>
+            </div>
+            <div class="action-group">
+                <button id="btn-demolish" class="action-circle sub" title="Démolir">❌</button>
+                <button id="btn-pop" class="action-circle" title="Population">👥</button>
             </div>
         </div>
 
