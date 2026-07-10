@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elsass Farm (gray-box) — Game Center</title>
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a2c1a; overflow: hidden; }
+        canvas { display: block; }
+        #engine-loader {
+            position: fixed; inset: 0; background: #1a2c1a; color: #e2e8f0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: system-ui, sans-serif; z-index: 10;
+        }
+        #engine-loader-track { width: 280px; height: 8px; background: #2e4a2e; border-radius: 4px; overflow: hidden; margin-top: 16px; }
+        #engine-loader-bar { width: 0%; height: 100%; background: #4f46e5; transition: width .2s; }
+        #engine-loader-status { margin-top: 12px; font-size: 13px; opacity: .75; }
+    </style>
+
+    <!-- 1. Librairie p5 -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.4/lib/p5.js"></script>
+
+    <!-- 2. Config plateforme (repli ; en production l'ID vient de ?gid=) -->
+    <script>window.DyadGame = { id: 'elsass-farm', version: 'v3' };</script>
+    <script src="../../system/system.js"></script>
+
+    <!-- 3. Socle partagé : engine v1 (Loader + Save) -->
+    <script src="../../system/engine/v1/LoadingManager.js"></script>
+    <script src="../../system/engine/v1/SaveManager.js"></script>
+
+    <!-- 4. Socle partagé : engine v2 (modules communs, créés pour la V2) -->
+    <script src="../../system/engine/v2/GameClock.js"></script>
+    <script src="../../system/engine/v2/Camera.js"></script>
+    <script src="../../system/engine/v2/GridSystem.js"></script>
+    <script src="../../system/engine/v2/Movement.js"></script>
+    <script src="../../system/engine/v2/ActionZone.js"></script>
+
+    <!-- 5. Le jeu -->
+    <script src="config.js"></script>
+    <script src="sketch.js"></script>
+</head>
+<body>
+    <div id="engine-loader">
+        <div>Chargement…</div>
+        <div id="engine-loader-track"><div id="engine-loader-bar"></div></div>
+        <div id="engine-loader-status"></div>
+    </div>
+</body>
+</html>

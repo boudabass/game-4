@@ -1,7 +1,7 @@
 # PRD — Elsass Farm V2 (simulation agricole façon Stardew Valley)
 
 > Statut : document de cadrage — phase réflexion, aucun code.
-> Date : 07/07/2026.
+> Date : 07/07/2026. Mis à jour : 10/07/2026 (décisions John : moteur p5.js seul, échelle de temps, prix fixes, météo, score, nom, cible, assets — voir §3, §8-§9 et GDD §10-§12).
 > Autres documents liés : `CAHIER_DES_CHARGES.md`, `GAME_DESIGN_DOCUMENT.md`, `ROADMAP.md` (même dossier).
 
 ## 1. Contexte
@@ -16,7 +16,7 @@ The Elsassisch opère une arcade de jeux gratuits (p5.js, iframe Odoo, `arcade.t
 
 ## 3. Public cible
 
-Les clients de The Elsassisch connectés via le portail (compte Odoo). Aucune tranche d'âge n'est imposée par ce projet : la mention "Game Center Seniors" trouvée dans le code (`ARCHITECTURE_CIBLE.md` §7) est un intitulé hérité, non confirmé comme cible produit réelle — c'est une question ouverte, hors scope de ce document (§9). Par défaut on conçoit pour un public généraliste, desktop et mobile.
+Les clients de The Elsassisch connectés via le portail (compte Odoo). Décision John 10/07/2026 : **grand public, avec une dominante senior assumée**. Les jeunes joueurs ont déjà accès à de gros jeux bien plus riches — ce jeu s'adresse à un public qui n'a pas envie de se prendre la tête. Conséquences de conception : lisibilité avant tout (textes et zones cliquables généreux), rythme doux sans stress, menus simples. Desktop et mobile.
 
 ## 4. Pitch
 
@@ -57,7 +57,7 @@ Progression par compétences (Farming, Fishing, Foraging, Mining, Combat dans l'
 ### Ce qu'on ajoute (nouveau, spécifique à ce projet)
 - **Thème alsacien assumé** : cultures, élevage, pêche et décor du terroir (détail dans `GAME_DESIGN_DOCUMENT.md`).
 - **Système de défis/catastrophes** : le monde peut régresser (météo, sinistres, actions de PNJ hostiles), pas seulement progresser — différenciateur fort vis-à-vis de Stardew Valley classique.
-- **Marché asynchrone inter-joueurs** : chaque joueur a sa propre partie indépendante, mais un espace d'échange commun (vente, achat, partage d'info) relie toutes les parties.
+- **Marché asynchrone inter-joueurs** : chaque joueur a sa propre partie indépendante, mais un espace d'échange commun (vente, achat, partage d'info) relie toutes les parties. Tous les prix sont fixés d'avance par le catalogue du jeu — aucune spéculation ni manipulation possible (décision John 10/07/2026).
 - **Partie sans fin** : pas d'objectif de complétion façon "Centre Communautaire" — la partie continue indéfiniment.
 
 ## 7. Périmètre V1 (validé avec John)
@@ -68,25 +68,28 @@ Progression par compétences (Farming, Fishing, Foraging, Mining, Combat dans l'
 - Pêche.
 - Mine (exploration + collecte, énigmes, **pas de combat**).
 - Relations PNJ (a minima dialogues, cadeaux, réputation) — nécessaires pour porter le système de défis liés aux PNJ.
-- Boutique / économie de base.
+- Boutique / économie de base (prix fixes, une seule monnaie).
+- Météo quotidienne qui affecte le gameplay (arrosage, pêche, défis) — voir CDC §9 et GDD §10.
 - Thème visuel et culturel alsacien.
 - Système de défis/catastrophes (météo, sinistres, actions PNJ négatives).
 - Marché asynchrone inter-joueurs (échange, vente, partage d'info — jamais de partie jouée à plusieurs en simultané).
-- Sauvegarde persistante, partie sans fin.
+- Sauvegarde persistante, partie sans fin, score cumulatif (formule : GDD §11).
 
 **Explicitement hors scope V1**
 - Combat (aucun ennemi à combattre — la mine le remplace par des puzzles).
 - Multijoueur temps réel / partie partagée.
 - Fin de jeu ou objectif de complétion type "100%".
+- Mécaniques annexes type FarmVille (décoration, collections, cadeaux quotidiens, bonus de connexion) — écartées le 10/07/2026 : le jeu doit rester simple, fun et réaliste à développer, pas un jeu AAA.
 
 Détail système par système : voir `CAHIER_DES_CHARGES.md`. Contenu concret (listes de cultures, PNJ, recettes, catalogue d'événements) : voir `GAME_DESIGN_DOCUMENT.md`.
 
 ## 8. Contraintes
 
-### Techniques (héritées de la plateforme — `GAME_WORKFLOW.md`, `ARCHITECTURE_CIBLE.md`)
-- Stack imposée : p5.js + p5.play v3 + planck.js, pas de TypeScript côté jeu.
+### Techniques (héritées de la plateforme)
+- **Moteur : p5.js seul** (décision John 10/07/2026), comme le template officiel (`_template/v1`) et Elsass Frost v2. Pas de p5.play ni planck.js — aucun besoin de moteur physique pour ce jeu. ⚠️ `GAME_WORKFLOW.md` mentionne encore "p5.play v3 + planck.js" : cette mention est obsolète, à mettre à jour.
+- Pas de TypeScript côté jeu (JavaScript ES6+).
 - Le jeu doit passer exclusivement par `window.GameSystem` (jamais de `fetch` direct) : `Lifecycle.notifyReady()`, `Score.submit()`, `Save.read()/write()`.
-- Sauvegarde hybride déjà fournie par le socle (`SaveManager` de `engine/v1`) — à réutiliser.
+- **État réel du socle** (vérifié 10/07/2026) : `engine/v1` ne fournit que `LoadingManager` et `SaveManager`. Les anciens modules (InputManager, GridSystem, GameStateBase, caméra) appartiennent au moteur city-builder sorti du socle (`test-system/v1`, décision 03/07/2026) et ne doivent pas être repris tels quels. Les modules communs nécessaires (déplacement au clic, zone d'action, caméra/zoom, machine d'états) sont **à créer de zéro** et à mutualiser dans le socle (probablement `engine/v2`) pour resservir aux futurs jeux — décision John 10/07/2026 : la base commune reste un principe fondateur de la plateforme.
 - **Nouveau besoin technique identifié** : le marché asynchrone inter-joueurs suppose une donnée **partagée entre utilisateurs**, alors que la table `save` (jsonb) est aujourd'hui strictement scopée par joueur (`PK (game_id, user_id)`). Cela demandera une nouvelle table/API côté plateforme — hors scope de ce document de réflexion, à cadrer techniquement avant le développement.
 
 ### Business / marque
@@ -98,11 +101,11 @@ Détail système par système : voir `CAHIER_DES_CHARGES.md`. Contenu concret (l
 | Sujet | Risque | À trancher |
 |---|---|---|
 | Ampleur | Stardew Valley représente ~4 ans de développement pour une personne. Même réduit, le scope V1 (5 systèmes) reste conséquent. | Prioriser un ordre de construction — voir `ROADMAP.md`. |
-| Marché asynchrone | Nécessite une brique technique nouvelle (table partagée, modération anti-abus). | Cadrage technique dédié avant développement. |
+| Marché asynchrone | Nécessite une brique technique nouvelle (table partagée, modération anti-abus du "mur du village"). | Cadrage technique dédié avant développement. |
 | Système de défis | Doit rester motivant, pas décourageant : perdre sa progression peut lasser un joueur. | Principes d'équilibrage détaillés dans `GAME_DESIGN_DOCUMENT.md` §7. |
-| Nom du jeu | "Elsass Farm" est le nom de l'ancien prototype abandonné. | Confirmer si on garde ce nom pour la V2 ou si on en choisit un autre. |
-| Cible réelle (grand public vs seniors) | Impacte la lisibilité de l'UI, la vitesse du jeu, la complexité des menus. | À confirmer avec John. |
-| Production d'assets | Univers alsacien = besoin de sprites/décors/musique originaux ou stylisés. | Définir qui produit les assets (IA générative, achat, création maison) avant la phase contenu. |
+| Rendu des emoji | Les assets reposent en partie sur les emoji (GDD §12), dont le dessin varie selon l'OS/navigateur. | Vérifier le rendu sur les 3 form factors dès le prototype ; fallback forme géométrique si besoin. |
+
+> Résolu le 10/07/2026 (décisions John) : nom = **Elsass Farm** (simple, reste dans le thème Alsace) ; cible = grand public à dominante senior ; assets = dessinés par le code + emoji (GDD §12).
 
 ## 10. Critères de succès
 
