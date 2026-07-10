@@ -36,7 +36,7 @@ tous les jeux de l'arcade.
 | Fish Pack | kenney.nl/assets/fish-pack | elsass-farm v3 — **décor de la zone pêche** (rivière/canal/étang, poissons visibles dans l'eau) |
 | Pixel Shmup | kenney.nl/assets/pixel-shmup | elsass-farm v3 — **mini-jeu de pêche actif** (l'action de pêche elle-même : timing/esquive), distinct du décor |
 | Tiny Town | kenney.nl/assets/tiny-town | elsass-farm v3 — village, marché couvert, bâtiments (GDD §5, §9) |
-| Minimap Pack | kenney.nl/assets/minimap-pack | elsass-farm v3 — mini-carte de navigation entre zones (`MONDE_ET_PORTAILS.md`) |
+| Minimap Pack | kenney.nl/assets/minimap-pack | elsass-farm v3 — mini-carte de navigation entre zones (`MONDE_ET_PORTAILS.md`) — **trié et renommé le 10/07/2026** |
 | Roguelike Characters | kenney.nl/assets/roguelike-characters | elsass-farm v3 — sprites des 8 PNJ du village (GDD §5) |
 | Roguelike Indoors | kenney.nl/assets/roguelike-indoors | elsass-farm v3 — intérieurs de bâtiments (Roadmap Partie 2 : bâtiments à un ou plusieurs étages) |
 | UI Pack Pixel Adventure | kenney.nl/assets/ui-pack-pixel-adventure | Transversal — HUD, menus, boutons, tous les jeux |
@@ -66,6 +66,23 @@ futurs jeux non encore planifiés.
   visuellement au test.
 
 ## Outil de tri (10/07/2026)
+
+Le tri/validation des packs se fait avec le jeu-outil **assets-test**
+(`public/games/assets-test/v1/`, masqué du catalogue) — voir
+`documentation/ASSETS_TEST.md`. Le résultat de chaque passe de tri doit être
+reporté ici (colonne "Usage prévu" → usage réel constaté).
+
+## Minimap Pack — trié le 10/07/2026
+
+Confirmé à l'usage : un système complet de tuiles-chemin 8×8 px (réseau
+horizontal/vertical/croix/T/virages + point isolé + case vide + 2 ponts),
+décliné en 6 palettes de couleur identiques en forme (`a` à `f`) — utilisable
+tel quel pour dessiner un tracé de route sur la mini-carte. Plus 2 marqueurs
+pleins (jaune/orange, couleur fixe indépendante du style — probablement
+repère joueur/objectif) et quelques icônes (crâne, monstre, lettres S/X,
+2 tuiles "pont sur rivière" à confirmer). Détail complet :
+`Assets_pack/tri/CATALOGUE.md`. Aucun manque : le jeu de rôles est complet
+pour les 6 styles.
 
 Le tri/validation des packs se fait avec le jeu-outil **assets-test**
 (`public/games/assets-test/v1/`, masqué du catalogue) — voir

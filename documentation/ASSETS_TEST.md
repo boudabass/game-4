@@ -66,4 +66,44 @@ de manifeste. Limites : profondeur 6, 20 000 fichiers.
 > À compléter au fil des passes de tri. Une entrée par pack testé :
 > date, verdict global, décisions notables, modifs faites.
 
-- *(vide — aucun pack encore trié)*
+### 10/07/2026 — Rattrapage kenney_minimap-pack (renommage)
+
+Une première passe mécanique (`tri_apply.ps1`, exécutée par John sous
+Windows) avait déjà déplacé le pack : 150 tuiles (6 styles × 25) vers
+`Assets_pack/tri/ui/` en gardant les noms Kenney bruts (`mmap_a_tile_0000.png`...,
+inutilisables tels quels), et les 6 planches + `Tilesheet.txt` vers
+`Assets_pack/_rejetes/kenney_minimap-pack/`. Ce rattrapage a consisté à
+regarder les 150 tuiles (8×8 px, identiques en forme entre les 6 styles,
+seule la couleur change) et à les renommer par rôle :
+
+- **125 tuiles "route"** (`mmap_route_<style>_<role>.png`) : réseau de
+  chemins complet par style — horizontal, vertical (+ variantes v2,
+  doublons pixel-exacts), croix, 4 T, 4 virages, point isolé, case vide,
+  2 ponts simples. Convention de rôles appliquée intégralement (voir
+  CLAUDE.md skill tri-assets-game4).
+- **25 icônes** (`mmap_icone_<style>_<nom>.png`) : 2 marqueurs pleins
+  (jaune/orange, couleur fixe quel que soit le style), crâne, monstre,
+  lettres S et X, + pont sur rivière (horizontal/vertical, deviné par la
+  couleur violette = eau).
+
+⚠️ **Écart de chemin constaté** : la destination réelle du tri est
+`public/games/system/assets/Assets_pack/tri/` (le script `tri_apply.ps1`
+crée l'arborescence ici), alors que le skill de tri documente
+`public/games/system/assets/tri/` (un niveau au-dessus, hors `Assets_pack/`).
+Pas de déplacement fait dans cette passe (risque inutile pour un simple
+rattrapage de noms) — à trancher : soit adapter la doc au chemin réel,
+soit migrer `tri/` au bon niveau lors d'une prochaine session.
+
+⚠️ **2 rôles à confirmer par John** (nom basé sur la couleur violette
+observée = probablement de l'eau, mais l'usage minimap n'est pas encore
+implémenté) : `pont_riviere_horizontal` et `pont_riviere_vertical`. Le
+reste du classement est certain (formes non ambiguës).
+
+Catalogue créé : `Assets_pack/tri/CATALOGUE.md`.
+
+⚠️ **Commit non fait** : `.git/index` corrompu (`unknown index entry
+format`) + `.git/HEAD.lock` et `.git/objects/maintenance.lock` résiduels,
+tous deux **impossibles à supprimer côté Claude** (`Operation not permitted`
+sur le montage). Idem que la session du 07/07 sur Elsass Frost v2 : John
+doit supprimer ces 2 fichiers `.lock` sous Windows avant qu'un commit soit
+possible.
