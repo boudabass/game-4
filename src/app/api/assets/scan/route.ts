@@ -22,7 +22,7 @@ async function walk(dir: string, rel: string, depth: number, out: FileEntry[]) {
   }
   entries.sort((a, b) => a.name.localeCompare(b.name));
   for (const e of entries) {
-    if (e.name.startsWith(".")) continue;
+    if (e.name.startsWith(".") || e.name.startsWith("_")) continue; // _rejetes etc. : hors scan
     const abs = path.join(dir, e.name);
     const r = rel ? rel + "/" + e.name : e.name;
     if (e.isDirectory()) {
@@ -52,7 +52,7 @@ export async function GET() {
 
     const packs = [];
     for (const d of packDirs) {
-      if (!d.isDirectory() || d.name.startsWith(".")) continue;
+      if (!d.isDirectory() || d.name.startsWith(".") || d.name.startsWith("_")) continue;
       const files: FileEntry[] = [];
       await walk(path.join(ROOT, d.name), "", 0, files);
       packs.push({ name: d.name, files });
