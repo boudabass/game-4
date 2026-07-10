@@ -11,6 +11,7 @@ documentation/elsass-farm-v2/
 ├── PRD.md                        # vision produit
 ├── CAHIER_DES_CHARGES.md         # spécifications fonctionnelles
 ├── GAME_DESIGN_DOCUMENT.md       # contenu concret (cultures, PNJ, recettes, défis...)
+├── MONDE_ET_PORTAILS.md          # zones multiples & portails (livrable partie 2, gate 01)
 ├── ROADMAP.md                    # ce fichier — index
 └── ROADMAP/
     ├── 00_METHODOLOGIE.md            # règles strictes, definition of done, versionnement

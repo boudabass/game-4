@@ -4,11 +4,14 @@
 > Détaille le contenu concret prévu par `CAHIER_DES_CHARGES.md`. Les noms, prix et durées ci-dessous
 > sont des propositions de premier jet, à ajuster en phase de contenu/équilibrage (voir `ROADMAP.md`).
 > Mis à jour le 10/07/2026 : céréales ajoutées (§2), recettes corrigées (§6), défis économiques retirés (§7),
-> marché à prix fixes (§9), nouveaux chapitres Météo (§10) et Score (§11).
+> marché à prix fixes (§9), nouveaux chapitres Météo (§10) et Score (§11), décision assets révisée (§12).
 
 ## 1. Univers & thème
 
 Un village alsacien fictif, quelque part entre plaine viticole et piémont vosgien. Colombages, vignes en coteaux, canaux et étangs à carpes, marché couvert, et une ancienne mine argentifère dans les hauteurs — clin d'œil au passé minier réel du Val d'Argent (Sainte-Marie-aux-Mines). Le ton reste léger et chaleureux, pas de contenu violent (cohérent avec l'absence de combat).
+
+> Structure du monde (zones multiples reliées par portails) détaillée dans
+> `MONDE_ET_PORTAILS.md`.
 
 ## 2. Cultures par saison
 
@@ -156,11 +159,12 @@ Tous les termes sont des cumuls (jamais décrémentés) : un défi subi ne baiss
 
 ## 12. Art / audio
 
-Décisions John 10/07/2026 :
+Décisions John 10/07/2026, **révisées le 10/07/2026** (même jour, changement de cap après découverte de la qualité des packs libres Kenney) :
 
 - **Lisibilité avant beauté** : on ne cherche pas un jeu esthétiquement impressionnant mais visuellement limpide (cohérent avec la cible plutôt senior, PRD §3).
 - Style : minimaliste, esprit pixel art doux — mais pas exagérément pixelisé façon Game Boy.
-- **Production : tout est dessiné par le code** (formes géométriques p5.js), complété par des **emoji** pour les objets et produits (🥕 🐔 🐟 💎…). Pas d'assets externes spéciaux ; les ressources gratuites restent une option ponctuelle si un élément est vraiment trop coûteux à dessiner en code.
-- ⚠️ Vigilance : le rendu des emoji varie selon l'OS/navigateur (Windows, Android, iOS n'affichent pas les mêmes dessins). Acceptable ici, mais à vérifier sur les 3 form factors dès le prototype (checklist QA) et prévoir un fallback en forme géométrique si un emoji rend mal.
+- **Production (décision révisée) : texture packs CC0 Kenney.nl**, adaptés/recolorés au besoin. Abandon de la décision initiale "tout dessiné par le code" — inutile vu le volume et la qualité des packs libres disponibles. Détail des 15 packs retenus et de leur usage : `../ASSETS_TEXTURE_PACKS.md`. Pour elsass-farm v3 précisément : Tiny Farm (ferme), Fish Pack (décor de la zone pêche), Pixel Shmup (mini-jeu de pêche actif), Tiny Town (village/marché), Roguelike Characters (PNJ), Roguelike Indoors (intérieurs), Pico-8 Platformer (mine), Minimap Pack (navigation), UI Pack Pixel Adventure (HUD).
+- Emoji : conservés en complément ponctuel pour les objets/produits (🥕 🐔 🐟 💎…), en fallback si un élément n'a pas de sprite adapté dans les packs retenus.
+- ⚠️ Vigilance : le rendu des emoji varie selon l'OS/navigateur (Windows, Android, iOS n'affichent pas les mêmes dessins). À vérifier sur les 3 form factors dès le prototype (checklist QA) et prévoir un fallback en forme géométrique si un emoji rend mal.
 
 **Audio (décision John 10/07/2026) : pas de musique du tout.** Uniquement une ambiance sonore simple, générée en code : petits bruitages de feedback (clic, récolte, vente, pluie, réussite d'énigme). Sobre, léger, et cohérent avec la cible qui ne veut pas se prendre la tête.

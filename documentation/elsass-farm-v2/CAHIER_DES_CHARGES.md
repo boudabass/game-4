@@ -24,6 +24,18 @@ Contrainte transverse validée par John : **aucun clavier, aucune manette, aucun
 - Boutons de zoom caméra dédiés (zoomer/dézoomer), affichés en permanence à l'écran.
 - Personnalisation visuelle du personnage : hors scope V1 (à statuer plus tard).
 
+### Structure du monde & portails (ajout 10/07/2026)
+
+Le monde n'est pas une carte unique mais plusieurs **zones** indépendantes
+(ferme, village, forêt, intérieurs de bâtiments, paliers de mine...), chacune
+sa taille et son rôle. Elles sont reliées par des **portails** placés à la
+main (bord de map, porte de bâtiment, ascenseur...), jamais générés
+automatiquement. Un clic sur un portail déplace le personnage dessus puis
+déclenche la transition : soit directe vers une zone + un point d'entrée,
+soit via une popup de choix (ex. étages de la mine). Le bouton MAP du HUD
+reste un plan de repérage, jamais un fast-travel cliquable. Détail complet :
+`MONDE_ET_PORTAILS.md`.
+
 ## 2. Ferme & cultures
 
 - Grille de parcelles cultivables, invisible tant que la case n'est pas labourée.
@@ -57,6 +69,10 @@ Contrainte transverse validée par John : **aucun clavier, aucune manette, aucun
 - Un **point de repos** existe par palier, mais il est en ruine : il doit être **reconstruit/aménagé** (coût en ressources/argent) avant d'être utilisable. Une fois aménagé, il permet de dormir sur place — même effet que le lit de la ferme : passage au jour suivant + sauvegarde (§9) — sans forcer un retour à la ferme.
 - Résoudre une énigme ne coûte pas d'énergie (c'est de la réflexion, voir la règle énergie §9) ; les actions physiques dans la mine (extraire le loot, dégager un passage) en coûtent.
 - Les ressources minées alimentent l'artisanat (§8).
+
+- Déplacement entre paliers via un **ascenseur** (élément visuel fixe) : au
+  clic, popup de sélection de l'étage — un portail « à choix », détail
+  `MONDE_ET_PORTAILS.md` §2.
 
 ## 6. PNJ & relations
 
