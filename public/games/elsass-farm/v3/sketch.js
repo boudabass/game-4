@@ -18,6 +18,9 @@ let moveMarker = null;    // { x, y, t } dernière destination cliquée
 let actionFlash = null;   // { c, r, t } tuile "actionnée"
 let zoomBtns = {};        // zones cliquables des boutons + / − (coords écran)
 
+// Transition de zone (fondue)
+let zoneTransition = null; // { phase: 'out'|'in', zoneId, entry, t, duration: 250 }
+
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
 function u(n) {
     return (min(width, height) * n) / 100;
@@ -99,15 +102,24 @@ async function boot() {
             key: "elsass-farm-v3",
             gather: function () {
                 var t = player.tile() || { c: C.player.c, r: C.player.r };
-                return {
+                var data = {
                     day: Engine.Clock.day,
                     hour: Engine.Clock.hour,
                     minute: Engine.Clock.minute,
                     c: t.c, r: t.r
                 };
+                // Sauvegarder la zone courante (WorldZone)
+                if (Engine.WorldZone && Engine.WorldZone.getCurrent()) {
+                    data.zoneId = Engine.WorldZone.getCurrent().id;
+                }
+                return data;
             },
             apply: function (data) {
                 if (!data) return;
+                // Restaurer la zone sauvegardée AVANT de replacer le joueur
+                if (data.zoneId && Engine.WorldZone) {
+                    Engine.WorldZone.setCurrent(data.zoneId);
+                }
                 if (typeof data.day === "number")
                     Engine.Clock.setTime(data.day, data.hour, data.minute);
                 if (typeof data.c === "number" && Engine.Grid.isWalkable(data.c, data.r)) {
@@ -127,8 +139,10 @@ function draw() {
     background(C.colors.bg);
 
     // --- Simulation ---
-    Engine.Clock.update(deltaTime);
-    player.update(deltaTime);
+    if (!zoneTransition) {
+        Engine.Clock.update(deltaTime);
+        player.update(deltaTime);
+    }
     Engine.Camera.follow(player.x, player.y);
 
     // Fin de trajet -> petite sauvegarde locale (gratuite).
@@ -145,6 +159,9 @@ function draw() {
 
     // --- HUD (coordonnées écran) ---
     drawHud();
+
+    // --- Fondu de transition entre zones ---
+    drawZoneFade();
 }
 
 function drawWorld() {
@@ -225,6 +242,9 @@ function inRect(mx, my, b) {
 }
 
 function mousePressed() {
+    // Bloquer les inputs pendant une transition
+    if (zoneTransition) return;
+
     // 1. HUD d'abord (coordonnées écran)
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
     if (inRect(mouseX, mouseY, zoomBtns.minus)) { Engine.Camera.zoomOut(); return; }
@@ -243,4 +263,48 @@ function mousePressed() {
         var center = Engine.Grid.toWorld(tile.c, tile.r);
         moveMarker = { x: center.x, y: center.y, t: millis() };
     }
+}
+
+// --- Transition entre zones (ZoneLoader) ---
+
+/* Déclenche une transition avec fondu vers une nouvelle zone. */
+function switchToZone(zoneId) {
+    if (!Engine.WorldZone || zoneTransition) return;
+    zoneTransition = { phase: 'out', zoneId: zoneId, t: millis(), duration: 250 };
+}
+
+/* Rendu du fondu de transition. Appelé dans draw(). */
+function drawZoneFade() {
+    if (!zoneTransition) return;
+
+    var elapsed = millis() - zoneTransition.t;
+    var progress = min(elapsed / zoneTransition.duration, 1);
+    var alpha = 0;
+
+    if (zoneTransition.phase === 'out') {
+        alpha = progress * 255;
+        if (progress >= 1) {
+            // Fin du fade-out : exécuter la transition
+            Engine.WorldZone.switchZone(zoneTransition.zoneId, function (entry) {
+                if (entry) {
+                    player.placeAt(entry.c, entry.r);
+                    Engine.Camera.snapTo(player.x, player.y);
+                }
+            });
+            zoneTransition.phase = 'in';
+            zoneTransition.t = millis();
+            alpha = 255;
+        }
+    } else if (zoneTransition.phase === 'in') {
+        alpha = (1 - progress) * 255;
+        if (progress >= 1) {
+            zoneTransition = null;
+            alpha = 0;
+        }
+    }
+
+    // Dessiner le fondu
+    noStroke();
+    fill(0, 0, 0, alpha);
+    rect(0, 0, width, height);
 }

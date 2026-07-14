@@ -90,6 +90,41 @@
             return this._zones[zoneId] || null;
         },
 
+        /*
+         * Transition complète vers une zone : sauvegarde état, fondu noir,
+         * reconfiguration grille, retourne le point d'entrée pour replacer le joueur.
+         * Le fondu est géré par l'appelant (sketch.js) via le callback onFade.
+         *
+         * switchZone(zoneId, onComplete)
+         *   onComplete(entryPoint) — appelé après la transition.
+         *   Si pas de onComplete, la transition est immédiate (pas de fondu).
+         */
+        switchZone: function (zoneId, onComplete) {
+            var z = this._zones[zoneId];
+            if (!z) {
+                console.warn("[WorldZone] Zone inconnue : " + zoneId);
+                if (onComplete) onComplete(null);
+                return false;
+            }
+            var prevId = this._currentId;
+            this.setCurrent(zoneId);
+            var entry = z.entryPoint || { c: Math.floor(z.cols / 2), r: Math.floor(z.rows / 2) };
+
+            if (typeof onComplete === "function") {
+                onComplete(entry);
+            }
+
+            console.log("[WorldZone] Transition : " + (prevId || "null") + " → " + zoneId);
+            return true;
+        },
+
+        /* Retourne le point d'entrée d'une zone, ou null. */
+        getEntryPoint: function (zoneId) {
+            var z = this._zones[zoneId || this._currentId];
+            if (!z) return null;
+            return z.entryPoint || { c: Math.floor(z.cols / 2), r: Math.floor(z.rows / 2) };
+        },
+
         /* Liste des IDs de toutes les zones configurées. */
         listZones: function () {
             var ids = [];
