@@ -1,5 +1,5 @@
 /*
- * Engine.Save (socle partagé v1)
+ * Engine.Save (socle partagé v2)
  * Sauvegarde HYBRIDE : localStorage (rapide) + cloud Odoo (via GameSystem.Save).
  * Le jeu fournit deux callbacks : gather() -> objet à sauvegarder, apply(data).
  *
@@ -103,5 +103,5 @@
         }
     };
 
-    console.log("💾 Engine.Save v1 chargé");
+    console.log("💾 Engine.Save v2 chargé");
 })();
