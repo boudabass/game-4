@@ -48,13 +48,21 @@ function preload() {
     loadCat("perso");
     loadCat("batiment");
     loadCat("objet");
+
+    // Charger la définition des zones (WorldZone)
+    C._zonesData = loadJSON("data/zones/zones.json");
 }
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     textAlign(CENTER, CENTER);
 
-    // --- Grille + obstacles gray-box ---
+    // --- Configuration des zones (WorldZone) ---
+    if (Engine.WorldZone && C._zonesData) {
+        Engine.WorldZone.configure({ zones: C._zonesData });
+    }
+
+    // --- Grille + obstacles (legacy, ou zone par défaut si WorldZone non configuré) ---
     Engine.Grid.configure(C.grid);
     C.obstacles.rects.forEach(function (o) {
         for (var dc = 0; dc < o.w; dc++)

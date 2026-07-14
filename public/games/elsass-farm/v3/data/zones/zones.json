@@ -1,0 +1,54 @@
+{
+    "ferme": {
+        "id": "ferme",
+        "cols": 28,
+        "rows": 18,
+        "tileSize": 64,
+        "entryPoint": { "c": 14, "r": 9 },
+        "obstacles": {
+            "rects": [
+                { "c": 4, "r": 3, "w": 4, "h": 3 },
+                { "c": 20, "r": 12, "w": 5, "h": 2 },
+                { "c": 11, "r": 14, "w": 2, "h": 2 }
+            ],
+            "singles": [
+                { "c": 9, "r": 6 }, { "c": 10, "r": 6 }, { "c": 17, "r": 4 },
+                { "c": 18, "r": 8 }, { "c": 6, "r": 11 }, { "c": 22, "r": 5 },
+                { "c": 15, "r": 12 }, { "c": 3, "r": 15 }
+            ]
+        },
+        "portals": [
+            {
+                "id": "ferme-to-village",
+                "col": 27, "row": 9,
+                "type": "simple",
+                "to": { "zone": "village", "entry": { "c": 0, "r": 7 } }
+            }
+        ]
+    },
+    "village": {
+        "id": "village",
+        "cols": 20,
+        "rows": 15,
+        "tileSize": 64,
+        "entryPoint": { "c": 0, "r": 7 },
+        "obstacles": {
+            "rects": [
+                { "c": 5, "r": 5, "w": 3, "h": 3 },
+                { "c": 14, "r": 3, "w": 2, "h": 2 }
+            ],
+            "singles": [
+                { "c": 3, "r": 3 }, { "c": 8, "r": 8 },
+                { "c": 12, "r": 10 }, { "c": 17, "r": 7 }
+            ]
+        },
+        "portals": [
+            {
+                "id": "village-to-ferme",
+                "col": 0, "row": 7,
+                "type": "simple",
+                "to": { "zone": "ferme", "entry": { "c": 26, "r": 9 } }
+            }
+        ]
+    }
+}
