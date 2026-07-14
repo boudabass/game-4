@@ -254,14 +254,22 @@ function drawGround() {
 /* Remplace les obstacles gray-box par des sprites Tiny Farm. */
 function drawDecor() {
     var ts = Engine.Grid.tileSize;
-    var rects = C.obstacles.rects;
-    var singles = C.obstacles.singles;
 
-    // Obstacles rectangulaires
+    // Lire les obstacles depuis la zone courante (WorldZone), fallback config
+    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
+    var rects = zone && zone.obstacles ? zone.obstacles.rects || [] : C.obstacles.rects;
+    var singles = zone && zone.obstacles ? zone.obstacles.singles || [] : C.obstacles.singles;
+
+    // Obstacles rectangulaires → choix du sprite selon dimensions
     for (var ri = 0; ri < rects.length; ri++) {
         var o = rects[ri];
-        // Mare → bac d'eau (c:4, r:3, w:4, h:3)
-        if (o.c === 4 && o.r === 3) {
+        var area = o.w * o.h;
+        // Grand rectangle (>6 cellules) → bâtiment/grange
+        if (area >= 6) {
+            _drawGrange(o.c, o.r, o.w, o.h, ts);
+        }
+        // Rectangle moyen (3-5 cellules) → mare/bac eau
+        else if (area >= 3) {
             var eau_g = img("decor", "farm_bac_eau_gauche");
             var eau_d = img("decor", "farm_bac_eau_droit");
             for (var dc = 0; dc < o.w; dc++) {
@@ -271,12 +279,8 @@ function drawDecor() {
                 }
             }
         }
-        // Grange → bâtiment assemblé (c:20, r:12, w:5, h:2)
-        else if (o.c === 20 && o.r === 12) {
-            _drawGrange(o.c, o.r, o.w, o.h, ts);
-        }
-        // Rocher → tas de pierres + pierres (c:11, r:14, w:2, h:2)
-        else if (o.c === 11 && o.r === 14) {
+        // Petit rectangle (1-2 cellules) → rocher/pierres
+        else {
             var pierres = img("decor", "farm_tas_pierres");
             for (var dc = 0; dc < o.w; dc++) {
                 for (var dr = 0; dr < o.h; dr++) {
