@@ -23,6 +23,30 @@ function u(n) {
     return (min(width, height) * n) / 100;
 }
 
+function preload() {
+    // Charger tous les assets Tiny Farm listés dans FarmConfig.assets
+    var base = C.assets.base;
+
+    // Charger une image et la stocker dans un cache nommé par catégorie
+    function loadCat(cat) {
+        var list = C.assets[cat];
+        if (!list) return;
+        var cache = {};
+        for (var i = 0; i < list.length; i++) {
+            var path = list[i];
+            var key = path.replace(cat + "/", "").replace(".png", "");
+            cache[key] = loadImage(base + path);
+        }
+        C.assets[cat + "_loaded"] = cache;
+    }
+
+    loadCat("sol");
+    loadCat("decor");
+    loadCat("perso");
+    loadCat("batiment");
+    loadCat("objet");
+}
+
 function setup() {
     createCanvas(windowWidth, windowHeight);
     textAlign(CENTER, CENTER);
