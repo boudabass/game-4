@@ -20,9 +20,8 @@
         "portals": [
             {
                 "id": "ferme-to-village",
-                "col": 27, "row": 9,
-                "type": "simple",
-                "to": { "zone": "village", "entry": { "c": 0, "r": 7 } }
+                "from": { "cells": [[27, 9]] },
+                "to": { "zone": "village", "entry": { "col": 0, "row": 7 } }
             }
         ]
     },
@@ -45,9 +44,8 @@
         "portals": [
             {
                 "id": "village-to-ferme",
-                "col": 0, "row": 7,
-                "type": "simple",
-                "to": { "zone": "ferme", "entry": { "c": 26, "r": 9 } }
+                "from": { "cells": [[0, 7]] },
+                "to": { "zone": "ferme", "entry": { "col": 26, "row": 9 } }
             }
         ]
     }

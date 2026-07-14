@@ -21,6 +21,9 @@ let zoomBtns = {};        // zones cliquables des boutons + / − (coords écran
 // Transition de zone (fondue)
 let zoneTransition = null; // { phase: 'out'|'in', zoneId, entry, t, duration: 250 }
 
+// Popup de choix de portail (ascenseur, etc.)
+let portalChoice = null;   // { portal, buttons: [{label, zone, entry, x, y, w, h}] }
+
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
 function u(n) {
     return (min(width, height) * n) / 100;
@@ -60,6 +63,25 @@ function setup() {
     // --- Configuration des zones (WorldZone) ---
     if (Engine.WorldZone && C._zonesData) {
         Engine.WorldZone.configure({ zones: C._zonesData });
+    }
+
+    // --- Configuration des portails ---
+    if (Engine.Portal && C._zonesData) {
+        var allPortals = [];
+        for (var zid in C._zonesData) {
+            if (!C._zonesData.hasOwnProperty(zid)) continue;
+            var z = C._zonesData[zid];
+            if (z.portals && z.portals.length) {
+                // Injecter from.zone automatiquement
+                for (var pi = 0; pi < z.portals.length; pi++) {
+                    var p = z.portals[pi];
+                    if (!p.from) p.from = {};
+                    if (!p.from.zone) p.from.zone = zid;
+                    allPortals.push(p);
+                }
+            }
+        }
+        Engine.Portal.configure(allPortals);
     }
 
     // --- Grille + obstacles (legacy, ou zone par défaut si WorldZone non configuré) ---
@@ -154,8 +176,33 @@ function draw() {
     Engine.Camera.follow(player.x, player.y);
 
     // Fin de trajet -> petite sauvegarde locale (gratuite).
-    if (wasMoving && !player.isMoving() && window.Engine && Engine.Save) {
-        Engine.Save.saveLocal();
+    if (wasMoving && !player.isMoving()) {
+        // Détection portail (prioritaire)
+        if (Engine.Portal && Engine.WorldZone) {
+            var curZone = Engine.WorldZone.getCurrent();
+            if (curZone) {
+                var t = player.tile();
+                if (t) {
+                    var portal = Engine.Portal.checkTrigger(curZone.id, t.c, t.r);
+                    if (portal) {
+                        if (portal.type === "simple") {
+                            // Transition directe vers la zone cible avec le point d'entrée du portail
+                            var entry = portal.to && portal.to.entry ? portal.to.entry : null;
+                            switchToZone(portal.to.zone, entry);
+                        } else if (portal.type === "choice") {
+                            // Popup de choix (affichée dans drawHud)
+                            showPortalChoice(portal);
+                        }
+                        // Ne pas sauvegarder pendant une transition
+                        wasMoving = false;
+                        return; // skip le reste du draw
+                    }
+                }
+            }
+        }
+        if (window.Engine && Engine.Save) {
+            Engine.Save.saveLocal();
+        }
     }
     wasMoving = player.isMoving();
 
@@ -243,6 +290,9 @@ function drawHud() {
     textAlign(LEFT, CENTER);
     text("test emoji : 🧑‍🌾 🥕 🐔 🐟 💎", u(4), height - u(5.5));
     textAlign(CENTER, CENTER);
+
+    // Popup de choix de portail
+    drawPortalChoice();
 }
 
 function inRect(mx, my, b) {
@@ -252,6 +302,21 @@ function inRect(mx, my, b) {
 function mousePressed() {
     // Bloquer les inputs pendant une transition
     if (zoneTransition) return;
+
+    // Popup de choix : prioritaire sur tout
+    if (portalChoice) {
+        for (var i = 0; i < portalChoice.buttons.length; i++) {
+            var b = portalChoice.buttons[i];
+            if (inRect(mouseX, mouseY, b)) {
+                portalChoice = null;
+                switchToZone(b.zone, b.entry);
+                return;
+            }
+        }
+        // Clic hors des boutons = fermer la popup
+        portalChoice = null;
+        return;
+    }
 
     // 1. HUD d'abord (coordonnées écran)
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
@@ -276,9 +341,57 @@ function mousePressed() {
 // --- Transition entre zones (ZoneLoader) ---
 
 /* Déclenche une transition avec fondu vers une nouvelle zone. */
-function switchToZone(zoneId) {
+function switchToZone(zoneId, entryOverride) {
     if (!Engine.WorldZone || zoneTransition) return;
-    zoneTransition = { phase: 'out', zoneId: zoneId, t: millis(), duration: 250 };
+    zoneTransition = { phase: 'out', zoneId: zoneId, entryOverride: entryOverride, t: millis(), duration: 250 };
+}
+
+/* Affiche la popup de choix de portail (ascenseur, etc.). */
+function showPortalChoice(portal) {
+    if (!portal || !portal.choices) return;
+    // Construire les boutons
+    var buttons = [];
+    var btnW = u(60);
+    var btnH = u(9);
+    var startY = height / 2 - (portal.choices.length * (btnH + u(2))) / 2;
+    for (var i = 0; i < portal.choices.length; i++) {
+        var ch = portal.choices[i];
+        buttons.push({
+            label: ch.label,
+            zone: ch.to.zone,
+            entry: ch.to.entry,
+            x: width / 2 - btnW / 2,
+            y: startY + i * (btnH + u(2)),
+            w: btnW,
+            h: btnH
+        });
+    }
+    portalChoice = { portal: portal, buttons: buttons };
+}
+
+/* Rendu de la popup de choix. Appelé dans drawHud(). */
+function drawPortalChoice() {
+    if (!portalChoice) return;
+
+    // Fond sombre
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
+
+    // Titre
+    textSize(u(4));
+    fill(255);
+    text("Où aller ?", width / 2, height / 2 - u(20));
+
+    // Boutons
+    for (var i = 0; i < portalChoice.buttons.length; i++) {
+        var b = portalChoice.buttons[i];
+        fill(79, 70, 229, 230); // indigo semi-transparent
+        rect(b.x, b.y, b.w, b.h, u(1.5));
+        fill(255);
+        textSize(u(3));
+        text(b.label, b.x + b.w / 2, b.y + b.h / 2);
+    }
 }
 
 /* Rendu du fondu de transition. Appelé dans draw(). */
@@ -293,10 +406,17 @@ function drawZoneFade() {
         alpha = progress * 255;
         if (progress >= 1) {
             // Fin du fade-out : exécuter la transition
-            Engine.WorldZone.switchZone(zoneTransition.zoneId, function (entry) {
+            Engine.WorldZone.switchZone(zoneTransition.zoneId, function (defaultEntry) {
+                // Utiliser le point d'entrée override (portail) ou le défaut de la zone
+                var entry = zoneTransition.entryOverride || defaultEntry;
                 if (entry) {
-                    player.placeAt(entry.c, entry.r);
-                    Engine.Camera.snapTo(player.x, player.y);
+                    // Normaliser col/row → c/r
+                    var cc = typeof entry.c !== 'undefined' ? entry.c : entry.col;
+                    var rr = typeof entry.r !== 'undefined' ? entry.r : entry.row;
+                    if (typeof cc === 'number' && typeof rr === 'number') {
+                        player.placeAt(cc, rr);
+                        Engine.Camera.snapTo(player.x, player.y);
+                    }
                 }
             });
             zoneTransition.phase = 'in';
