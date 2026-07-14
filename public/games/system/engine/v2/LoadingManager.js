@@ -1,5 +1,5 @@
 /*
- * Engine.Loader (socle partagé v1)
+ * Engine.Loader (socle partagé v2)
  * Petit écran de chargement + progression. Générique, sans logique de jeu.
  * Namespace dédié (window.Engine) pour ne PAS entrer en conflit avec les
  * anciens window.LoadingManager encore présents dans certains jeux.
@@ -49,5 +49,5 @@
         }
     };
 
-    console.log("🧩 Engine.Loader v1 chargé");
+    console.log("🧩 Engine.Loader v2 chargé");
 })();
