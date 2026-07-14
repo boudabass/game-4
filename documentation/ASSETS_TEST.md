@@ -107,3 +107,65 @@ tous deux **impossibles à supprimer côté Claude** (`Operation not permitted`
 sur le montage). Idem que la session du 07/07 sur Elsass Frost v2 : John
 doit supprimer ces 2 fichiers `.lock` sous Windows avant qu'un commit soit
 possible.
+
+### 10/07/2026 — kenney_tiny-farm (tri complet, premier passage)
+
+Montage Cowork illisible pour tout `Assets_pack/kenney_tiny-farm/` (ls/find/
+listdir renvoient vide, alors que `git ls-tree`/`git cat-file` y accèdent
+sans problème) — même symptôme que documenté dans CLAUDE.md, mais ici sur
+un pack qui n'avait encore jamais été touché. Suppression de fichiers
+impossible aussi (`Operation not permitted`, testé sur un fichier tout
+juste créé). Méthode utilisée : extraction des 132 tuiles via
+`git cat-file -p HEAD:...`, analyse visuelle tuile par tuile (planche
+`tilemap_packed.png` annotée + zooms individuels), copies déjà renommées
+écrites **directement** en tri/ (pas de déplacement des originaux — écrire
+de nouveaux fichiers fonctionne sur ce mount, contrairement à supprimer).
+
+**Résultat** : 132 tuiles (16×16 px, grille 12×11, 1px d'espacement) toutes
+classées et renommées — aucun `Tilesheet.txt` de Kenney ne donnait les noms
+(juste les dimensions), tout a été identifié à l'œil :
+
+- **16 sol** : buttes de terre labourée (isolée, sillon vertical 3 rôles,
+  sillon horizontal 4 tuiles × 2 teintes).
+- **43 decor** : sapin (3 stades de croissance), 6 familles de cultures
+  (carotte, aubergine, maïs, tomate — 5 stades au lieu de 4 —, chou, blé)
+  avec leurs tuiles de champ, meubles (bancs, bac à eau, mangeoire),
+  buisson à baies, tas de pierres, tournesol, ruche, herbe, pousse en pot.
+- **24 batiment** : ensemble `grange` complet (mur 3×4 + toit 3×4 tuiles,
+  assemblage vérifié par recomposition de la planche source) — plan de
+  montage dans `CATALOGUE.md`.
+- **5 perso** : 2 personnages fermiers + mouton/vache/poule.
+- **42 objet** : outils (gant, pelle, hache), récipients (seaux, pots,
+  coffres, sac), branches ramassables (4 variantes), + 24 icônes de récolte
+  (icône/sac/caisse/présentoir × 6 cultures).
+- **1 ui** : icône "?".
+- **1 rejeté** : tuile quasi vide (idx 130, 2px de bruit résiduel).
+
+Catalogue mis à jour (`tri/CATALOGUE.md`) + premier `tri/catalogue.json`
+créé (131 entrées, format machine pour les jeux — n'inclut pas encore les
+tuiles minimap de la passe précédente, à fusionner lors d'une prochaine
+passe).
+
+⚠️ **4 tuiles douteuses à confirmer par John** : `farm_taupiniere` (rôle
+incertain), `farm_ruche` (déduit de la forme, pas garanti), `farm_pain`
+(pourrait être un fromage rond), et les rôles précis du set
+`sol_butte_seul/vert_haut/centre/bas` (déduits par élimination, jamais
+vérifiés par un assemblage en jeu réel).
+
+⚠️ **Suppression de l'original non faite** (même blocage `Operation not
+permitted` que pour les `.lock`) : script `tri_apply_tiny-farm.ps1` généré
+à la racine du repo (nom différent de `tri_apply.ps1` existant, lui aussi
+illisible sur ce mount — probablement un reliquat de la passe minimap).
+John doit l'exécuter sous Windows pour supprimer
+`Assets_pack/kenney_tiny-farm/` (son contenu est déjà dupliqué et renommé
+dans `tri/` + `_rejetes/kenney_tiny-farm/`).
+
+⚠️ **Commit non fait**, même blocage que la passe minimap (`.git/HEAD.lock`
+et `.git/objects/maintenance.lock` toujours présents et impossibles à
+supprimer côté Claude — confirmé de nouveau ce jour). À faire par John
+après avoir lancé le script PowerShell : vérifier `git status`, supprimer
+les `.lock` s'ils traînent encore, puis committer via GitHub Desktop.
+
+Planches de contrôle générées : `tri/_references/planche_sol.png`,
+`planche_decor.png`, `planche_batiment.png`, `planche_perso.png`,
+`planche_objet.png`, `planche_ui.png` (fond damier, nom sous chaque tuile).

@@ -72,6 +72,18 @@ Le tri/validation des packs se fait avec le jeu-outil **assets-test**
 `documentation/ASSETS_TEST.md`. Le résultat de chaque passe de tri doit être
 reporté ici (colonne "Usage prévu" → usage réel constaté).
 
+## Tiny Farm — trié le 10/07/2026
+
+132 tuiles (16×16 px) classées et renommées : 16 tuiles de sol labouré
+(butte isolée + sillon vertical/horizontal), sapin en 3 stades de
+croissance, 6 cultures complètes avec leurs stades de champ + icônes de
+récolte (carotte, aubergine, maïs, tomate, chou, blé), l'ensemble bâtiment
+`grange` (mur + toit, 24 tuiles), 2 personnages fermiers, mouton/vache/
+poule, et une vingtaine d'objets (outils, récipients, coffres, branches
+ramassables). Détail complet et plan de montage de la grange :
+`Assets_pack/tri/CATALOGUE.md`. 4 tuiles à confirmer par John (rôle
+incertain) — voir journal `ASSETS_TEST.md`.
+
 ## Minimap Pack — trié le 10/07/2026
 
 Confirmé à l'usage : un système complet de tuiles-chemin 8×8 px (réseau
