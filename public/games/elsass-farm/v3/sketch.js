@@ -219,13 +219,132 @@ function draw() {
     drawZoneFade();
 }
 
-function drawWorld() {
-    // Sol
-    noStroke();
-    fill(C.colors.ground);
-    rect(0, 0, Engine.Grid.worldWidth(), Engine.Grid.worldHeight());
+// ─── Helpers de rendu Tiny Farm ─────────────────────────────────────────────
 
-    // Grille + obstacles (rendu debug du socle)
+/* Retourne l'image chargée depuis le cache d'une catégorie, ou null. */
+function img(cat, key) {
+    var cache = C.assets[cat + "_loaded"];
+    return cache ? cache[key] : null;
+}
+
+/* Dessine une image centrée sur une tuile (coords monde). */
+function drawTileImg(img, c, r, ts) {
+    if (!img) return;
+    ts = ts || Engine.Grid.tileSize;
+    image(img, c * ts, r * ts, ts, ts);
+}
+
+/* Dessine le sol en tuiles de labour (sillons horizontaux, clairs). */
+function drawGround() {
+    var ts = Engine.Grid.tileSize;
+    var cols = C.grid.cols;
+    var rows = C.grid.rows;
+    var centre1 = img("sol", "farm_sol_sillon_horizontal_clair_centre1");
+    var centre2 = img("sol", "farm_sol_sillon_horizontal_clair_centre2");
+    var def = centre1; // fallback
+
+    for (var c = 0; c < cols; c++) {
+        for (var r = 0; r < rows; r++) {
+            var tile = (c + r) % 2 === 0 ? centre1 : centre2;
+            drawTileImg(tile || def, c, r, ts);
+        }
+    }
+}
+
+/* Remplace les obstacles gray-box par des sprites Tiny Farm. */
+function drawDecor() {
+    var ts = Engine.Grid.tileSize;
+    var rects = C.obstacles.rects;
+    var singles = C.obstacles.singles;
+
+    // Obstacles rectangulaires
+    for (var ri = 0; ri < rects.length; ri++) {
+        var o = rects[ri];
+        // Mare → bac d'eau (c:4, r:3, w:4, h:3)
+        if (o.c === 4 && o.r === 3) {
+            var eau_g = img("decor", "farm_bac_eau_gauche");
+            var eau_d = img("decor", "farm_bac_eau_droit");
+            for (var dc = 0; dc < o.w; dc++) {
+                for (var dr = 0; dr < o.h; dr++) {
+                    var tile = dc < o.w / 2 ? eau_g : eau_d;
+                    drawTileImg(tile, o.c + dc, o.r + dr, ts);
+                }
+            }
+        }
+        // Grange → bâtiment assemblé (c:20, r:12, w:5, h:2)
+        else if (o.c === 20 && o.r === 12) {
+            _drawGrange(o.c, o.r, o.w, o.h, ts);
+        }
+        // Rocher → tas de pierres + pierres (c:11, r:14, w:2, h:2)
+        else if (o.c === 11 && o.r === 14) {
+            var pierres = img("decor", "farm_tas_pierres");
+            for (var dc = 0; dc < o.w; dc++) {
+                for (var dr = 0; dr < o.h; dr++) {
+                    drawTileImg(pierres, o.c + dc, o.r + dr, ts);
+                }
+            }
+        }
+    }
+
+    // Obstacles simples → décor varié
+    var singleDecor = [
+        img("decor", "farm_herbe_touffe"),
+        img("decor", "farm_arbre_sapin_jeune"),
+        img("decor", "farm_arbre_sapin_moyen"),
+        img("decor", "farm_buisson_baies"),
+        img("decor", "farm_tournesol"),
+        img("decor", "farm_ble_mure"),
+        img("decor", "farm_carotte_mure"),
+        img("decor", "farm_tomate_mure"),
+        img("decor", "farm_chou_mure"),
+        img("decor", "farm_mais_mure"),
+        img("decor", "farm_aubergine_mure"),
+        img("decor", "farm_pousse_en_pot")
+    ];
+
+    for (var si = 0; si < singles.length; si++) {
+        var s = singles[si];
+        var spr = singleDecor[si % singleDecor.length];
+        drawTileImg(spr, s.c, s.r, ts);
+    }
+}
+
+/* Assemble un bâtiment grange 5×2 avec portes et fenêtres. */
+function _drawGrange(cc, rr, w, h, ts) {
+    if (w < 3 || h < 2) return; // trop petit pour une grange modulaire
+
+    // Ligne du haut : toit_bas
+    var tg = img("batiment", "farm_grange_toit_bas_gauche");
+    var tc = img("batiment", "farm_grange_toit_bas_centre");
+    var td = img("batiment", "farm_grange_toit_bas_droit");
+    drawTileImg(tg || tc, cc,       rr, ts);
+    for (var i = 1; i < w-1; i++) drawTileImg(tc || tg, cc + i, rr, ts);
+    drawTileImg(td || tc, cc + w-1, rr, ts);
+
+    // Ligne du bas : mur avec porte au centre + fenêtres
+    var mg = img("batiment", "farm_grange_mur_brique1_gauche");
+    var mc = img("batiment", "farm_grange_mur_brique1_centre");
+    var md = img("batiment", "farm_grange_mur_brique1_droit");
+    var pg = img("batiment", "farm_grange_porte_gauche");
+    var pd = img("batiment", "farm_grange_porte_droit");
+    var fen = img("batiment", "farm_grange_fenetre");
+
+    var r = rr + 1;
+    drawTileImg(fen || mc, cc,       r, ts);                 // fenêtre gauche
+    drawTileImg(mc  || fen, cc + 1,   r, ts);                 // mur
+    drawTileImg(pg  || mc, cc + 2,   r, ts);                 // porte gauche
+    drawTileImg(pd  || mc, cc + 3,   r, ts);                 // porte droite
+    drawTileImg(fen || mc, cc + w-1, r, ts);                 // fenêtre droite
+}
+
+function drawWorld() {
+    // Sol en tuiles Tiny Farm (labour)
+    drawGround();
+
+    // Décor Tiny Farm à la place des obstacles gray-box
+    drawDecor();
+
+    // Grille de debug (surcouche, toggleable)
     Engine.Grid.drawDebug({ line: C.colors.gridLine, blocked: C.colors.blocked });
 
     // Marqueur de destination (s'estompe en 1 s)
@@ -249,12 +368,18 @@ function drawWorld() {
     Engine.ActionZone.drawDebug(Engine.Grid, player.tile(), C.colors.zone);
     player.drawDebugPath(C.colors.path);
 
-    // Personnage : cercle gray-box + emoji (test de rendu)
-    var d = Engine.Grid.tileSize * 0.7;
-    fill(C.colors.player);
-    circle(player.x, player.y, d);
-    textSize(Engine.Grid.tileSize * 0.5);
-    text("🧑‍🌾", player.x, player.y - Engine.Grid.tileSize * 0.05);
+    // Personnage : sprite Tiny Farm au lieu du cercle gray-box
+    var farmer = img("perso", "farm_fermier_brun");
+    var d = Engine.Grid.tileSize;
+    if (farmer) {
+        image(farmer, player.x - d/2, player.y - d/2, d, d);
+    } else {
+        // Fallback gray-box si l'image n'est pas chargée
+        fill(C.colors.player);
+        circle(player.x, player.y, d * 0.7);
+        textSize(d * 0.5);
+        text("🧑‍🌾", player.x, player.y - d * 0.05);
+    }
 }
 
 function drawHud() {
