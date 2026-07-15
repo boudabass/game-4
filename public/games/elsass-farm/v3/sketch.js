@@ -18,6 +18,11 @@ let moveMarker = null;    // { x, y, t } dernière destination cliquée
 let actionFlash = null;   // { c, r, t } tuile "actionnée"
 let zoomBtns = {};        // zones cliquables des boutons + / − (coords écran)
 
+// Systèmes de culture Phase 02
+let soilSystem = null;    // Engine.SoilSystem
+let cropGrowth = null;   // Engine.CropGrowth
+let culturesData = null;  // données cultures.json chargées
+
 // Transition de zone (fondue)
 let zoneTransition = null; // { phase: 'out'|'in', zoneId, entry, t, duration: 250 }
 
@@ -54,6 +59,9 @@ function preload() {
 
     // Charger la définition des zones (WorldZone)
     C._zonesData = loadJSON("data/zones/zones.json");
+
+    // Charger les données de cultures (Phase 02)
+    culturesData = loadJSON("data/cultures.json");
 }
 
 function setup() {
@@ -113,8 +121,27 @@ function setup() {
     // --- Horloge : 1 min réelle = 1 h en jeu, journée démarre à 7 h ---
     Engine.Clock.configure({
         startHour: 7,
-        onNewDay: function () { if (window.Engine && Engine.Save) Engine.Save.save(); }
+        onNewDay: function () {
+            // Faire pousser les cultures chaque nouveau jour
+            if (cropGrowth) cropGrowth.onNewDay(Engine.Clock.day);
+            if (window.Engine && Engine.Save) Engine.Save.save();
+        }
     });
+
+    // --- Système de sol (SoilSystem) — Phase 02 ---
+    soilSystem = new Engine.SoilSystem();
+    // Marquer les tuiles 7-12,4-10 comme cultivables (zone centrale du farm)
+    for (var sc = 7; sc <= 12; sc++) {
+        for (var sr = 4; sr <= 10; sr++) {
+            soilSystem.setCultivable(sc, sr, true);
+        }
+    }
+
+    // --- Système de pousse des cultures (CropGrowth) — Phase 02 ---
+    cropGrowth = new Engine.CropGrowth();
+    if (culturesData) {
+        cropGrowth.configure({ cultures: culturesData });
+    }
 
     boot();
 }
@@ -142,6 +169,9 @@ async function boot() {
                 if (Engine.WorldZone && Engine.WorldZone.getCurrent()) {
                     data.zoneId = Engine.WorldZone.getCurrent().id;
                 }
+                // Sauvegarder l'état du sol et des cultures (Phase 02)
+                if (soilSystem) data.soil = soilSystem.gather();
+                if (cropGrowth) data.crops = cropGrowth.gather();
                 return data;
             },
             apply: function (data) {
@@ -156,6 +186,9 @@ async function boot() {
                     player.placeAt(data.c, data.r);
                     Engine.Camera.snapTo(player.x, player.y);
                 }
+                // Restaurer l'état du sol et des cultures (Phase 02)
+                if (soilSystem && data.soil) soilSystem.apply(data.soil);
+                if (cropGrowth && data.crops) cropGrowth.apply(data.crops);
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");

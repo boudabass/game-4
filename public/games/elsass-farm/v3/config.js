@@ -45,7 +45,7 @@ window.FarmConfig = {
     // Assets Tiny Farm (chargés dans preload())
     // Base path relative à sketch.js → ../../system/assets/
     assets: {
-        base: "../../system/assets/",
+        base: "../../system/assets/Assets_pack/tri/",
 
         // Sol (ground tiles)
         sol: [
