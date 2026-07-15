@@ -23,6 +23,9 @@ let soilSystem = null;    // Engine.SoilSystem
 let cropGrowth = null;   // Engine.CropGrowth
 let harvestSystem = null; // Engine.HarvestSystem
 let culturesData = null;  // données cultures.json chargées
+let outilsData = null;     // données outils.json chargées
+let selectedTool = null;   // outil sélectionné (id), null = aucun
+let toolbarSlots = [];     // zones cliquables de chaque slot [{x,y,w,h,tool}]
 
 // Transition de zone (fondue)
 let zoneTransition = null; // { phase: 'out'|'in', zoneId, entry, t, duration: 250 }
@@ -63,6 +66,9 @@ function preload() {
 
     // Charger les données de cultures (Phase 02)
     culturesData = loadJSON("data/cultures.json", function(data) { culturesData = Object.values(data); });
+
+    // Charger les données d'outils (Phase 02 — HUD)
+    outilsData = loadJSON("data/outils.json");
 }
 
 function setup() {
@@ -614,17 +620,63 @@ function drawHud() {
     text("+", x + size / 2, yPlus + size / 2);
     text("−", x + size / 2, yMinus + size / 2);
 
-    // Test emoji (bas gauche) — vérifier le rendu sur Windows/Android/iOS
-    textSize(u(2.2));
-    fill(C.colors.hudPanel);
-    rect(u(2), height - u(9), u(34), u(7), u(1.5));
-    fill(C.colors.hudText);
-    textAlign(LEFT, CENTER);
-    text("test emoji : 🧑‍🌾 🥕 🐔 🐟 💎", u(4), height - u(5.5));
-    textAlign(CENTER, CENTER);
+    // Barre d'outils (bas centre) — 5 slots cliquables
+    drawToolbar();
 
     // Popup de choix de portail
     drawPortalChoice();
+}
+
+/* Barre d'outils : 5 slots en bas de l'écran, centrés.
+   Chaque slot affiche l'emoji de l'outil + fond coloré si sélectionné.
+   Un seul outil sélectionné à la fois (toggle au re-clic). */
+function drawToolbar() {
+    if (!outilsData || !outilsData.length) return;
+
+    var slotSize = u(11);
+    var gap = u(2);
+    var totalW = outilsData.length * slotSize + (outilsData.length - 1) * gap;
+    var startX = width / 2 - totalW / 2;
+    var y = height - slotSize - u(3);
+
+    toolbarSlots = [];
+
+    for (var i = 0; i < outilsData.length; i++) {
+        var tool = outilsData[i];
+        var x = startX + i * (slotSize + gap);
+        var isSelected = selectedTool === tool.id;
+
+        // Fond du slot
+        if (isSelected) {
+            fill(255, 215, 0, 220);  // doré pour l'outil sélectionné
+        } else {
+            fill(C.colors.hudPanel);
+        }
+        stroke(C.colors.hudText);
+        strokeWeight(u(0.3));
+        rect(x, y, slotSize, slotSize, u(1.5));
+        noStroke();
+
+        // Emoji de l'outil
+        textSize(slotSize * 0.55);
+        fill(isSelected ? 0 : C.colors.hudText);
+        textAlign(CENTER, CENTER);
+        text(tool.emoji, x + slotSize / 2, y + slotSize / 2);
+
+        // Liseré de sélection
+        if (isSelected) {
+            noFill();
+            stroke(255, 215, 0, 255);
+            strokeWeight(u(0.5));
+            rect(x, y, slotSize, slotSize, u(1.5));
+            noStroke();
+        }
+
+        // Stocker la zone cliquable
+        toolbarSlots.push({ x: x, y: y, w: slotSize, h: slotSize, tool: tool });
+    }
+
+    textAlign(CENTER, CENTER);
 }
 
 function inRect(mx, my, b) {
@@ -653,6 +705,15 @@ function mousePressed() {
     // 1. HUD d'abord (coordonnées écran)
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
     if (inRect(mouseX, mouseY, zoomBtns.minus)) { Engine.Camera.zoomOut(); return; }
+
+    // Barre d'outils : sélection d'outil
+    for (var ti = 0; ti < toolbarSlots.length; ti++) {
+        var slot = toolbarSlots[ti];
+        if (inRect(mouseX, mouseY, slot)) {
+            selectedTool = (selectedTool === slot.tool.id) ? null : slot.tool.id;
+            return;
+        }
+    }
 
     // 2. Sinon, clic dans le monde
     var w = Engine.Camera.screenToWorld(mouseX, mouseY);
