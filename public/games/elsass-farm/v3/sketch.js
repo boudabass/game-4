@@ -204,11 +204,6 @@ async function boot() {
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
         await Engine.Save.load();
     }
-    
-    // Fallback : si pas de sauvegarde, démarrer sur la ferme
-    if (Engine.WorldZone && !Engine.WorldZone.getCurrent()) {
-        Engine.WorldZone.setCurrent('ferme');
-    }
 
     if (window.Engine && Engine.Loader) Engine.Loader.finish();
 }
