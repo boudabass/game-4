@@ -24,13 +24,6 @@ let zoneTransition = null; // { phase: 'out'|'in', zoneId, entry, t, duration: 2
 // Popup de choix de portail (ascenseur, etc.)
 let portalChoice = null;   // { portal, buttons: [{label, zone, entry, x, y, w, h}] }
 
-// Systèmes de culture (feuilles 531-534)
-let soilSystem = null;     // Engine.SoilSystem
-let cropGrowth = null;     // Engine.CropGrowth
-let harvestSystem = null;  // Engine.HarvestSystem
-let selectedTool = 'pelle'; // 'pelle' | 'graines' | 'arrosoir'
-let toolCycle = ['pelle', 'graines', 'arrosoir'];
-
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
 function u(n) {
     return (min(width, height) * n) / 100;
@@ -61,9 +54,6 @@ function preload() {
 
     // Charger la définition des zones (WorldZone)
     C._zonesData = loadJSON("data/zones/zones.json");
-
-    // Charger les données de culture (pour les prix de vente)
-    C._culturesData = loadJSON("data/cultures.json");
 }
 
 function setup() {
@@ -115,27 +105,6 @@ function setup() {
     // --- Zone d'action ---
     Engine.ActionZone.configure({ range: C.actionRange });
 
-    // --- Systèmes de culture (feuilles 531-534) ---
-    soilSystem = Engine.SoilSystem ? new Engine.SoilSystem() : null;
-    cropGrowth = Engine.CropGrowth ? new Engine.CropGrowth() : null;
-    harvestSystem = Engine.HarvestSystem ? new Engine.HarvestSystem() : null;
-
-    // Parcelles cultivables depuis zones.json
-    if (soilSystem && C._zonesData) {
-        for (var zid in C._zonesData) {
-            if (!C._zonesData.hasOwnProperty(zid)) continue;
-            var zone = C._zonesData[zid];
-            var tiles = zone.cultivableTiles;
-            if (tiles && tiles.length) {
-                for (var ti = 0; ti < tiles.length; ti++) {
-                    soilSystem.setCultivable(tiles[ti].c, tiles[ti].r, true);
-                }
-            }
-        }
-    }
-
-    // Brancher CropGrowth sur l'horloge
-
     // --- Caméra ---
     Engine.Camera.configure({ minZoom: 0.5, maxZoom: 2.2, zoom: 1 });
     Engine.Camera.setWorldBounds(Engine.Grid.worldWidth(), Engine.Grid.worldHeight());
@@ -144,10 +113,7 @@ function setup() {
     // --- Horloge : 1 min réelle = 1 h en jeu, journée démarre à 7 h ---
     Engine.Clock.configure({
         startHour: 7,
-        onNewDay: function (day) {
-            if (cropGrowth) cropGrowth.onNewDay(day);
-            if (window.Engine && Engine.Save) Engine.Save.save();
-        }
+        onNewDay: function () { if (window.Engine && Engine.Save) Engine.Save.save(); }
     });
 
     boot();
@@ -176,10 +142,6 @@ async function boot() {
                 if (Engine.WorldZone && Engine.WorldZone.getCurrent()) {
                     data.zoneId = Engine.WorldZone.getCurrent().id;
                 }
-                // Sauvegarder l'état des systèmes de culture
-                if (soilSystem) data.soil = soilSystem.gather();
-                if (cropGrowth) data.crops = cropGrowth.gather();
-                if (harvestSystem) data.harvest = harvestSystem.gather();
                 return data;
             },
             apply: function (data) {
@@ -194,10 +156,6 @@ async function boot() {
                     player.placeAt(data.c, data.r);
                     Engine.Camera.snapTo(player.x, player.y);
                 }
-                // Restaurer l'état des systèmes de culture
-                if (data.soil && soilSystem) soilSystem.apply(data.soil);
-                if (data.crops && cropGrowth) cropGrowth.apply(data.crops);
-                if (data.harvest && harvestSystem) harvestSystem.apply(data.harvest);
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
@@ -387,14 +345,8 @@ function drawWorld() {
     // Sol en tuiles Tiny Farm (labour)
     drawGround();
 
-    // Rendu de l'état du sol (système de culture)
-    drawSoilState();
-
     // Décor Tiny Farm à la place des obstacles gray-box
     drawDecor();
-
-    // Indicateurs visuels de portails (cercle pulsé + icône 🚪)
-    drawPortalIndicators();
 
     // Grille de debug (surcouche, toggleable)
     Engine.Grid.drawDebug({ line: C.colors.gridLine, blocked: C.colors.blocked });
@@ -434,134 +386,6 @@ function drawWorld() {
     }
 }
 
-/* Rendu de l'état du sol : labouré, planté, mature. */
-function drawSoilState() {
-    if (!soilSystem) return;
-    var ts = Engine.Grid.tileSize;
-
-    // Charger les sprites de cultures depuis Tiny Farm
-    var sprites = {
-        ble: img("decor", "farm_ble_mure"),
-        asperge: img("decor", "farm_carotte_mure"),  // fallback visuel
-        choux: img("decor", "farm_chou_mure"),
-        default: img("decor", "farm_ble_pousse1")
-    };
-
-    // Parcourir toutes les cellules (optimisable : ne rendre que la zone visible)
-    for (var c = 0; c < C.grid.cols; c++) {
-        for (var r = 0; r < C.grid.rows; r++) {
-            if (!soilSystem.isCultivable(c, r)) continue;
-
-            var state = soilSystem.getState(c, r);
-            if (!state || state === 'empty') continue;
-
-            var x = c * ts, y = r * ts;
-
-            if (state === 'tilled') {
-                // Sol labouré : fond marron foncé
-                fill(101, 67, 33, 140);
-                noStroke();
-                rect(x + 2, y + 2, ts - 4, ts - 4, 4);
-            } else if (state === 'planted') {
-                // Plante en croissance
-                var stage = cropGrowth ? cropGrowth.getStage(c, r) : null;
-                var cropId = soilSystem.getCropId(c, r);
-                var spr = sprites[cropId] || sprites["default"];
-
-                // Fond labouré
-                fill(101, 67, 33, 120);
-                noStroke();
-                rect(x + 2, y + 2, ts - 4, ts - 4, 4);
-
-                if (spr) {
-                    // Ajuster la taille selon le stade
-                    var growthRatio = stage ? 1 - (stage.daysRemaining / stage.growthDays) : 0.5;
-                    var sprSize = ts * (0.35 + growthRatio * 0.5);
-                    var ox = x + (ts - sprSize) / 2;
-                    var oy = y + (ts - sprSize) / 2;
-                    image(spr, ox, oy, sprSize, sprSize);
-                }
-
-                // Flash vert si mature
-                if (stage && stage.mature) {
-                    var flash = sin(millis() * 0.005) * 0.3 + 0.5;
-                    fill(102, 187, 106, flash * 200);
-                    noStroke();
-                    rect(x + 2, y + 2, ts - 4, ts - 4, 4);
-                }
-            }
-
-            // Goutte d'eau si arrosé
-            if (soilSystem.isWatered(c, r)) {
-                fill(66, 165, 245, 130);
-                noStroke();
-                circle(x + ts * 0.75, y + ts * 0.25, ts * 0.2);
-            }
-        }
-    }
-}
-
-/* Rendu des indicateurs de portail : cercle pulsé + icône 🚪 sur chaque cellule de portail. */
-function drawPortalIndicators() {
-    if (!Engine.Portal || !Engine.WorldZone) return;
-
-    var curZone = Engine.WorldZone.getCurrent();
-    if (!curZone) return;
-
-    var portals = Engine.Portal.getPortalsForZone(curZone.id);
-    if (!portals || portals.length === 0) return;
-
-    var ts = Engine.Grid.tileSize;
-
-    for (var pi = 0; pi < portals.length; pi++) {
-        var p = portals[pi];
-        var cells = p.from && p.from.cells;
-        if (!cells) continue;
-
-        for (var ci = 0; ci < cells.length; ci++) {
-            var cell = cells[ci];
-            var cc = cell[0];
-            var rr = cell[1];
-            var cx = cc * ts + ts / 2;
-            var cy = rr * ts + ts / 2;
-
-            // Pulse animé : phase sinusoïdale basée sur le temps
-            var pulse = sin(millis() * 0.003) * 0.2 + 0.7; // 0.5 à 0.9
-
-            // Cercle coloré extérieur (pulsé)
-            var alpha = pulse * 140;
-            noStroke();
-
-            // Cercle de fond (couleur selon type de portail)
-            if (p.choices) {
-                // Portail à choix (ascenseur) → violet
-                fill(139, 92, 246, alpha);
-            } else {
-                // Portail simple → vert émeraude
-                fill(52, 211, 153, alpha);
-            }
-            circle(cx, cy, ts * 0.6 * pulse);
-
-            // Anneau lumineux
-            noFill();
-            strokeWeight(2);
-            if (p.choices) {
-                stroke(167, 139, 250, pulse * 200);
-            } else {
-                stroke(110, 231, 183, pulse * 200);
-            }
-            circle(cx, cy, ts * 0.55 * pulse);
-            noStroke();
-
-            // Icône 🚪 centrée
-            fill(255, 255, 255, 230);
-            textSize(ts * 0.5);
-            textAlign(CENTER, CENTER);
-            text("🚪", cx, cy);
-        }
-    }
-}
-
 function drawHud() {
     // Bandeau horloge (haut centre)
     var label = "Jour " + Engine.Clock.day + " — " + Engine.Clock.timeString();
@@ -596,38 +420,12 @@ function drawHud() {
     text("test emoji : 🧑‍🌾 🥕 🐔 🐟 💎", u(4), height - u(5.5));
     textAlign(CENTER, CENTER);
 
-    // Outil sélectionné + or (bas centre-gauche)
-    var toolLabel = "🔧 " + selectedTool;
-    var goldLabel = harvestSystem ? "💰 " + harvestSystem.getGold() + "g" : "💰 0g";
-    textSize(u(2.2));
-    var tw = textWidth(toolLabel) + u(6);
-    fill(C.colors.hudPanel);
-    rect(u(38), height - u(9), tw + u(20), u(7), u(1.5));
-    fill(C.colors.hudText);
-    textAlign(LEFT, CENTER);
-    text(toolLabel + "    " + goldLabel, u(40), height - u(5.5));
-    textAlign(CENTER, CENTER);
-
     // Popup de choix de portail
     drawPortalChoice();
 }
 
 function inRect(mx, my, b) {
     return b && mx > b.x && mx < b.x + b.w && my > b.y && my < b.y + b.h;
-}
-
-/* Cycle entre les outils : pelle → graines → arrosoir → pelle */
-function cycleTool() {
-    var idx = toolCycle.indexOf(selectedTool);
-    selectedTool = toolCycle[(idx + 1) % toolCycle.length];
-}
-
-/* Changement d'outil au clavier (touches 1,2,3) */
-function keyPressed() {
-    if (zoneTransition || portalChoice) return;
-    if (key === '1') selectedTool = 'pelle';
-    if (key === '2') selectedTool = 'graines';
-    if (key === '3') selectedTool = 'arrosoir';
 }
 
 function mousePressed() {
@@ -659,61 +457,8 @@ function mousePressed() {
     if (!tile) return; // clic hors de la grille
 
     if (Engine.ActionZone.contains(player.tile(), tile)) {
-        // Pivot d'interaction : DANS la zone -> action (outil ou récolte)
-        var acted = false;
-
-        // Priorité : récolter si mature (peu importe l'outil)
-        if (cropGrowth && harvestSystem && cropGrowth.isMature(tile.c, tile.r)) {
-            var harvested = cropGrowth.harvest(tile.c, tile.r);
-            if (harvested) {
-                harvestSystem.addToInventory(harvested.cropId, 1);
-                // Vente automatique simplifiée (sera remplacée par interaction PNJ)
-                if (C._culturesData && C._culturesData[harvested.cropId]) {
-                    var cropDef = C._culturesData[harvested.cropId];
-                    harvestSystem.sell(harvested.cropId, 1, cropDef.sell);
-                }
-                // Nettoyer le sol après récolte
-                if (soilSystem) {
-                    soilSystem.till(tile.c, tile.r); // retour à l'état labouré
-                }
-                actionFlash = { c: tile.c, r: tile.r, t: millis() };
-                acted = true;
-            }
-        }
-
-        // Actions avec outil
-        if (!acted && soilSystem) {
-            var state = soilSystem.getState(tile.c, tile.r);
-
-            if (selectedTool === 'pelle' && state === 'empty') {
-                soilSystem.till(tile.c, tile.r);
-                actionFlash = { c: tile.c, r: tile.r, t: millis() };
-                acted = true;
-            } else if (selectedTool === 'graines' && state === 'tilled') {
-                // Plante du blé par défaut (MVP)
-                soilSystem.plant(tile.c, tile.r, 'ble');
-                if (cropGrowth) {
-                    // Charger les données de culture si disponibles
-                    var cd = C._culturesData && C._culturesData['ble'] ? C._culturesData['ble'] : { id: 'ble', growthDays: 4 };
-                    cropGrowth.register(tile.c, tile.r, cd);
-                }
-                actionFlash = { c: tile.c, r: tile.r, t: millis() };
-                acted = true;
-            } else if (selectedTool === 'arrosoir' && (state === 'tilled' || state === 'planted')) {
-                soilSystem.water(tile.c, tile.r);
-                actionFlash = { c: tile.c, r: tile.r, t: millis() };
-                acted = true;
-            }
-        }
-
-        // Cycle d'outil si clic sur une cellule déjà travaillée sans action possible
-        if (!acted) {
-            cycleTool();
-        }
-
-        if (acted && window.Engine && Engine.Save) {
-            Engine.Save.saveLocal();
-        }
+        // Pivot d'interaction : DANS la zone -> action (simulée en gray-box)
+        actionFlash = { c: tile.c, r: tile.r, t: millis() };
     } else {
         // HORS zone -> déplacement avec contournement
         player.moveTo(tile.c, tile.r);
