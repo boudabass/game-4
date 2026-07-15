@@ -1,112 +1,42 @@
 [
   {
-    "id": "hache",
-    "sprite": "objet/farm_hache.png",
-    "d": "Hache"
-  },
-  {
     "id": "pelle",
-    "sprite": "objet/farm_pelle.png",
-    "d": "Pelle/bêche"
-  },
-  {
-    "id": "marteau",
-    "sprite": "objet/town_marteau.png",
-    "d": "marteau/maillet"
-  },
-  {
-    "id": "fourche",
-    "sprite": "objet/town_fourche.png",
-    "d": "fourche"
-  },
-  {
-    "id": "pioche",
-    "sprite": "objet/town_pioche.png",
-    "d": "pioche"
-  },
-  {
-    "id": "serpe",
-    "sprite": "objet/town_serpe.png",
-    "d": "serpe/faucille à manche courbe"
-  },
-  {
-    "id": "faux",
-    "sprite": "À_TROUVER",
-    "d": ""
+    "label": "Pelle",
+    "emoji": "🪏",
+    "fallback": { "shape": "rect", "color": "#8d6e63" },
+    "action": "till",
+    "sprite": "objet/farm_pelle.png"
   },
   {
     "id": "arrosoir",
-    "sprite": "À_TROUVER",
-    "d": ""
+    "label": "Arrosoir",
+    "emoji": "🚿",
+    "fallback": { "shape": "circle", "color": "#42a5f5" },
+    "action": "water",
+    "sprite": "objet/farm_seau_eau.png"
   },
   {
-    "id": "houe",
-    "sprite": "À_TROUVER",
-    "d": ""
+    "id": "graines",
+    "label": "Graines",
+    "emoji": "🌱",
+    "fallback": { "shape": "circle", "color": "#66bb6a" },
+    "action": "plant",
+    "sprite": "objet/farm_pousse_en_pot.png"
   },
   {
-    "id": "râteau",
-    "sprite": "À_TROUVER",
-    "d": ""
+    "id": "hache",
+    "label": "Hache",
+    "emoji": "🪓",
+    "fallback": { "shape": "triangle", "color": "#78909c" },
+    "action": "chop",
+    "sprite": "objet/farm_hache.png"
   },
   {
-    "id": "sécateur",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "ciseaux",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "scie",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "échelle",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "brouette",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "seau",
-    "sprite": "objet/farm_seau_vide.png",
-    "d": "Seau en bois vide, cerclé métal"
-  },
-  {
-    "id": "panier",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "corde",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "masse",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "gant",
-    "sprite": "objet/farm_gant.png",
-    "d": "Gant de jardinage"
-  },
-  {
-    "id": "canne_à_pêche",
-    "sprite": "À_TROUVER",
-    "d": ""
-  },
-  {
-    "id": "lampe",
-    "sprite": "objet/rogrpg_lampe_huile.png",
-    "d": "lampe à huile/encensoir"
+    "id": "pioche",
+    "label": "Pioche",
+    "emoji": "⛏️",
+    "fallback": { "shape": "triangle", "color": "#9e9e9e" },
+    "action": "mine",
+    "sprite": "objet/town_pioche.png"
   }
 ]
