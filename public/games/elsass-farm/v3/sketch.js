@@ -24,6 +24,13 @@ let zoneTransition = null; // { phase: 'out'|'in', zoneId, entry, t, duration: 2
 // Popup de choix de portail (ascenseur, etc.)
 let portalChoice = null;   // { portal, buttons: [{label, zone, entry, x, y, w, h}] }
 
+// Systèmes de culture (feuilles 531-534)
+let soilSystem = null;     // Engine.SoilSystem
+let cropGrowth = null;     // Engine.CropGrowth
+let harvestSystem = null;  // Engine.HarvestSystem
+let selectedTool = 'pelle'; // 'pelle' | 'graines' | 'arrosoir'
+let toolCycle = ['pelle', 'graines', 'arrosoir'];
+
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
 function u(n) {
     return (min(width, height) * n) / 100;
@@ -105,6 +112,27 @@ function setup() {
     // --- Zone d'action ---
     Engine.ActionZone.configure({ range: C.actionRange });
 
+    // --- Systèmes de culture (feuilles 531-534) ---
+    soilSystem = Engine.SoilSystem ? new Engine.SoilSystem() : null;
+    cropGrowth = Engine.CropGrowth ? new Engine.CropGrowth() : null;
+    harvestSystem = Engine.HarvestSystem ? new Engine.HarvestSystem() : null;
+
+    // Parcelles cultivables depuis zones.json
+    if (soilSystem && C._zonesData) {
+        for (var zid in C._zonesData) {
+            if (!C._zonesData.hasOwnProperty(zid)) continue;
+            var zone = C._zonesData[zid];
+            var tiles = zone.cultivableTiles;
+            if (tiles && tiles.length) {
+                for (var ti = 0; ti < tiles.length; ti++) {
+                    soilSystem.setCultivable(tiles[ti].c, tiles[ti].r, true);
+                }
+            }
+        }
+    }
+
+    // Brancher CropGrowth sur l'horloge
+
     // --- Caméra ---
     Engine.Camera.configure({ minZoom: 0.5, maxZoom: 2.2, zoom: 1 });
     Engine.Camera.setWorldBounds(Engine.Grid.worldWidth(), Engine.Grid.worldHeight());
@@ -113,7 +141,10 @@ function setup() {
     // --- Horloge : 1 min réelle = 1 h en jeu, journée démarre à 7 h ---
     Engine.Clock.configure({
         startHour: 7,
-        onNewDay: function () { if (window.Engine && Engine.Save) Engine.Save.save(); }
+        onNewDay: function (day) {
+            if (cropGrowth) cropGrowth.onNewDay(day);
+            if (window.Engine && Engine.Save) Engine.Save.save();
+        }
     });
 
     boot();

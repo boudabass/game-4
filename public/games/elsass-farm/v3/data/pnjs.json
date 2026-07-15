@@ -1,0 +1,142 @@
+[
+  {
+    "id": "vigneron",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "boulangère",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "aubergiste",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "potier",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "tisserande",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "apiculteur",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "ancien_mineur",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "maraîcher",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "forgeron",
+    "sprite": "perso/rogchar_exemple_forgeron.png",
+    "d": "personnage exemple pré-assemblé : homme costaud basané, haut orange"
+  },
+  {
+    "id": "menuisier",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "meunier",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "berger",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "pêcheur",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "bûcheron",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "tailleur",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "apothicaire",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "marchand",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "garde",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "prêtre",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "fermier",
+    "sprite": "perso/farm_fermier_brun.png",
+    "d": "Personnage fermier, cheveux bruns, sans chapeau, salopette bleue"
+  },
+  {
+    "id": "fermier_chapeau",
+    "sprite": "perso/farm_fermier_chapeau.png",
+    "d": "Personnage fermier avec chapeau de paille, salopette bleue"
+  },
+  {
+    "id": "enfant",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "vieillard",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "voyageur",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "colporteur",
+    "sprite": "À_TROUVER",
+    "d": ""
+  },
+  {
+    "id": "poule",
+    "sprite": "perso/farm_poule.png",
+    "d": "Poule"
+  },
+  {
+    "id": "vache",
+    "sprite": "perso/farm_vache.png",
+    "d": "Vache"
+  },
+  {
+    "id": "mouton",
+    "sprite": "perso/farm_mouton.png",
+    "d": "Mouton"
+  }
+]
