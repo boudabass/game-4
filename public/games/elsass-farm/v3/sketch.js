@@ -62,7 +62,7 @@ function preload() {
     C._zonesData = loadJSON("data/zones/zones.json");
 
     // Charger les données de cultures (Phase 02)
-    culturesData = loadJSON("data/cultures.json");
+    culturesData = loadJSON("data/cultures.json", function(data) { culturesData = Object.values(data); });
 }
 
 function setup() {
@@ -476,14 +476,15 @@ function drawWorld() {
     // Sol en tuiles Tiny Farm (labour)
     drawGround();
 
+    // Grille de debug : uniquement les lignes, PAS les remplissages gris
+    // (ils recouvriraient les sprites décor/cultures dessinés après)
+    Engine.Grid.drawDebug({ line: C.colors.gridLine });
+
     // Décor Tiny Farm à la place des obstacles gray-box
     drawDecor();
 
     // Cultures Phase 02 : rendu du sol, pousses, arrosage
     drawCrops();
-
-    // Grille de debug (surcouche, toggleable)
-    Engine.Grid.drawDebug({ line: C.colors.gridLine, blocked: C.colors.blocked });
 
     // Marqueur de destination (s'estompe en 1 s)
     if (moveMarker && millis() - moveMarker.t < 1000) {

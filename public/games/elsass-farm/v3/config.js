@@ -1,8 +1,8 @@
-// config.js — Prototype gray-box Elsass Farm (v3, pré-production)
+// config.js — Elsass Farm (v3, pré-production)
 // Aucune taille écran en dur : le canvas remplit l'iframe, le HUD utilise u().
 // Le MONDE, lui, est en unités fixes (tuiles de 64) vues à travers la caméra.
 window.FarmConfig = {
-    title: "Elsass Farm — gray-box",
+    title: "Elsass Farm",
 
     grid: { cols: 28, rows: 18, tileSize: 64 },
 
@@ -12,7 +12,7 @@ window.FarmConfig = {
     // Zone d'action : 1 = les 8 tuiles autour du personnage.
     actionRange: 1,
 
-    // Obstacles gray-box (à contourner). "rect" = zone bloquée c,r → c+w,r+h.
+    // Obstacles (décor). "rect" = zone bloquée c,r → c+w,r+h.
     obstacles: {
         rects: [
             { c: 4,  r: 3,  w: 4, h: 3 },   // future mare

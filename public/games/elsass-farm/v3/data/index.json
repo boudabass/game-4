@@ -1,0 +1,2613 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "generated": "2026-07-15T03:00:00Z",
+    "source_catalogue": "tri/catalogue.json",
+    "source_gdd": "Odoo 430",
+    "source_cultures": "data/cultures.json",
+    "source_zones": "data/zones/zones.json",
+    "contexte": "INSTRUCTION active (469) — reconstruction donnees"
+  },
+  "assets": {
+    "batiment": {
+      "count": 24,
+      "items": [
+        {
+          "file": "batiment/farm_grange_fenetre.png",
+          "key": "farm_grange_fenetre",
+          "desc": "Fenêtre de grange (cadre + barreaux)",
+          "passable": "non",
+          "role": "fenetre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_brique1_centre.png",
+          "key": "farm_grange_mur_brique1_centre",
+          "desc": "Mur de grange, briques rouges (rangée 1), centre",
+          "passable": "non",
+          "role": "mur_brique1_centre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_brique1_droit.png",
+          "key": "farm_grange_mur_brique1_droit",
+          "desc": "Mur de grange, briques rouges (rangée 1), droit",
+          "passable": "non",
+          "role": "mur_brique1_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_brique1_gauche.png",
+          "key": "farm_grange_mur_brique1_gauche",
+          "desc": "Mur de grange, briques rouges (rangée 1), gauche",
+          "passable": "non",
+          "role": "mur_brique1_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_brique2_centre.png",
+          "key": "farm_grange_mur_brique2_centre",
+          "desc": "Mur de grange, briques rouges (rangée 2), centre",
+          "passable": "non",
+          "role": "mur_brique2_centre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_brique2_droit.png",
+          "key": "farm_grange_mur_brique2_droit",
+          "desc": "Mur de grange, briques rouges (rangée 2), droit",
+          "passable": "non",
+          "role": "mur_brique2_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_brique2_gauche.png",
+          "key": "farm_grange_mur_brique2_gauche",
+          "desc": "Mur de grange, briques rouges (rangée 2), gauche",
+          "passable": "non",
+          "role": "mur_brique2_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_haut_centre.png",
+          "key": "farm_grange_mur_haut_centre",
+          "desc": "Mur de grange, planche croisée supérieure, centre",
+          "passable": "non",
+          "role": "mur_haut_centre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_haut_droit.png",
+          "key": "farm_grange_mur_haut_droit",
+          "desc": "Mur de grange, planche croisée supérieure, droit",
+          "passable": "non",
+          "role": "mur_haut_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_mur_haut_gauche.png",
+          "key": "farm_grange_mur_haut_gauche",
+          "desc": "Mur de grange, planche croisée (X) supérieure, gauche",
+          "passable": "non",
+          "role": "mur_haut_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_porte_droit.png",
+          "key": "farm_grange_porte_droit",
+          "desc": "Porte de grange, moitié droite — entrée",
+          "passable": "oui",
+          "role": "porte_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_porte_gauche.png",
+          "key": "farm_grange_porte_gauche",
+          "desc": "Porte de grange (planche croisée), moitié gauche — entrée",
+          "passable": "oui",
+          "role": "porte_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_apex.png",
+          "key": "farm_grange_toit_apex",
+          "desc": "Toit de grange, pointe sommitale avec poteau/cheminée",
+          "passable": "haut",
+          "role": "toit_apex",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_avant_toit_droit.png",
+          "key": "farm_grange_toit_avant_toit_droit",
+          "desc": "Toit de grange, coin extérieur de l'avant-toit, droit",
+          "passable": "haut",
+          "role": "avant_toit_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_avant_toit_gauche.png",
+          "key": "farm_grange_toit_avant_toit_gauche",
+          "desc": "Toit de grange, coin extérieur de l'avant-toit, gauche",
+          "passable": "haut",
+          "role": "avant_toit_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_bas_centre.png",
+          "key": "farm_grange_toit_bas_centre",
+          "desc": "Toit de grange, pan bas, centre — dessous visible (avant-toit)",
+          "passable": "haut",
+          "role": "toit_bas_centre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_bas_droit.png",
+          "key": "farm_grange_toit_bas_droit",
+          "desc": "Toit de grange, pan bas, droit",
+          "passable": "haut",
+          "role": "toit_bas_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_bas_gauche.png",
+          "key": "farm_grange_toit_bas_gauche",
+          "desc": "Toit de grange, pan bas (avant-toit), gauche",
+          "passable": "haut",
+          "role": "toit_bas_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_haut_centre.png",
+          "key": "farm_grange_toit_haut_centre",
+          "desc": "Toit de grange, pan supérieur, centre (ligne de faîtage)",
+          "passable": "haut",
+          "role": "toit_haut_centre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_haut_droit.png",
+          "key": "farm_grange_toit_haut_droit",
+          "desc": "Toit de grange, pan supérieur, droit",
+          "passable": "haut",
+          "role": "toit_haut_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_haut_gauche.png",
+          "key": "farm_grange_toit_haut_gauche",
+          "desc": "Toit de grange, pan supérieur, gauche",
+          "passable": "haut",
+          "role": "toit_haut_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_milieu_centre.png",
+          "key": "farm_grange_toit_milieu_centre",
+          "desc": "Toit de grange, pan du milieu, centre",
+          "passable": "haut",
+          "role": "toit_milieu_centre",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_milieu_droit.png",
+          "key": "farm_grange_toit_milieu_droit",
+          "desc": "Toit de grange, pan du milieu, droit",
+          "passable": "haut",
+          "role": "toit_milieu_droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "batiment/farm_grange_toit_milieu_gauche.png",
+          "key": "farm_grange_toit_milieu_gauche",
+          "desc": "Toit de grange, pan du milieu, gauche",
+          "passable": "haut",
+          "role": "toit_milieu_gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "grange",
+          "px": 16,
+          "douteux": false
+        }
+      ]
+    },
+    "decor": {
+      "count": 43,
+      "items": [
+        {
+          "file": "decor/farm_arbre_sapin_jeune.png",
+          "key": "farm_arbre_sapin_jeune",
+          "desc": "Jeune sapin, stade de croissance 1 (petit)",
+          "passable": "non",
+          "role": null,
+          "etat": "jeune",
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_arbre_sapin_mature.png",
+          "key": "farm_arbre_sapin_mature",
+          "desc": "Sapin mature, stade de croissance 3 (adulte)",
+          "passable": "non",
+          "role": null,
+          "etat": "mature",
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_arbre_sapin_moyen.png",
+          "key": "farm_arbre_sapin_moyen",
+          "desc": "Sapin, stade de croissance 2 (moyen)",
+          "passable": "non",
+          "role": null,
+          "etat": "moyen",
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_aubergine_mure.png",
+          "key": "farm_aubergine_mure",
+          "desc": "Culture aubergine (violette) — stade 'mure' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "mure",
+          "famille": "crop_aubergine",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_aubergine_pousse1.png",
+          "key": "farm_aubergine_pousse1",
+          "desc": "Culture aubergine (violette) — stade 'pousse1' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse1",
+          "famille": "crop_aubergine",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_aubergine_pousse2.png",
+          "key": "farm_aubergine_pousse2",
+          "desc": "Culture aubergine (violette) — stade 'pousse2' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse2",
+          "famille": "crop_aubergine",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_aubergine_recolte_sol.png",
+          "key": "farm_aubergine_recolte_sol",
+          "desc": "Culture aubergine (violette) — stade 'recolte_sol' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "recolte_sol",
+          "famille": "crop_aubergine",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_bac_eau_droit.png",
+          "key": "farm_bac_eau_droit",
+          "desc": "Bac/abreuvoir eau bleue, moitié droite",
+          "passable": "non",
+          "role": "droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "bac_eau",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_bac_eau_gauche.png",
+          "key": "farm_bac_eau_gauche",
+          "desc": "Bac/abreuvoir rempli d'eau bleue, moitié gauche",
+          "passable": "non",
+          "role": "gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "bac_eau",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_banc_bois_droit.png",
+          "key": "farm_banc_bois_droit",
+          "desc": "Banc en bois, moitié droite",
+          "passable": "non",
+          "role": "droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "banc_bois",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_banc_bois_gauche.png",
+          "key": "farm_banc_bois_gauche",
+          "desc": "Banc en bois, moitié gauche (sprite 2 tuiles)",
+          "passable": "non",
+          "role": "gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "banc_bois",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_banc_metal_droit.png",
+          "key": "farm_banc_metal_droit",
+          "desc": "Banc en métal/gris, moitié droite",
+          "passable": "non",
+          "role": "droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "banc_metal",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_banc_metal_gauche.png",
+          "key": "farm_banc_metal_gauche",
+          "desc": "Banc en métal/gris, moitié gauche (sprite 2 tuiles)",
+          "passable": "non",
+          "role": "gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "banc_metal",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_ble_mure.png",
+          "key": "farm_ble_mure",
+          "desc": "Culture blé (épi doré) — stade 'mure' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "mure",
+          "famille": "crop_ble",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_ble_pousse1.png",
+          "key": "farm_ble_pousse1",
+          "desc": "Culture blé (épi doré) — stade 'pousse1' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse1",
+          "famille": "crop_ble",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_ble_pousse2.png",
+          "key": "farm_ble_pousse2",
+          "desc": "Culture blé (épi doré) — stade 'pousse2' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse2",
+          "famille": "crop_ble",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_ble_recolte_sol.png",
+          "key": "farm_ble_recolte_sol",
+          "desc": "Culture blé (épi doré) — stade 'recolte_sol' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "recolte_sol",
+          "famille": "crop_ble",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_buisson_baies.png",
+          "key": "farm_buisson_baies",
+          "desc": "Buisson avec baies rouges",
+          "passable": "non",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_carotte_mure.png",
+          "key": "farm_carotte_mure",
+          "desc": "Culture carotte (racine orange) — stade 'mure' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "mure",
+          "famille": "crop_carotte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_carotte_pousse1.png",
+          "key": "farm_carotte_pousse1",
+          "desc": "Culture carotte (racine orange) — stade 'pousse1' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse1",
+          "famille": "crop_carotte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_carotte_pousse2.png",
+          "key": "farm_carotte_pousse2",
+          "desc": "Culture carotte (racine orange) — stade 'pousse2' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse2",
+          "famille": "crop_carotte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_carotte_recolte_sol.png",
+          "key": "farm_carotte_recolte_sol",
+          "desc": "Culture carotte (racine orange) — stade 'recolte_sol' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "recolte_sol",
+          "famille": "crop_carotte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_chou_mure.png",
+          "key": "farm_chou_mure",
+          "desc": "Culture chou/laitue (boule verte) — stade 'mure' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "mure",
+          "famille": "crop_chou",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_chou_pousse1.png",
+          "key": "farm_chou_pousse1",
+          "desc": "Culture chou/laitue (boule verte) — stade 'pousse1' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse1",
+          "famille": "crop_chou",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_chou_pousse2.png",
+          "key": "farm_chou_pousse2",
+          "desc": "Culture chou/laitue (boule verte) — stade 'pousse2' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse2",
+          "famille": "crop_chou",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_chou_recolte_sol.png",
+          "key": "farm_chou_recolte_sol",
+          "desc": "Culture chou/laitue (boule verte) — stade 'recolte_sol' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "recolte_sol",
+          "famille": "crop_chou",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_herbe_touffe.png",
+          "key": "farm_herbe_touffe",
+          "desc": "Touffe d'herbe sauvage",
+          "passable": "oui",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_mais_mure.png",
+          "key": "farm_mais_mure",
+          "desc": "Culture maïs (épi orange/jaune) — stade 'mure' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "mure",
+          "famille": "crop_mais",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_mais_pousse1.png",
+          "key": "farm_mais_pousse1",
+          "desc": "Culture maïs (épi orange/jaune) — stade 'pousse1' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse1",
+          "famille": "crop_mais",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_mais_pousse2.png",
+          "key": "farm_mais_pousse2",
+          "desc": "Culture maïs (épi orange/jaune) — stade 'pousse2' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse2",
+          "famille": "crop_mais",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_mais_recolte_sol.png",
+          "key": "farm_mais_recolte_sol",
+          "desc": "Culture maïs (épi orange/jaune) — stade 'recolte_sol' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "recolte_sol",
+          "famille": "crop_mais",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_mangeoire_droit.png",
+          "key": "farm_mangeoire_droit",
+          "desc": "Mangeoire à grain doré, moitié droite",
+          "passable": "non",
+          "role": "droit",
+          "etat": null,
+          "famille": null,
+          "ensemble": "mangeoire",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_mangeoire_gauche.png",
+          "key": "farm_mangeoire_gauche",
+          "desc": "Mangeoire à grain doré, moitié gauche",
+          "passable": "non",
+          "role": "gauche",
+          "etat": null,
+          "famille": null,
+          "ensemble": "mangeoire",
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_pousse_en_pot.png",
+          "key": "farm_pousse_en_pot",
+          "desc": "Petite pousse à 3 tiges dans un pot en terre",
+          "passable": "oui",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_ruche.png",
+          "key": "farm_ruche",
+          "desc": "Ruche traditionnelle (skep), dôme + cerclages empilés",
+          "passable": "non",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_tas_pierres.png",
+          "key": "farm_tas_pierres",
+          "desc": "Tas de pierres (2 rochers, plus gros que 'cailloux')",
+          "passable": "non",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_taupiniere.png",
+          "key": "farm_taupiniere",
+          "desc": "Monticule brun-orangé arrondi, rôle incertain (taupinière ? souche ?) — À CONFIRMER",
+          "passable": "oui",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": true
+        },
+        {
+          "file": "decor/farm_tomate_fane.png",
+          "key": "farm_tomate_fane",
+          "desc": "Culture tomate (rouge) — stade 'fane' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "fane",
+          "famille": "crop_tomate",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_tomate_mure.png",
+          "key": "farm_tomate_mure",
+          "desc": "Culture tomate (rouge) — stade 'mure' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "mure",
+          "famille": "crop_tomate",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_tomate_pousse1.png",
+          "key": "farm_tomate_pousse1",
+          "desc": "Culture tomate (rouge) — stade 'pousse1' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse1",
+          "famille": "crop_tomate",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_tomate_pousse2.png",
+          "key": "farm_tomate_pousse2",
+          "desc": "Culture tomate (rouge) — stade 'pousse2' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse2",
+          "famille": "crop_tomate",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_tomate_pousse3.png",
+          "key": "farm_tomate_pousse3",
+          "desc": "Culture tomate (rouge) — stade 'pousse3' (tuile de champ)",
+          "passable": "oui",
+          "role": null,
+          "etat": "pousse3",
+          "famille": "crop_tomate",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "decor/farm_tournesol.png",
+          "key": "farm_tournesol",
+          "desc": "Tournesol",
+          "passable": "non",
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        }
+      ]
+    },
+    "objet": {
+      "count": 42,
+      "items": [
+        {
+          "file": "objet/farm_aubergine_caisse.png",
+          "key": "farm_aubergine_caisse",
+          "desc": "Caisse de rangement — aubergine (violette)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_aubergine_icone.png",
+          "key": "farm_aubergine_icone",
+          "desc": "Icône aubergine (violette) récoltée (item)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_aubergine_presentoir.png",
+          "key": "farm_aubergine_presentoir",
+          "desc": "Présentoir de marché (item posé) — aubergine (violette)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_aubergine_sac.png",
+          "key": "farm_aubergine_sac",
+          "desc": "Sachet de graines — aubergine (violette)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_ble_caisse.png",
+          "key": "farm_ble_caisse",
+          "desc": "Caisse de rangement — blé (épi doré)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_ble_icone.png",
+          "key": "farm_ble_icone",
+          "desc": "Icône blé (épi doré) récoltée (item)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_ble_presentoir.png",
+          "key": "farm_ble_presentoir",
+          "desc": "Présentoir de marché (item posé) — blé (épi doré)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_ble_sac.png",
+          "key": "farm_ble_sac",
+          "desc": "Sachet de graines — blé (épi doré)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_branche_v1.png",
+          "key": "farm_branche_v1",
+          "desc": "Branche/brindille au sol, ramassable (bois), variante 1",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_branche_v2.png",
+          "key": "farm_branche_v2",
+          "desc": "Branche/brindille au sol, ramassable (bois), variante 2",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_branche_v3.png",
+          "key": "farm_branche_v3",
+          "desc": "Branche/brindille au sol, ramassable (bois), variante 3",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_branche_v4.png",
+          "key": "farm_branche_v4",
+          "desc": "Branche/brindille au sol, ramassable (bois), variante 4",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_cailloux.png",
+          "key": "farm_cailloux",
+          "desc": "Petit tas de cailloux ramassables (3 pierres)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_carotte_caisse.png",
+          "key": "farm_carotte_caisse",
+          "desc": "Caisse de rangement — carotte (racine orange)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_carotte_icone.png",
+          "key": "farm_carotte_icone",
+          "desc": "Icône carotte (racine orange) récoltée (item)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_carotte_presentoir.png",
+          "key": "farm_carotte_presentoir",
+          "desc": "Présentoir de marché (item posé) — carotte (racine orange)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_carotte_sac.png",
+          "key": "farm_carotte_sac",
+          "desc": "Sachet de graines — carotte (racine orange)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_chou_caisse.png",
+          "key": "farm_chou_caisse",
+          "desc": "Caisse de rangement — chou/laitue (boule verte)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_chou_icone.png",
+          "key": "farm_chou_icone",
+          "desc": "Icône chou/laitue (boule verte) récoltée (item)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_chou_presentoir.png",
+          "key": "farm_chou_presentoir",
+          "desc": "Présentoir de marché (item posé) — chou/laitue (boule verte)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_chou_sac.png",
+          "key": "farm_chou_sac",
+          "desc": "Sachet de graines — chou/laitue (boule verte)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_coffre_bois_clair.png",
+          "key": "farm_coffre_bois_clair",
+          "desc": "Coffre en bois clair, bande foncée",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_coffre_bois_fonce.png",
+          "key": "farm_coffre_bois_fonce",
+          "desc": "Caisse/armoire en bois foncé",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_coffre_jaune.png",
+          "key": "farm_coffre_jaune",
+          "desc": "Coffre orange/jaune à cadenas",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_coffre_raye.png",
+          "key": "farm_coffre_raye",
+          "desc": "Coffre rayé rouge/orange",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_gant.png",
+          "key": "farm_gant",
+          "desc": "Gant de jardinage",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_hache.png",
+          "key": "farm_hache",
+          "desc": "Hache",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_mais_caisse.png",
+          "key": "farm_mais_caisse",
+          "desc": "Caisse de rangement — maïs (épi orange/jaune)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_mais_icone.png",
+          "key": "farm_mais_icone",
+          "desc": "Icône maïs (épi orange/jaune) récoltée (item)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_mais_presentoir.png",
+          "key": "farm_mais_presentoir",
+          "desc": "Présentoir de marché (item posé) — maïs (épi orange/jaune)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_mais_sac.png",
+          "key": "farm_mais_sac",
+          "desc": "Sachet de graines — maïs (épi orange/jaune)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_pain.png",
+          "key": "farm_pain",
+          "desc": "Miche de pain ronde",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_pelle.png",
+          "key": "farm_pelle",
+          "desc": "Pelle/bêche",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_pot_lait.png",
+          "key": "farm_pot_lait",
+          "desc": "Pot/bocal avec couvercle, contenu blanc (lait ?)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_sac_toile.png",
+          "key": "farm_sac_toile",
+          "desc": "Sac en toile/jute (grain ou farine)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_seau_eau.png",
+          "key": "farm_seau_eau",
+          "desc": "Seau en bois rempli d'eau",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_seau_lait.png",
+          "key": "farm_seau_lait",
+          "desc": "Seau/tonneau cerclé métal rempli de lait",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_seau_vide.png",
+          "key": "farm_seau_vide",
+          "desc": "Seau en bois vide, cerclé métal",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_tomate_caisse.png",
+          "key": "farm_tomate_caisse",
+          "desc": "Caisse de rangement — tomate (rouge)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_tomate_icone.png",
+          "key": "farm_tomate_icone",
+          "desc": "Icône tomate (rouge) récoltée (item)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_tomate_presentoir.png",
+          "key": "farm_tomate_presentoir",
+          "desc": "Présentoir de marché (item posé) — tomate (rouge)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "objet/farm_tomate_sac.png",
+          "key": "farm_tomate_sac",
+          "desc": "Sachet de graines — tomate (rouge)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        }
+      ]
+    },
+    "perso": {
+      "count": 5,
+      "items": [
+        {
+          "file": "perso/farm_fermier_brun.png",
+          "key": "farm_fermier_brun",
+          "desc": "Personnage fermier, cheveux bruns, sans chapeau, salopette bleue",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "perso/farm_fermier_chapeau.png",
+          "key": "farm_fermier_chapeau",
+          "desc": "Personnage fermier avec chapeau de paille, salopette bleue",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "perso/farm_mouton.png",
+          "key": "farm_mouton",
+          "desc": "Mouton",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "perso/farm_poule.png",
+          "key": "farm_poule",
+          "desc": "Poule",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "perso/farm_vache.png",
+          "key": "farm_vache",
+          "desc": "Vache",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        }
+      ]
+    },
+    "sol": {
+      "count": 16,
+      "items": [
+        {
+          "file": "sol/farm_sol_butte_seul_v1.png",
+          "key": "farm_sol_butte_seul_v1",
+          "desc": "Butte de terre labourée isolée, vue de dessus, variante 1",
+          "passable": "oui",
+          "role": null,
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_seul_v2.png",
+          "key": "farm_sol_butte_seul_v2",
+          "desc": "Butte de terre labourée isolée, variante 2",
+          "passable": "oui",
+          "role": null,
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_vert_bas_v1.png",
+          "key": "farm_sol_butte_vert_bas_v1",
+          "desc": "Bout bas (arrondi) d'un sillon labouré vertical, variante 1",
+          "passable": "oui",
+          "role": "bout_bas",
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_vert_bas_v2.png",
+          "key": "farm_sol_butte_vert_bas_v2",
+          "desc": "Bout bas d'un sillon labouré vertical, variante 2",
+          "passable": "oui",
+          "role": "bout_bas",
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_vert_centre_v1.png",
+          "key": "farm_sol_butte_vert_centre_v1",
+          "desc": "Segment central (droit) d'un sillon labouré vertical, variante 1",
+          "passable": "oui",
+          "role": "centre",
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_vert_centre_v2.png",
+          "key": "farm_sol_butte_vert_centre_v2",
+          "desc": "Segment central d'un sillon labouré vertical, variante 2",
+          "passable": "oui",
+          "role": "centre",
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_vert_haut_v1.png",
+          "key": "farm_sol_butte_vert_haut_v1",
+          "desc": "Bout haut (arrondi) d'un sillon labouré vertical, variante 1",
+          "passable": "oui",
+          "role": "bout_haut",
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_butte_vert_haut_v2.png",
+          "key": "farm_sol_butte_vert_haut_v2",
+          "desc": "Bout haut d'un sillon labouré vertical, variante 2",
+          "passable": "oui",
+          "role": "bout_haut",
+          "etat": null,
+          "famille": "sol_butte",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_clair_centre1.png",
+          "key": "farm_sol_sillon_horizontal_clair_centre1",
+          "desc": "Sillon labouré horizontal clair, segment central 1",
+          "passable": "oui",
+          "role": "centre",
+          "etat": null,
+          "famille": "sol_sillon_clair",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_clair_centre2.png",
+          "key": "farm_sol_sillon_horizontal_clair_centre2",
+          "desc": "Sillon labouré horizontal clair, segment central 2",
+          "passable": "oui",
+          "role": "centre",
+          "etat": null,
+          "famille": "sol_sillon_clair",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_clair_droit.png",
+          "key": "farm_sol_sillon_horizontal_clair_droit",
+          "desc": "Sillon labouré horizontal clair, bout droit",
+          "passable": "oui",
+          "role": "bord_droit",
+          "etat": null,
+          "famille": "sol_sillon_clair",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_clair_gauche.png",
+          "key": "farm_sol_sillon_horizontal_clair_gauche",
+          "desc": "Sillon labouré horizontal (terre claire/sèche), bout gauche",
+          "passable": "oui",
+          "role": "bord_gauche",
+          "etat": null,
+          "famille": "sol_sillon_clair",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_fonce_centre1.png",
+          "key": "farm_sol_sillon_horizontal_fonce_centre1",
+          "desc": "Sillon labouré horizontal foncé, segment central 1",
+          "passable": "oui",
+          "role": "centre",
+          "etat": null,
+          "famille": "sol_sillon_fonce",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_fonce_centre2.png",
+          "key": "farm_sol_sillon_horizontal_fonce_centre2",
+          "desc": "Sillon labouré horizontal foncé, segment central 2",
+          "passable": "oui",
+          "role": "centre",
+          "etat": null,
+          "famille": "sol_sillon_fonce",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_fonce_droit.png",
+          "key": "farm_sol_sillon_horizontal_fonce_droit",
+          "desc": "Sillon labouré horizontal foncé, bout droit",
+          "passable": "oui",
+          "role": "bord_droit",
+          "etat": null,
+          "famille": "sol_sillon_fonce",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        },
+        {
+          "file": "sol/farm_sol_sillon_horizontal_fonce_gauche.png",
+          "key": "farm_sol_sillon_horizontal_fonce_gauche",
+          "desc": "Sillon labouré horizontal (terre foncée), bout gauche, 4 tuiles de large",
+          "passable": "oui",
+          "role": "bord_gauche",
+          "etat": null,
+          "famille": "sol_sillon_fonce",
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        }
+      ]
+    },
+    "ui": {
+      "count": 1,
+      "items": [
+        {
+          "file": "ui/farm_aide_inconnu.png",
+          "key": "farm_aide_inconnu",
+          "desc": "Icône point d'interrogation (aide / objet non identifié)",
+          "passable": null,
+          "role": null,
+          "etat": null,
+          "famille": null,
+          "ensemble": null,
+          "px": 16,
+          "douteux": false
+        }
+      ]
+    }
+  },
+  "zones": {
+    "ferme": {
+      "id": "ferme",
+      "cols": 28,
+      "rows": 18,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "ferme-to-village",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                27,
+                9
+              ]
+            ]
+          },
+          "to": {
+            "zone": "village",
+            "entry": {
+              "col": 0,
+              "row": 7
+            }
+          }
+        },
+        {
+          "id": "ferme-to-maison",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                14,
+                17
+              ]
+            ]
+          },
+          "to": {
+            "zone": "maison-rdc",
+            "entry": {
+              "col": 5,
+              "row": 7
+            }
+          }
+        },
+        {
+          "id": "ferme-to-mine",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                0,
+                9
+              ]
+            ]
+          },
+          "to": {
+            "zone": "mine-entree",
+            "entry": {
+              "col": 6,
+              "row": 11
+            }
+          }
+        }
+      ],
+      "obstacleRects": 3,
+      "obstacleSingles": 8
+    },
+    "maison-etage": {
+      "id": "maison-etage",
+      "cols": 12,
+      "rows": 10,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "etage-to-rdc",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "to": {
+            "zone": "maison-rdc",
+            "entry": {
+              "col": 9,
+              "row": 2
+            }
+          }
+        }
+      ],
+      "obstacleRects": 8,
+      "obstacleSingles": 2
+    },
+    "maison-rdc": {
+      "id": "maison-rdc",
+      "cols": 12,
+      "rows": 10,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "rdc-to-ferme",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                5,
+                9
+              ]
+            ]
+          },
+          "to": {
+            "zone": "ferme",
+            "entry": {
+              "col": 14,
+              "row": 16
+            }
+          }
+        },
+        {
+          "id": "rdc-to-etage",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "to": {
+            "zone": "maison-etage",
+            "entry": {
+              "col": 1,
+              "row": 8
+            }
+          }
+        }
+      ],
+      "obstacleRects": 8,
+      "obstacleSingles": 2
+    },
+    "mine-entree": {
+      "id": "mine-entree",
+      "cols": 14,
+      "rows": 14,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "mine-to-ferme",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                6,
+                12
+              ]
+            ]
+          },
+          "to": {
+            "zone": "ferme",
+            "entry": {
+              "col": 1,
+              "row": 9
+            }
+          }
+        },
+        {
+          "id": "mine-elevator",
+          "type": "choice",
+          "from": {
+            "cells": [
+              [
+                7,
+                7
+              ]
+            ]
+          },
+          "choices": [
+            {
+              "label": "Étage 1 — Galeries",
+              "to": {
+                "zone": "mine-etage-1",
+                "entry": {
+                  "col": 5,
+                  "row": 8
+                }
+              }
+            },
+            {
+              "label": "Étage 2 — Cristaux",
+              "to": {
+                "zone": "mine-etage-2",
+                "entry": {
+                  "col": 5,
+                  "row": 8
+                }
+              }
+            },
+            {
+              "label": "Étage 3 — Trésor",
+              "to": {
+                "zone": "mine-etage-3",
+                "entry": {
+                  "col": 5,
+                  "row": 8
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "obstacleRects": 5,
+      "obstacleSingles": 6
+    },
+    "mine-etage-1": {
+      "id": "mine-etage-1",
+      "cols": 12,
+      "rows": 10,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "etage1-to-entree",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                5,
+                9
+              ]
+            ]
+          },
+          "to": {
+            "zone": "mine-entree",
+            "entry": {
+              "col": 7,
+              "row": 8
+            }
+          }
+        }
+      ],
+      "obstacleRects": 5,
+      "obstacleSingles": 4
+    },
+    "mine-etage-2": {
+      "id": "mine-etage-2",
+      "cols": 12,
+      "rows": 10,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "etage2-to-entree",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                5,
+                9
+              ]
+            ]
+          },
+          "to": {
+            "zone": "mine-entree",
+            "entry": {
+              "col": 7,
+              "row": 8
+            }
+          }
+        }
+      ],
+      "obstacleRects": 5,
+      "obstacleSingles": 4
+    },
+    "mine-etage-3": {
+      "id": "mine-etage-3",
+      "cols": 12,
+      "rows": 10,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "etage3-to-entree",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                5,
+                9
+              ]
+            ]
+          },
+          "to": {
+            "zone": "mine-entree",
+            "entry": {
+              "col": 7,
+              "row": 8
+            }
+          }
+        }
+      ],
+      "obstacleRects": 4,
+      "obstacleSingles": 4
+    },
+    "village": {
+      "id": "village",
+      "cols": 20,
+      "rows": 15,
+      "tileSize": 64,
+      "portals": [
+        {
+          "id": "village-to-ferme",
+          "type": "simple",
+          "from": {
+            "cells": [
+              [
+                0,
+                7
+              ]
+            ]
+          },
+          "to": {
+            "zone": "ferme",
+            "entry": {
+              "col": 26,
+              "row": 9
+            }
+          }
+        }
+      ],
+      "obstacleRects": 2,
+      "obstacleSingles": 4
+    }
+  },
+  "crops": [
+    {
+      "id": "asperge",
+      "label": "Asperge",
+      "emoji": "🌱",
+      "season": "printemps",
+      "growthDays": 6,
+      "buy": 30,
+      "sell": 55,
+      "regrow": false,
+      "fallback": {
+        "shape": "triangle",
+        "color": "#7cb342"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "ble",
+      "label": "Blé",
+      "emoji": "🌾",
+      "season": "ete",
+      "growthDays": 4,
+      "buy": 15,
+      "sell": 30,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#fdd835"
+      },
+      "assets": {
+        "status": "full",
+        "field": {
+          "mure": "farm_ble_mure",
+          "pousse1": "farm_ble_pousse1",
+          "pousse2": "farm_ble_pousse2",
+          "recolte_sol": "farm_ble_recolte_sol"
+        },
+        "objects": {
+          "caisse": "farm_ble_caisse",
+          "icone": "farm_ble_icone",
+          "presentoir": "farm_ble_presentoir",
+          "sac": "farm_ble_sac"
+        }
+      }
+    },
+    {
+      "id": "choux-choucroute",
+      "label": "Choux à choucroute",
+      "emoji": "🥬",
+      "season": "automne",
+      "growthDays": 7,
+      "buy": 25,
+      "sell": 45,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#a5d6a7"
+      },
+      "assets": {
+        "status": "full",
+        "field": {
+          "pousse1": "farm_chou_pousse1",
+          "pousse2": "farm_chou_pousse2",
+          "mure": "farm_chou_mure",
+          "recolte_sol": "farm_chou_recolte_sol"
+        },
+        "objects": {
+          "icone": "farm_chou_icone",
+          "sac": "farm_chou_sac",
+          "caisse": "farm_chou_caisse",
+          "presentoir": "farm_chou_presentoir"
+        }
+      }
+    },
+    {
+      "id": "carotte",
+      "label": "Carotte",
+      "emoji": "🥕",
+      "season": "printemps",
+      "growthDays": 3,
+      "buy": 10,
+      "sell": 20,
+      "regrow": false,
+      "fallback": {
+        "shape": "triangle",
+        "color": "#ff8f00"
+      },
+      "assets": {
+        "status": "full",
+        "field": {
+          "mure": "farm_carotte_mure",
+          "pousse1": "farm_carotte_pousse1",
+          "pousse2": "farm_carotte_pousse2",
+          "recolte_sol": "farm_carotte_recolte_sol"
+        },
+        "objects": {
+          "caisse": "farm_carotte_caisse",
+          "icone": "farm_carotte_icone",
+          "presentoir": "farm_carotte_presentoir",
+          "sac": "farm_carotte_sac"
+        }
+      }
+    },
+    {
+      "id": "tomate",
+      "label": "Tomate",
+      "emoji": "🍅",
+      "season": "ete",
+      "growthDays": 5,
+      "buy": 20,
+      "sell": 40,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#e53935"
+      },
+      "assets": {
+        "status": "full",
+        "field": {
+          "fane": "farm_tomate_fane",
+          "mure": "farm_tomate_mure",
+          "pousse1": "farm_tomate_pousse1",
+          "pousse2": "farm_tomate_pousse2",
+          "pousse3": "farm_tomate_pousse3"
+        },
+        "objects": {
+          "caisse": "farm_tomate_caisse",
+          "icone": "farm_tomate_icone",
+          "presentoir": "farm_tomate_presentoir",
+          "sac": "farm_tomate_sac"
+        }
+      }
+    },
+    {
+      "id": "mais",
+      "label": "Maïs",
+      "emoji": "🌽",
+      "season": "ete",
+      "growthDays": 6,
+      "buy": 25,
+      "sell": 50,
+      "regrow": false,
+      "fallback": {
+        "shape": "rect",
+        "color": "#f9a825"
+      },
+      "assets": {
+        "status": "full",
+        "field": {
+          "mure": "farm_mais_mure",
+          "pousse1": "farm_mais_pousse1",
+          "pousse2": "farm_mais_pousse2",
+          "recolte_sol": "farm_mais_recolte_sol"
+        },
+        "objects": {
+          "caisse": "farm_mais_caisse",
+          "icone": "farm_mais_icone",
+          "presentoir": "farm_mais_presentoir",
+          "sac": "farm_mais_sac"
+        }
+      }
+    },
+    {
+      "id": "pomme-de-terre",
+      "label": "Pomme de terre",
+      "emoji": "🥔",
+      "season": "printemps",
+      "growthDays": 5,
+      "buy": 15,
+      "sell": 30,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#a1887f"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "houblon",
+      "label": "Houblon",
+      "emoji": "🌿",
+      "season": "ete",
+      "growthDays": 8,
+      "buy": 40,
+      "sell": 80,
+      "regrow": false,
+      "fallback": {
+        "shape": "rect",
+        "color": "#81c784"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "orge",
+      "label": "Orge",
+      "emoji": "🌾",
+      "season": "ete",
+      "growthDays": 5,
+      "buy": 20,
+      "sell": 38,
+      "regrow": false,
+      "fallback": {
+        "shape": "rect",
+        "color": "#c5a859"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "tournesol",
+      "label": "Tournesol",
+      "emoji": "🌻",
+      "season": "ete",
+      "growthDays": 7,
+      "buy": 35,
+      "sell": 65,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#fbc02d"
+      },
+      "assets": {
+        "status": "partial",
+        "field": {
+          "decor": "farm_tournesol"
+        },
+        "objects": {}
+      }
+    },
+    {
+      "id": "framboise",
+      "label": "Framboise",
+      "emoji": "🫐",
+      "season": "ete",
+      "growthDays": 6,
+      "buy": 50,
+      "sell": 25,
+      "regrow": true,
+      "fallback": {
+        "shape": "circle",
+        "color": "#c2185b"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "potiron",
+      "label": "Potiron",
+      "emoji": "🎃",
+      "season": "automne",
+      "growthDays": 10,
+      "buy": 40,
+      "sell": 90,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#e65100"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "raisin",
+      "label": "Raisin",
+      "emoji": "🍇",
+      "season": "automne",
+      "growthDays": 7,
+      "buy": 45,
+      "sell": 80,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#7b1fa2"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "oignon",
+      "label": "Oignon",
+      "emoji": "🧅",
+      "season": "printemps",
+      "growthDays": 4,
+      "buy": 12,
+      "sell": 22,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#d7ccc8"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "navet",
+      "label": "Navet",
+      "emoji": "🫒",
+      "season": "automne",
+      "growthDays": 4,
+      "buy": 15,
+      "sell": 28,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#e0e0e0"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "salade",
+      "label": "Salade",
+      "emoji": "🥗",
+      "season": "printemps",
+      "growthDays": 3,
+      "buy": 10,
+      "sell": 18,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#81c784"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "poireau",
+      "label": "Poireau",
+      "emoji": "🫑",
+      "season": "automne",
+      "growthDays": 6,
+      "buy": 20,
+      "sell": 40,
+      "regrow": false,
+      "fallback": {
+        "shape": "rect",
+        "color": "#7cb342"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "fraise",
+      "label": "Fraise",
+      "emoji": "🍓",
+      "season": "printemps",
+      "growthDays": 5,
+      "buy": 45,
+      "sell": 20,
+      "regrow": true,
+      "fallback": {
+        "shape": "circle",
+        "color": "#d32f2f"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "mirabelle",
+      "label": "Mirabelle",
+      "emoji": "🟡",
+      "season": "ete",
+      "growthDays": 8,
+      "buy": 55,
+      "sell": 30,
+      "regrow": true,
+      "fallback": {
+        "shape": "circle",
+        "color": "#f9a825"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "courgette",
+      "label": "Courgette",
+      "emoji": "🥒",
+      "season": "ete",
+      "growthDays": 4,
+      "buy": 18,
+      "sell": 35,
+      "regrow": false,
+      "fallback": {
+        "shape": "rect",
+        "color": "#66bb6a"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    },
+    {
+      "id": "aubergine",
+      "label": "Aubergine",
+      "emoji": "🍆",
+      "season": "ete",
+      "growthDays": 5,
+      "buy": 22,
+      "sell": 42,
+      "regrow": false,
+      "fallback": {
+        "shape": "rect",
+        "color": "#5c3d7c"
+      },
+      "assets": {
+        "status": "full",
+        "field": {
+          "mure": "farm_aubergine_mure",
+          "pousse1": "farm_aubergine_pousse1",
+          "pousse2": "farm_aubergine_pousse2",
+          "recolte_sol": "farm_aubergine_recolte_sol"
+        },
+        "objects": {
+          "caisse": "farm_aubergine_caisse",
+          "icone": "farm_aubergine_icone",
+          "presentoir": "farm_aubergine_presentoir",
+          "sac": "farm_aubergine_sac"
+        }
+      }
+    },
+    {
+      "id": "muguet",
+      "label": "Muguet",
+      "emoji": "🌺",
+      "season": "printemps",
+      "growthDays": 4,
+      "buy": 20,
+      "sell": 35,
+      "regrow": false,
+      "fallback": {
+        "shape": "circle",
+        "color": "#f8f8f8"
+      },
+      "assets": {
+        "status": "missing",
+        "field": {},
+        "objects": {}
+      }
+    }
+  ],
+  "animals": [
+    {
+      "id": "poule",
+      "label": "Poule",
+      "building": "Poulailler",
+      "produces": "Œufs",
+      "freq": "quotidienne",
+      "assets": {
+        "sprite": "farm_poule",
+        "status": "present"
+      }
+    },
+    {
+      "id": "vache",
+      "label": "Vache",
+      "building": "Étable",
+      "produces": "Lait",
+      "freq": "quotidienne",
+      "assets": {
+        "sprite": "farm_vache",
+        "status": "present"
+      }
+    },
+    {
+      "id": "mouton",
+      "label": "Mouton",
+      "building": "Étable",
+      "produces": "Laine",
+      "freq": "2-3 jours",
+      "assets": {
+        "sprite": "farm_mouton",
+        "status": "present"
+      }
+    },
+    {
+      "id": "chevre",
+      "label": "Chèvre",
+      "building": "Étable",
+      "produces": "Lait de chèvre",
+      "freq": "quotidienne",
+      "assets": {
+        "sprite": null,
+        "status": "missing"
+      }
+    },
+    {
+      "id": "abeille",
+      "label": "Abeilles",
+      "building": "Ruches",
+      "produces": "Miel",
+      "freq": "hebdomadaire",
+      "assets": {
+        "sprite": "farm_ruche",
+        "status": "decor_only"
+      }
+    }
+  ],
+  "pnjs": [
+    {
+      "id": "vigneron",
+      "role": "Vend/achète raisin et vin",
+      "lieu": "Cave viticole",
+      "assets": "missing"
+    },
+    {
+      "id": "boulangere",
+      "role": "Vend farine, achète céréales",
+      "lieu": "Boulangerie",
+      "assets": "missing"
+    },
+    {
+      "id": "aubergiste",
+      "role": "Tient la winstub",
+      "lieu": "Winstub",
+      "assets": "missing"
+    },
+    {
+      "id": "potier",
+      "role": "Vend contenants",
+      "lieu": "Atelier de poterie",
+      "assets": "missing"
+    },
+    {
+      "id": "tisserande",
+      "role": "Vend/achète laine et textile",
+      "lieu": "Atelier textile",
+      "assets": "missing"
+    },
+    {
+      "id": "apiculteur",
+      "role": "Vend ruches, achète miel",
+      "lieu": "Rucher",
+      "assets": "missing"
+    },
+    {
+      "id": "ancien_mineur",
+      "role": "Guide de la mine",
+      "lieu": "Entrée de la mine",
+      "assets": "missing"
+    },
+    {
+      "id": "maraicher",
+      "role": "Vend graines, achète récoltes",
+      "lieu": "Marché couvert",
+      "assets": "missing"
+    }
+  ],
+  "recipes": [
+    {
+      "structure": "Cave d'affinage",
+      "inputs": [
+        "Lait de vache"
+      ],
+      "output": "Munster, Tomme"
+    },
+    {
+      "structure": "Cave d'affinage",
+      "inputs": [
+        "Lait de chèvre"
+      ],
+      "output": "Fromage de chèvre"
+    },
+    {
+      "structure": "Cellier",
+      "inputs": [
+        "Raisin"
+      ],
+      "output": "Vin d'Alsace"
+    },
+    {
+      "structure": "Brasserie",
+      "inputs": [
+        "Houblon",
+        "Orge"
+      ],
+      "output": "Bière artisanale"
+    },
+    {
+      "structure": "Moulin",
+      "inputs": [
+        "Blé"
+      ],
+      "output": "Farine"
+    },
+    {
+      "structure": "Four",
+      "inputs": [
+        "Farine",
+        "Œufs"
+      ],
+      "output": "Kougelhopf, Bretzel"
+    },
+    {
+      "structure": "Atelier miel",
+      "inputs": [
+        "Miel",
+        "Farine"
+      ],
+      "output": "Pain d'épices"
+    },
+    {
+      "structure": "Fermentation",
+      "inputs": [
+        "Chou à choucroute"
+      ],
+      "output": "Choucroute"
+    }
+  ],
+  "_stats": {
+    "total_assets": 131,
+    "crops_with_full_assets": 6,
+    "crops_with_partial_assets": 1,
+    "crops_missing": 15,
+    "animals_with_sprites": 3,
+    "animals_missing": 1,
+    "pnjs_total": 8,
+    "pnjs_with_assets": 0,
+    "zones_total": 8,
+    "recipes_total": 8
+  }
+}
