@@ -477,6 +477,58 @@ function drawCrops() {
     }
 }
 
+/* Rendu visuel des portails dans la zone courante.
+   Chaque cellule de portail affiche un cercle pulsant coloré + icône 🚪. */
+function drawPortals() {
+    if (!Engine.Portal || !Engine.WorldZone) return;
+    var zone = Engine.WorldZone.getCurrent();
+    if (!zone) return;
+
+    var portals = Engine.Portal.getPortalsForZone(zone.id);
+    if (!portals || !portals.length) return;
+
+    var ts = Engine.Grid.tileSize;
+    var t = millis();
+    textAlign(CENTER, CENTER);
+
+    for (var pi = 0; pi < portals.length; pi++) {
+        var portal = portals[pi];
+        var cells = portal.from && portal.from.cells;
+        if (!cells) continue;
+
+        // Couleur selon le type de portail
+        var color = portal.type === 'choice' || portal.choices
+            ? [255, 193, 7]    // doré (portail à choix = ascenseur)
+            : [79, 195, 247];   // bleu ciel (portail simple)
+
+        for (var ci = 0; ci < cells.length; ci++) {
+            var cell = cells[ci];
+            var cc = cell[0], rr = cell[1];
+            var cx = cc * ts + ts / 2;
+            var cy = rr * ts + ts / 2;
+
+            // Halo pulsant (animation toutes les 1.5s)
+            var pulse = 0.55 + 0.25 * sin(t * 0.004);
+            noStroke();
+            fill(color[0], color[1], color[2], 60 + 40 * pulse);
+            ellipse(cx, cy, ts * 0.9, ts * 0.9);
+
+            // Cercle fin
+            noFill();
+            stroke(color[0], color[1], color[2], 180);
+            strokeWeight(2);
+            ellipse(cx, cy, ts * 0.6, ts * 0.6);
+
+            // Icône 🚪
+            noStroke();
+            fill(255, 255, 255, 220);
+            textSize(ts * 0.45);
+            text('\uD83D\uDEAA', cx, cy - ts * 0.05);  // 🚪 (portal icon)
+        }
+    }
+    textAlign(CENTER, CENTER);
+}
+
 function drawWorld() {
     // Sol en tuiles Tiny Farm (labour)
     drawGround();
@@ -490,6 +542,9 @@ function drawWorld() {
 
     // Cultures Phase 02 : rendu du sol, pousses, arrosage
     drawCrops();
+
+    // Portails : indicateurs visuels (cercle coloré + icône 🚪)
+    drawPortals();
 
     // Marqueur de destination (s'estompe en 1 s)
     if (moveMarker && millis() - moveMarker.t < 1000) {
