@@ -393,6 +393,9 @@ function drawWorld() {
     // Décor Tiny Farm à la place des obstacles gray-box
     drawDecor();
 
+    // Indicateurs visuels de portails (cercle pulsé + icône 🚪)
+    drawPortalIndicators();
+
     // Grille de debug (surcouche, toggleable)
     Engine.Grid.drawDebug({ line: C.colors.gridLine, blocked: C.colors.blocked });
 
@@ -494,6 +497,67 @@ function drawSoilState() {
                 noStroke();
                 circle(x + ts * 0.75, y + ts * 0.25, ts * 0.2);
             }
+        }
+    }
+}
+
+/* Rendu des indicateurs de portail : cercle pulsé + icône 🚪 sur chaque cellule de portail. */
+function drawPortalIndicators() {
+    if (!Engine.Portal || !Engine.WorldZone) return;
+
+    var curZone = Engine.WorldZone.getCurrent();
+    if (!curZone) return;
+
+    var portals = Engine.Portal.getPortalsForZone(curZone.id);
+    if (!portals || portals.length === 0) return;
+
+    var ts = Engine.Grid.tileSize;
+
+    for (var pi = 0; pi < portals.length; pi++) {
+        var p = portals[pi];
+        var cells = p.from && p.from.cells;
+        if (!cells) continue;
+
+        for (var ci = 0; ci < cells.length; ci++) {
+            var cell = cells[ci];
+            var cc = cell[0];
+            var rr = cell[1];
+            var cx = cc * ts + ts / 2;
+            var cy = rr * ts + ts / 2;
+
+            // Pulse animé : phase sinusoïdale basée sur le temps
+            var pulse = sin(millis() * 0.003) * 0.2 + 0.7; // 0.5 à 0.9
+
+            // Cercle coloré extérieur (pulsé)
+            var alpha = pulse * 140;
+            noStroke();
+
+            // Cercle de fond (couleur selon type de portail)
+            if (p.choices) {
+                // Portail à choix (ascenseur) → violet
+                fill(139, 92, 246, alpha);
+            } else {
+                // Portail simple → vert émeraude
+                fill(52, 211, 153, alpha);
+            }
+            circle(cx, cy, ts * 0.6 * pulse);
+
+            // Anneau lumineux
+            noFill();
+            strokeWeight(2);
+            if (p.choices) {
+                stroke(167, 139, 250, pulse * 200);
+            } else {
+                stroke(110, 231, 183, pulse * 200);
+            }
+            circle(cx, cy, ts * 0.55 * pulse);
+            noStroke();
+
+            // Icône 🚪 centrée
+            fill(255, 255, 255, 230);
+            textSize(ts * 0.5);
+            textAlign(CENTER, CENTER);
+            text("🚪", cx, cy);
         }
     }
 }
