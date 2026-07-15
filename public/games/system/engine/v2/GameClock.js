@@ -70,6 +70,15 @@
             var h = (this.hour < 10 ? "0" : "") + this.hour;
             var m = (this.minute < 10 ? "0" : "") + this.minute;
             return h + ":" + m;
+        },
+
+        // Saison basée sur le jour (cycle de 4 jours par saison pour le test).
+        getSeason: function () {
+            var r = this.day % 4;
+            if (r === 1) return 'printemps';
+            if (r === 2) return 'ete';
+            if (r === 3) return 'automne';
+            return 'hiver';
         }
     };
 })();

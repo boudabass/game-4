@@ -21,6 +21,7 @@ let zoomBtns = {};        // zones cliquables des boutons + / − (coords écran
 // Systèmes de culture Phase 02
 let soilSystem = null;    // Engine.SoilSystem
 let cropGrowth = null;   // Engine.CropGrowth
+let harvestSystem = null; // Engine.HarvestSystem
 let culturesData = null;  // données cultures.json chargées
 
 // Transition de zone (fondue)
@@ -130,10 +131,14 @@ function setup() {
 
     // --- Système de sol (SoilSystem) — Phase 02 ---
     soilSystem = new Engine.SoilSystem();
-    // Marquer les tuiles 7-12,4-10 comme cultivables (zone centrale du farm)
-    for (var sc = 7; sc <= 12; sc++) {
-        for (var sr = 4; sr <= 10; sr++) {
-            soilSystem.setCultivable(sc, sr, true);
+    // Marquer les tuiles cultivables depuis zones.json
+    var farmZone = C._zonesData && C._zonesData.ferme;
+    var ct = farmZone && farmZone.cultivableTiles;
+    if (ct) {
+        for (var sc = ct.c1; sc <= ct.c2; sc++) {
+            for (var sr = ct.r1; sr <= ct.r2; sr++) {
+                soilSystem.setCultivable(sc, sr, true);
+            }
         }
     }
 
@@ -142,6 +147,9 @@ function setup() {
     if (culturesData) {
         cropGrowth.configure({ cultures: culturesData });
     }
+
+    // --- Système de récolte (HarvestSystem) — Phase 02 ---
+    harvestSystem = new Engine.HarvestSystem();
 
     boot();
 }
@@ -172,6 +180,7 @@ async function boot() {
                 // Sauvegarder l'état du sol et des cultures (Phase 02)
                 if (soilSystem) data.soil = soilSystem.gather();
                 if (cropGrowth) data.crops = cropGrowth.gather();
+                if (harvestSystem) data.harvest = harvestSystem.gather();
                 return data;
             },
             apply: function (data) {
@@ -189,6 +198,7 @@ async function boot() {
                 // Restaurer l'état du sol et des cultures (Phase 02)
                 if (soilSystem && data.soil) soilSystem.apply(data.soil);
                 if (cropGrowth && data.crops) cropGrowth.apply(data.crops);
+                if (harvestSystem && data.harvest) harvestSystem.apply(data.harvest);
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
@@ -374,12 +384,103 @@ function _drawGrange(cc, rr, w, h, ts) {
     drawTileImg(fen || mc, cc + w-1, r, ts);                 // fenêtre droite
 }
 
+/* Rendu visuel des cultures : sol labouré, pousses, arrosage, culture mature. */
+function drawCrops() {
+    if (!soilSystem) return;
+    var ts = Engine.Grid.tileSize;
+    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
+    if (!zone || zone.id !== 'ferme') return; // cultivable uniquement sur la ferme
+
+    var keys = Object.keys(soilSystem._cultivable);
+    for (var i = 0; i < keys.length; i++) {
+        var parts = keys[i].split(',');
+        var c = parseInt(parts[0]), r = parseInt(parts[1]);
+        var state = soilSystem.getState(c, r);
+        var x = c * ts, y = r * ts;
+        var cx = x + ts/2, cy = y + ts/2;
+
+        // Fond de la parcelle cultivable (terre foncée)
+        noStroke();
+        fill(80, 55, 30, 180);
+        rect(x + 2, y + 2, ts - 4, ts - 4, 4);
+
+        if (state === 'tilled') {
+            // Sol labouré : sillons horizontaux
+            stroke(110, 85, 45, 200);
+            strokeWeight(1);
+            for (var s = 0; s < 3; s++) {
+                var ly = y + ts * (0.25 + s * 0.2);
+                line(x + 4, ly, x + ts - 4, ly);
+            }
+            noStroke();
+        } else if (state === 'planted') {
+            // Pousse en fonction du stade de croissance
+            var cropId = cropGrowth ? cropGrowth.getCropId(c, r) : null;
+            var stage = cropGrowth ? cropGrowth.getGrowthStage(c, r) : 0;
+            var isMature = cropGrowth ? cropGrowth.isMature(c, r) : false;
+            var cropData = cropId ? cropGrowth.getCropData(cropId) : null;
+
+            if (cropData) {
+                var emojiSize = ts * (0.35 + 0.35 * stage);
+                textAlign(CENTER, CENTER);
+                textSize(emojiSize);
+                if (isMature) {
+                    // Culture mature : emoji + fond brillant
+                    fill(255, 255, 100, 60);
+                    rect(x + 2, y + 2, ts - 4, ts - 4, 4);
+                    fill(255);
+                    text(cropData.emoji, cx, cy);
+                } else {
+                    // En croissance : pousse avec opacité croissante
+                    fill(255, 255, 255, 140 + 80 * stage);
+                    text('🌱', cx, cy);
+                    // Petite étiquette du nom
+                    textSize(ts * 0.15);
+                    fill(255, 255, 255, 180);
+                    text(cropData.label.substring(0, 3), cx, y + ts * 0.85);
+                }
+
+                // Indicateur "arrosé" (goutte bleue)
+                if (soilSystem.isWatered(c, r)) {
+                    textSize(ts * 0.4);
+                    fill(100, 180, 255, 220);
+                    text('💧', x + ts * 0.75, y + ts * 0.25);
+                }
+
+                // Compteur de jours restants si pas mature
+                if (!isMature) {
+                    var remaining = cropGrowth.getDaysUntilMature(c, r);
+                    textSize(ts * 0.2);
+                    fill(255, 255, 255, 200);
+                    text(remaining + 'j', cx, y + ts * 0.15);
+                }
+                textAlign(CENTER, CENTER);
+            } else {
+                // Pas de données culture → fallback pousse générique
+                textSize(ts * 0.45);
+                fill(100, 200, 80, 200);
+                text('🌱', cx, cy);
+            }
+        } else {
+            // empty: juste un petit indicateur de disponibilité
+            textSize(ts * 0.22);
+            fill(180, 160, 120, 140);
+            textAlign(CENTER, CENTER);
+            text('clic', cx, cy);
+        }
+        textAlign(CENTER, CENTER);
+    }
+}
+
 function drawWorld() {
     // Sol en tuiles Tiny Farm (labour)
     drawGround();
 
     // Décor Tiny Farm à la place des obstacles gray-box
     drawDecor();
+
+    // Cultures Phase 02 : rendu du sol, pousses, arrosage
+    drawCrops();
 
     // Grille de debug (surcouche, toggleable)
     Engine.Grid.drawDebug({ line: C.colors.gridLine, blocked: C.colors.blocked });
@@ -394,10 +495,18 @@ function drawWorld() {
         noStroke();
     }
 
-    // Flash vert de la tuile "actionnée" (0,6 s)
+    // Flash de la tuile "actionnée" (0,6 s) — couleur selon type d'action
     if (actionFlash && millis() - actionFlash.t < 600) {
         var s = Engine.Grid.tileSize;
-        fill(C.colors.actionFlash);
+        var flashColors = {
+            till: 'rgba(139,90,43,0.8)',    // marron (labour)
+            plant: 'rgba(76,175,80,0.75)',   // vert (plantation)
+            water: 'rgba(33,150,243,0.75)',  // bleu (arrosage)
+            harvest: 'rgba(255,193,7,0.8)',  // doré (récolte)
+            action: C.colors.actionFlash     // vert par défaut
+        };
+        var fc = flashColors[actionFlash.type] || flashColors.action;
+        fill(fc);
         rect(actionFlash.c * s + 2, actionFlash.r * s + 2, s - 4, s - 4, 6);
     }
 
@@ -490,8 +599,50 @@ function mousePressed() {
     if (!tile) return; // clic hors de la grille
 
     if (Engine.ActionZone.contains(player.tile(), tile)) {
-        // Pivot d'interaction : DANS la zone -> action (simulée en gray-box)
-        actionFlash = { c: tile.c, r: tile.r, t: millis() };
+        // Pivot d'interaction : DANS la zone -> action
+        // Vérifier si c'est une tuile cultivable (farming Phase 02)
+        if (soilSystem && soilSystem.isCultivable(tile.c, tile.r)) {
+            var state = soilSystem.getState(tile.c, tile.r);
+            if (state === 'empty') {
+                // Labourer
+                soilSystem.till(tile.c, tile.r);
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
+            } else if (state === 'tilled') {
+                // Planter (culture selon saison)
+                var season = Engine.Clock.getSeason ? Engine.Clock.getSeason() : 'printemps';
+                var crops = culturesData || [];
+                var toPlant = null;
+                for (var ci = 0; ci < crops.length; ci++) {
+                    if (crops[ci].season === season) { toPlant = crops[ci]; break; }
+                }
+                if (toPlant) {
+                    soilSystem.plant(tile.c, tile.r, toPlant.id);
+                    cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
+                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
+                }
+            } else if (state === 'planted') {
+                if (!soilSystem.isWatered(tile.c, tile.r)) {
+                    // Arroser
+                    soilSystem.water(tile.c, tile.r);
+                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
+                } else if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
+                    // Récolter
+                    var cropId = cropGrowth.getCropId(tile.c, tile.r);
+                    var cropData = cropId ? cropGrowth.getCropData(cropId) : null;
+                    if (cropData && harvestSystem) {
+                        harvestSystem.addToInventory(cropId, 1);
+                        harvestSystem.addGold(cropData.sell || 0);
+                    }
+                    // Réinitialiser la tuile
+                    soilSystem.till(tile.c, tile.r); // re-labourer (on remet à tilled pour simplifier)
+                    cropGrowth.resetTile(tile.c, tile.r);
+                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'harvest' };
+                }
+            }
+            if (window.Engine && Engine.Save) Engine.Save.saveLocal();
+        } else {
+            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'action' };
+        }
     } else {
         // HORS zone -> déplacement avec contournement
         player.moveTo(tile.c, tile.r);
