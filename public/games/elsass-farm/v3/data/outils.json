@@ -1,0 +1,37 @@
+[
+  {
+    "id": "pelle",
+    "label": "Pelle",
+    "emoji": "🪏",
+    "fallback": { "shape": "rect", "color": "#795548" },
+    "action": "till"
+  },
+  {
+    "id": "arrosoir",
+    "label": "Arrosoir",
+    "emoji": "💧",
+    "fallback": { "shape": "circle", "color": "#42a5f5" },
+    "action": "water"
+  },
+  {
+    "id": "graines",
+    "label": "Graines",
+    "emoji": "🌱",
+    "fallback": { "shape": "circle", "color": "#66bb6a" },
+    "action": "plant"
+  },
+  {
+    "id": "hache",
+    "label": "Hache",
+    "emoji": "🪓",
+    "fallback": { "shape": "triangle", "color": "#8d6e63" },
+    "action": "chop"
+  },
+  {
+    "id": "pioche",
+    "label": "Pioche",
+    "emoji": "⛏️",
+    "fallback": { "shape": "triangle", "color": "#607d8b" },
+    "action": "mine"
+  }
+]
