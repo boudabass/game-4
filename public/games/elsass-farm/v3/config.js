@@ -40,5 +40,72 @@ window.FarmConfig = {
         hudPanel: "rgba(15,23,42,0.75)",
         button: "#4f46e5",
         buttonText: "#ffffff"
+    },
+
+    // Assets Tiny Farm (chargés dans preload())
+    // Base path relative à sketch.js → ../../system/assets/
+    assets: {
+        base: "../../system/assets/",
+
+        // Sol (ground tiles)
+        sol: [
+            "sol/farm_sol_butte_seul_v1.png",
+            "sol/farm_sol_butte_seul_v2.png",
+            "sol/farm_sol_butte_vert_haut_v1.png",
+            "sol/farm_sol_butte_vert_centre_v1.png",
+            "sol/farm_sol_butte_vert_bas_v1.png"
+        ],
+
+        // Décor (plantes, arbres, buissons)
+        decor: [
+            "decor/farm_herbe_touffe.png",
+            "decor/farm_arbre_sapin_jeune.png",
+            "decor/farm_arbre_sapin_moyen.png",
+            "decor/farm_arbre_sapin_mature.png",
+            "decor/farm_buisson_baies.png",
+            "decor/farm_tournesol.png",
+            "decor/farm_ble_mure.png",
+            "decor/farm_carotte_mure.png",
+            "decor/farm_tomate_mure.png",
+            "decor/farm_chou_mure.png",
+            "decor/farm_mais_mure.png",
+            "decor/farm_aubergine_mure.png"
+        ],
+
+        // Personnage joueur
+        perso: [
+            "perso/farm_fermier_brun.png",
+            "perso/farm_fermier_chapeau.png"
+        ],
+
+        // Bâtiments (grange, éléments de construction)
+        batiment: [
+            "batiment/farm_grange_mur_brique1_centre.png",
+            "batiment/farm_grange_mur_brique1_gauche.png",
+            "batiment/farm_grange_mur_brique1_droit.png",
+            "batiment/farm_grange_mur_haut_centre.png",
+            "batiment/farm_grange_mur_haut_gauche.png",
+            "batiment/farm_grange_mur_haut_droit.png",
+            "batiment/farm_grange_toit_haut_centre.png",
+            "batiment/farm_grange_toit_haut_gauche.png",
+            "batiment/farm_grange_toit_haut_droit.png",
+            "batiment/farm_grange_toit_bas_centre.png",
+            "batiment/farm_grange_toit_bas_gauche.png",
+            "batiment/farm_grange_toit_bas_droit.png",
+            "batiment/farm_grange_porte_gauche.png",
+            "batiment/farm_grange_porte_droit.png",
+            "batiment/farm_grange_fenetre.png"
+        ],
+
+        // Objets farm
+        objet: [
+            "objet/farm_hache.png",
+            "objet/farm_pelle.png",
+            "objet/farm_seau_vide.png",
+            "objet/farm_seau_eau.png",
+            "objet/farm_seau_lait.png",
+            "objet/farm_pot_lait.png",
+            "objet/farm_pain.png"
+        ]
     }
 };
