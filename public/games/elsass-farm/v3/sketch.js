@@ -1461,6 +1461,32 @@ function mousePressed() {
         }
     }
 
+    // Vérifier portail — priorité absolue, même dans la zone d'action
+    if (Engine.Portal && Engine.WorldZone) {
+        var portalCurZone = Engine.WorldZone.getCurrent();
+        if (portalCurZone) {
+            var portalAtTile = Engine.Portal.checkTrigger(portalCurZone.id, tile.c, tile.r);
+            if (portalAtTile) {
+                var pTile = player.tile();
+                if (pTile && pTile.c === tile.c && pTile.r === tile.r) {
+                    // Déjà sur le portail → déclencher directement
+                    if (portalAtTile.type === "choice") {
+                        showPortalChoice(portalAtTile);
+                    } else {
+                        var entry = portalAtTile.to && portalAtTile.to.entry ? portalAtTile.to.entry : null;
+                        switchToZone(portalAtTile.to.zone, entry);
+                    }
+                } else {
+                    // Se déplacer vers le portail → trigger à l'arrivée
+                    player.moveTo(tile.c, tile.r);
+                    var center = Engine.Grid.toWorld(tile.c, tile.r);
+                    moveMarker = { x: center.x, y: center.y, t: millis() };
+                }
+                return;
+            }
+        }
+    }
+
     if (Engine.ActionZone.contains(player.tile(), tile)) {
         // Action dans la zone — outil prioritaire (carte 525)
         if (selectedTool) {
