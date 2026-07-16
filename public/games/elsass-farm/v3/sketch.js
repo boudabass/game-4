@@ -1054,20 +1054,9 @@ function drawNPCDialogue() {
     fill(255, 255, 255, alpha);
     text(npcDialogue.text, dx + dw/2, dy + dh/2 - u(2));
 
-    // Jauge de relation
+    // Jauge de relation (p5.js, 0-100, avec paliers relationTiers)
     if (npc) {
-        var rel = npcSystem.getRelationLevel(npcDialogue.npcId);
-        var barW2 = dw - u(10);
-        var barH2 = u(1.5);
-        var bx = dx + u(5);
-        var by = dy + dh - u(6);
-        fill(60, 60, 60, alpha);
-        rect(bx, by, barW2, barH2, u(0.4));
-        fill(255, 105, 180, alpha);
-        rect(bx, by, barW2 * (rel / 20), barH2, u(0.4));
-        textSize(u(2));
-        fill(255, 255, 255, alpha * 0.7);
-        text('❤️ ' + rel + '/20', bx + barW2 + u(1), by + barH2/2);
+        _drawRelationGauge(npc, npcDialogue.npcId, dx, dy, dw, dh, alpha);
 
         // Instructions — boutons cliquables (100% clic/tap, Pilier 1)
         textSize(u(2.5));
@@ -1094,6 +1083,136 @@ function drawNPCDialogue() {
         // Stocker les zones cliquables pour mousePressed
         npcDialogue._btnSell = { x: btnX1, y: btnY, w: btnW, h: btnH };
         npcDialogue._btnBuy  = { x: btnX2, y: btnY, w: btnW, h: btnH };
+    }
+}
+
+/* ─── Jauge de relation PNJ (p5.js, 0-100, engine/v2) ───
+ * Intégrée avec NPCSystem.getRelationLevel(), NPCSystem.giveGift().
+ * Affiche : barre de progression avec gradient, paliers relationTiers, label 0-100.
+ * Persistance via NPCSystem.gather()/apply() → Engine.Save.
+ */
+function _drawRelationGauge(npc, npcId, dx, dy, dw, dh, alpha) {
+    var level = npcSystem.getRelationLevel(npcId);
+    var pct = Math.min(100, level * 5);          // 0-20 → 0-100
+
+    var barW = dw - u(12);
+    var barH = u(4);
+    var bx = dx + u(6);
+    // Placer la jauge entre le texte de dialogue et les boutons
+    var by = dy + dh - u(14);
+
+    // Fond de la jauge
+    noStroke();
+    fill(40, 40, 60, alpha * 0.8);
+    rect(bx - u(1), by - u(5.5), barW + u(2), barH + u(12), u(1.5));
+
+    // Label "Relation"
+    textSize(u(2.2));
+    fill(255, 255, 255, alpha * 0.8);
+    textAlign(LEFT, CENTER);
+    text("❤️ Relation", bx, by - u(1));
+
+    // Pourcentage
+    textSize(u(2.5));
+    fill(255, 215, 0, alpha * 0.95);
+    textAlign(RIGHT, CENTER);
+    text(pct + "/100", bx + barW, by - u(1));
+    textAlign(CENTER, CENTER);
+
+    // Barre de fond
+    noStroke();
+    fill(20, 20, 40, alpha * 0.7);
+    rect(bx, by, barW, barH, u(0.6));
+
+    // Barre remplie avec gradient (froid → chaud selon relation)
+    if (pct > 0) {
+        var fillW = barW * (pct / 100);
+        // Dégradé horizontal : bleu(0%) → vert(40%) → jaune(70%) → rose(100%)
+        var steps = Math.max(2, Math.floor(fillW / u(1)));
+        var stepW = fillW / steps;
+        for (var s = 0; s < steps; s++) {
+            var t2 = s / steps;
+            var r, g, b;
+            if (t2 < 0.4) {
+                // Bleu → Vert
+                var tt = t2 / 0.4;
+                r = Math.round(100 + tt * 50);
+                g = Math.round(150 + tt * 80);
+                b = Math.round(220 - tt * 140);
+            } else if (t2 < 0.7) {
+                // Vert → Jaune
+                var tt2 = (t2 - 0.4) / 0.3;
+                r = Math.round(150 + tt2 * 105);
+                g = Math.round(230 - tt2 * 30);
+                b = Math.round(80 - tt2 * 50);
+            } else {
+                // Jaune → Rose
+                var tt3 = (t2 - 0.7) / 0.3;
+                r = Math.round(255 - tt3 * 35);
+                g = Math.round(200 - tt3 * 120);
+                b = Math.round(30 + tt3 * 115);
+            }
+            fill(r, g, b, alpha * 0.85);
+            rect(bx + s * stepW, by, stepW + 0.5, barH);
+        }
+    }
+
+    // Bordure de la barre
+    noFill();
+    stroke(255, 255, 255, alpha * 0.3);
+    strokeWeight(u(0.3));
+    rect(bx, by, barW, barH, u(0.6));
+    noStroke();
+
+    // Paliers relationTiers (marqueurs et labels)
+    var tiers = npc.relationTiers;
+    if (tiers && tiers.length) {
+        for (var ti = 0; ti < tiers.length; ti++) {
+            var tier = tiers[ti];
+            var tierPct = Math.min(100, tier.level * 5); // level → %
+            var mx = bx + barW * (tierPct / 100);
+
+            // Trait vertical
+            stroke(255, 255, 255, alpha * 0.5);
+            strokeWeight(u(0.2));
+            line(mx, by - u(1), mx, by + barH + u(1));
+
+            // Petit losange marqueur
+            noStroke();
+            fill(255, 215, 0, alpha * 0.9);
+            var ds = u(0.8);
+            quad(mx, by + barH + u(1.2),
+                 mx + ds, by + barH + u(2.2),
+                 mx, by + barH + u(3.2),
+                 mx - ds, by + barH + u(2.2));
+
+            // Label d'effet (compact)
+            var effectLabel = '';
+            if (tier.effect) {
+                if (tier.effect.type === 'discount') {
+                    effectLabel = '-' + Math.round(tier.effect.value * 100) + '%';
+                } else if (tier.effect.type === 'recipe') {
+                    effectLabel = '📜 ' + (tier.effect.id || '?');
+                }
+            }
+            if (effectLabel) {
+                textSize(u(1.6));
+                fill(255, 255, 255, alpha * 0.65);
+                textAlign(CENTER, TOP);
+                text(effectLabel, mx, by + barH + u(4));
+                textAlign(CENTER, CENTER);
+            }
+        }
+    }
+
+    // Niveau actuel : marqueur sur la barre
+    if (pct > 0) {
+        var curX = bx + barW * (pct / 100);
+        noStroke();
+        fill(255, 255, 255, alpha * 0.9);
+        circle(curX, by + barH/2, u(1.5));
+        fill(255, 215, 0, alpha);
+        circle(curX, by + barH/2, u(2.5));
     }
 }
 
