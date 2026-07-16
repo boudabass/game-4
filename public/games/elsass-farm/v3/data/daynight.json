@@ -1,0 +1,50 @@
+{
+  "id": "cycle-jour-nuit",
+  "label": "Cycle jour/nuit",
+  "emoji": "🌗",
+  "fallback": { "shape": "rect", "color": "#1a237e" },
+  "description": "Overlay visuel pleine écran — teinte selon l'heure de jeu. Transitions progressives sur 1h de jeu.",
+  "transitionMinutes": 60,
+  "phases": [
+    {
+      "id": "aube",
+      "label": "Aube",
+      "emoji": "🌅",
+      "fallback": { "shape": "rect", "color": "#ff8f00" },
+      "startHour": 6,
+      "endHour": 8,
+      "color": "#ff8f00",
+      "alpha": 0.15
+    },
+    {
+      "id": "jour",
+      "label": "Jour",
+      "emoji": "☀️",
+      "fallback": { "shape": "rect", "color": "#ffffff" },
+      "startHour": 8,
+      "endHour": 18,
+      "color": null,
+      "alpha": 0.0
+    },
+    {
+      "id": "crepuscule",
+      "label": "Crépuscule",
+      "emoji": "🌇",
+      "fallback": { "shape": "rect", "color": "#e65100" },
+      "startHour": 18,
+      "endHour": 20,
+      "color": "#e65100",
+      "alpha": 0.25
+    },
+    {
+      "id": "nuit",
+      "label": "Nuit",
+      "emoji": "🌙",
+      "fallback": { "shape": "rect", "color": "#0d1b3e" },
+      "startHour": 20,
+      "endHour": 6,
+      "color": "#0d1b3e",
+      "alpha": 0.4
+    }
+  ]
+}
