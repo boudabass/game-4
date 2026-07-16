@@ -28,7 +28,6 @@ let culturesData = null;  // données cultures.json chargées
 let outilsData = null;     // données outils.json chargées
 let selectedTool = null;   // outil sélectionné (id), null = aucun
 let toolbarSlots = [];     // zones cliquables de chaque slot [{x,y,w,h,tool}]
-let sleepSystem = null;    // Engine.SleepSystem (carte 526)
 
 // Systèmes Phase 02 — Vertical Slice
 let npcSystem = null;      // Engine.NPCSystem
@@ -286,14 +285,65 @@ function _isRainyDay(season) {
     return _rainyToday;
 }
 
-/* ─── Teinte jour/nuit ─── */
-function _getDayTint(hour) {
+/* ─── Teinte jour/nuit avec interpolation lisse (carte 526) ─── */
+function _getDayTint(hour, minute) {
     var dt = C.dayTint;
-    if (hour < dt.dawn.hour)  return dt.night.color;
-    if (hour < dt.day.hour)   return dt.dawn.color;
-    if (hour < dt.dusk.hour)  return dt.day.color;
-    if (hour < dt.night.hour) return dt.dusk.color;
-    return dt.night.color;
+    // Heure décimale pour interpolation précise
+    var t = hour + (minute || 0) / 60;
+
+    // Phases ordonnées par heure
+    var phases = [
+        { hour: dt.dawn.hour,  color: dt.dawn.color  },
+        { hour: dt.day.hour,   color: dt.day.color   },
+        { hour: dt.dusk.hour,  color: dt.dusk.color  },
+        { hour: dt.night.hour, color: dt.night.color }
+    ];
+
+    // Trouver l'intervalle [prev, next]
+    var prev = phases[3]; // night (dernière)
+    var next = phases[0]; // dawn
+    var prevHour = prev.hour;
+    var nextHour = next.hour;
+
+    // Cas spécial : avant la première phase (entre night et dawn)
+    if (t < phases[0].hour) {
+        prev = phases[3];       // night (21h)
+        next = phases[0];       // dawn (5h)
+        prevHour = prev.hour;
+        nextHour = next.hour + 24; // lendemain
+    } else {
+        for (var i = 0; i < phases.length; i++) {
+            if (t < phases[i].hour) {
+                prev = i === 0 ? phases[phases.length - 1] : phases[i - 1];
+                next = phases[i];
+                prevHour = prev.hour;
+                nextHour = next.hour;
+                break;
+            }
+            if (i === phases.length - 1) {
+                // Après night (21h) → wrap vers dawn lendemain
+                prev = phases[i];
+                next = { hour: phases[0].hour + 24, color: phases[0].color };
+                prevHour = prev.hour;
+                nextHour = next.hour;
+            }
+        }
+    }
+
+    var range = nextHour - prevHour;
+    if (range <= 0) range = 24;
+    var progress = (t - prevHour) / range;
+    progress = Math.max(0, Math.min(1, progress));
+
+    // Smoothstep pour transition douce
+    var p = progress * progress * (3 - 2 * progress);
+
+    return [
+        Math.round(prev.color[0] + (next.color[0] - prev.color[0]) * p),
+        Math.round(prev.color[1] + (next.color[1] - prev.color[1]) * p),
+        Math.round(prev.color[2] + (next.color[2] - prev.color[2]) * p),
+        Math.round(prev.color[3] + (next.color[3] - prev.color[3]) * p)
+    ];
 }
 
 function draw() {
@@ -342,7 +392,7 @@ function draw() {
     pop();
 
     // --- Filtre jour/nuit (après le monde, avant le HUD) ---
-    var tint = _getDayTint(Engine.Clock.hour);
+    var tint = _getDayTint(Engine.Clock.hour, Engine.Clock.minute);
     // Lissage progressif
     dayTintColor = [
         dayTintColor[0] + (tint[0] - dayTintColor[0]) * 0.05,
@@ -1016,11 +1066,31 @@ function drawNPCDialogue() {
         fill(255, 255, 255, alpha * 0.7);
         text('❤️ ' + rel + '/20', bx + barW2 + u(1), by + barH2/2);
 
-        // Instructions
+        // Instructions — boutons cliquables (100% clic/tap, Pilier 1)
         textSize(u(2.5));
         fill(255, 255, 255, alpha * 0.6);
         textAlign(CENTER, CENTER);
-        text("Clic : offrir récolte sélectionnée  |  V : vendre  |  A : acheter graines", dx + dw/2, dy + dh - u(1.5));
+        var btnY = dy + dh - u(5);
+        // Bouton Vendre
+        var btnW = u(18), btnH = u(4), gap = u(2);
+        var totalBW = btnW * 2 + gap;
+        var btnX1 = dx + dw/2 - totalBW/2;
+        var btnX2 = btnX1 + btnW + gap;
+
+        // Fond boutons
+        fill(100, 180, 100, alpha * 0.8);
+        rect(btnX1, btnY, btnW, btnH, u(1));
+        fill(220, 180, 60, alpha * 0.8);
+        rect(btnX2, btnY, btnW, btnH, u(1));
+
+        fill(255);
+        textSize(u(2.5));
+        text("🛒 Vendre", btnX1 + btnW/2, btnY + btnH/2);
+        text("🌱 Acheter", btnX2 + btnW/2, btnY + btnH/2);
+
+        // Stocker les zones cliquables pour mousePressed
+        npcDialogue._btnSell = { x: btnX1, y: btnY, w: btnW, h: btnH };
+        npcDialogue._btnBuy  = { x: btnX2, y: btnY, w: btnW, h: btnH };
     }
 }
 
@@ -1159,6 +1229,16 @@ function mousePressed() {
     // 1. HUD
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
     if (inRect(mouseX, mouseY, zoomBtns.minus)) { Engine.Camera.zoomOut(); return; }
+
+    // Boutons dialogue PNJ (Vendre / Acheter)
+    if (npcDialogue && npcDialogue._btnSell && inRect(mouseX, mouseY, npcDialogue._btnSell)) {
+        _openShop(true);
+        return;
+    }
+    if (npcDialogue && npcDialogue._btnBuy && inRect(mouseX, mouseY, npcDialogue._btnBuy)) {
+        _openShop(false);
+        return;
+    }
 
     // Barre d'outils
     for (var ti = 0; ti < toolbarSlots.length; ti++) {
