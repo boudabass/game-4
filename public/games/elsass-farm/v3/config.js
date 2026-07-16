@@ -25,10 +25,10 @@ window.FarmConfig = {
 
     // Cycle jour/nuit : teintes par plage horaire
     dayTint: {
-        dawn:   { hour: 5,  color: [255, 200, 150, 40] },  // aube
+        dawn:   { hour: 5,  color: [255, 230, 200, 12] },  // aube (très léger)
         day:    { hour: 7,  color: [255, 255, 255, 0] },    // plein jour
-        dusk:   { hour: 19, color: [255, 150, 80, 50] },    // crépuscule
-        night:  { hour: 21, color: [20, 20, 60, 160] },     // nuit
+        dusk:   { hour: 19, color: [255, 160, 100, 20] },   // crépuscule (discret)
+        night:  { hour: 21, color: [15, 15, 50, 120] },     // nuit (moins opaque)
     },
 
     // Lit (position dans maison-rdc, déclenche le sommeil)
