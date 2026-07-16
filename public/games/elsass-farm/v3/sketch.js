@@ -884,6 +884,35 @@ function drawWorld() {
         drawDecor();
     }
 
+    // Zone cultivable — contour visible de loin
+    if (zoneId === 'ferme' && soilSystem) {
+        var cKeys = Object.keys(soilSystem._cultivable);
+        if (cKeys.length > 0) {
+            var minC = 999, maxC = -1, minR = 999, maxR = -1;
+            for (var ki = 0; ki < cKeys.length; ki++) {
+                var parts = cKeys[ki].split(',');
+                var cc = parseInt(parts[0]), rr = parseInt(parts[1]);
+                if (cc < minC) minC = cc; if (cc > maxC) maxC = cc;
+                if (rr < minR) minR = rr; if (rr > maxR) maxR = rr;
+            }
+            var ts = Engine.Grid.tileSize;
+            var bx = minC * ts, by = minR * ts;
+            var bw = (maxC - minC + 1) * ts, bh = (maxR - minR + 1) * ts;
+            // Fond semi-transparent
+            noStroke();
+            fill(255, 215, 0, 30);
+            rect(bx, by, bw, bh);
+            // Contour pointillé jaune
+            drawingContext.setLineDash([8, 6]);
+            stroke(255, 215, 0, 180);
+            strokeWeight(3);
+            noFill();
+            rect(bx + 2, by + 2, bw - 4, bh - 4);
+            drawingContext.setLineDash([]);
+            noStroke();
+        }
+    }
+
     // Cultures (ferme uniquement)
     drawCrops();
 
@@ -943,6 +972,18 @@ function drawWorld() {
 }
 
 function drawHud() {
+    // Nom de la zone (haut centre-gauche)
+    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
+    var zoneLabel = zone ? (zone.emoji || '') + ' ' + (zone.label || zone.id) : 'Ferme';
+    textSize(u(3));
+    var zw = textWidth(zoneLabel) + u(4);
+    fill(C.colors.hudPanel);
+    rect(u(2), u(2), zw, u(6), u(1.5));
+    fill(255, 215, 0);
+    textAlign(LEFT, CENTER);
+    text(zoneLabel, u(4), u(2) + u(3));
+    textAlign(CENTER, CENTER);
+
     // Bandeau horloge (haut centre)
     var season = Engine.Clock.getSeason();
     var seasonEmoji = { printemps: '🌸', ete: '☀️', automne: '🍂', hiver: '❄️' };
