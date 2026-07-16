@@ -1,0 +1,66 @@
+[
+  {
+    "id": "gel-tardif",
+    "label": "Gel tardif",
+    "season": "printemps",
+    "trigger": {
+      "type": "weather",
+      "chance": 0.15,
+      "description": "Se déclenche aléatoirement la nuit au printemps"
+    },
+    "effect": {
+      "type": "crop-damage",
+      "ratio": 0.4,
+      "maxAffected": 2,
+      "filter": "non-protege",
+      "stateAfter": "tilled",
+      "visual": "frost",
+      "durationDays": 1
+    },
+    "notification": {
+      "icon": "❄️",
+      "title": "Gel tardif !",
+      "msg": "Un gel tardif a frappé cette nuit ! Certaines de vos cultures ont gelé."
+    },
+    "mitigation": "serre",
+    "mitigationLabel": "Construisez une serre pour protéger vos cultures.",
+    "reconciliation": {
+      "resetToState": "tilled",
+      "allowReplant": true,
+      "neverPermanent": true,
+      "description": "Les cultures gelées retournent à l'état labouré — le joueur peut replanter immédiatement. Jamais de perte définitive (pilier 2)."
+    }
+  },
+  {
+    "id": "grele",
+    "label": "Grêle",
+    "season": "ete",
+    "trigger": {
+      "type": "weather",
+      "chance": 0.10,
+      "description": "Se déclenche aléatoirement la nuit en été"
+    },
+    "effect": {
+      "type": "crop-damage",
+      "ratio": 0.25,
+      "maxAffected": 1,
+      "filter": "non-protege",
+      "stateAfter": "tilled",
+      "visual": "hail",
+      "durationDays": 1
+    },
+    "notification": {
+      "icon": "🌨️",
+      "title": "Grêle !",
+      "msg": "Un violent orage de grêle a endommagé vos cultures d'été !"
+    },
+    "mitigation": "assurance",
+    "mitigationLabel": "Diversifiez vos cultures ou souscrivez une assurance récolte.",
+    "reconciliation": {
+      "resetToState": "tilled",
+      "allowReplant": true,
+      "neverPermanent": true,
+      "description": "Les cultures touchées retournent à l'état labouré. Pas de perte définitive (pilier 2)."
+    }
+  }
+]
