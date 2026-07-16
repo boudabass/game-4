@@ -85,10 +85,18 @@ function preload() {
         culturesData = Array.isArray(data) ? data : Object.values(data);
     });
 
-    outilsData = loadJSON("data/outils.json");
-    pnjsData = loadJSON("data/pnjs.json");
-    catastrophesData = loadJSON("data/catastrophes.json");
-    challengesData2 = loadJSON("data/challenges.json");
+    outilsData = loadJSON("data/outils.json", function(data) {
+        outilsData = Array.isArray(data) ? data : Object.values(data);
+    });
+    pnjsData = loadJSON("data/pnjs.json", function(data) {
+        pnjsData = Array.isArray(data) ? data : Object.values(data);
+    });
+    catastrophesData = loadJSON("data/catastrophes.json", function(data) {
+        catastrophesData = Array.isArray(data) ? data : Object.values(data);
+    });
+    challengesData2 = loadJSON("data/challenges.json", function(data) {
+        challengesData2 = Array.isArray(data) ? data : Object.values(data);
+    });
 }
 
 function setup() {
