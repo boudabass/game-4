@@ -91,8 +91,8 @@ class SoilSystem {
     // --- Persistance ---
     gather() {
         return {
-            tiles: JSON.parse(JSON.stringify(this._tiles)),
-            cultivable: Object.keys(this._cultivable)
+            tiles: JSON.parse(JSON.stringify(this._tiles))
+            // cultivable = config statique de la map, pas de l'état de jeu → PAS sauvé
         };
     }
 
@@ -105,12 +105,7 @@ class SoilSystem {
                 this._tiles[keys[i]] = JSON.parse(JSON.stringify(data.tiles[keys[i]]));
             }
         }
-        this._cultivable = {};
-        if (data.cultivable) {
-            for (var j = 0; j < data.cultivable.length; j++) {
-                this._cultivable[data.cultivable[j]] = true;
-            }
-        }
+        // cultivable = config statique → PAS restauré (géré par setup)
     }
 }
 
