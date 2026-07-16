@@ -1,11 +1,14 @@
 {
     "ferme": {
         "id": "ferme",
+        "label": "Ferme",
+        "emoji": "🏡",
+        "fallback": { "shape": "rect", "color": "#7cb342" },
         "cols": 28,
         "rows": 18,
         "tileSize": 64,
         "entryPoint": { "c": 14, "r": 9 },
-        "cultivableTiles": { "c1": 7, "r1": 4, "c2": 12, "r2": 10 },
+        "cultivableTiles": { "c1": 5, "r1": 5, "c2": 10, "r2": 7 },
         "obstacles": {
             "rects": [
                 { "c": 4, "r": 3, "w": 4, "h": 3 },
@@ -41,6 +44,9 @@
     },
     "village": {
         "id": "village",
+        "label": "Village",
+        "emoji": "🏘️",
+        "fallback": { "shape": "rect", "color": "#8d6e63" },
         "cols": 20,
         "rows": 15,
         "tileSize": 64,
@@ -55,6 +61,9 @@
                 { "c": 12, "r": 10 }, { "c": 17, "r": 7 }
             ]
         },
+        "npcs": [
+            { "id": "boulangere", "c": 9, "r": 5 }
+        ],
         "portals": [
             {
                 "id": "village-to-ferme",
@@ -66,10 +75,16 @@
     },
     "maison-rdc": {
         "id": "maison-rdc",
+        "label": "Maison (RDC)",
+        "emoji": "🏠",
+        "fallback": { "shape": "rect", "color": "#a1887f" },
         "cols": 12,
         "rows": 10,
         "tileSize": 64,
         "entryPoint": { "c": 5, "r": 9 },
+        "beds": [
+            { "c": 3, "r": 5 }
+        ],
         "obstacles": {
             "rects": [
                 { "c": 0, "r": 0, "w": 12, "h": 1 },
@@ -102,6 +117,9 @@
     },
     "maison-etage": {
         "id": "maison-etage",
+        "label": "Maison (Étage)",
+        "emoji": "🏠",
+        "fallback": { "shape": "rect", "color": "#bcaaa4" },
         "cols": 12,
         "rows": 10,
         "tileSize": 64,
@@ -132,6 +150,9 @@
     },
     "mine-entree": {
         "id": "mine-entree",
+        "label": "Mine (Entrée)",
+        "emoji": "⛏️",
+        "fallback": { "shape": "rect", "color": "#607d8b" },
         "cols": 14,
         "rows": 14,
         "tileSize": 64,
@@ -171,6 +192,9 @@
     },
     "mine-etage-1": {
         "id": "mine-etage-1",
+        "label": "Mine (Étage 1 — Galeries)",
+        "emoji": "⛏️",
+        "fallback": { "shape": "rect", "color": "#546e7a" },
         "cols": 12,
         "rows": 10,
         "tileSize": 64,
@@ -199,6 +223,9 @@
     },
     "mine-etage-2": {
         "id": "mine-etage-2",
+        "label": "Mine (Étage 2 — Cristaux)",
+        "emoji": "💎",
+        "fallback": { "shape": "rect", "color": "#455a64" },
         "cols": 12,
         "rows": 10,
         "tileSize": 64,
@@ -227,6 +254,9 @@
     },
     "mine-etage-3": {
         "id": "mine-etage-3",
+        "label": "Mine (Étage 3 — Trésor)",
+        "emoji": "💰",
+        "fallback": { "shape": "rect", "color": "#37474f" },
         "cols": 12,
         "rows": 10,
         "tileSize": 64,
