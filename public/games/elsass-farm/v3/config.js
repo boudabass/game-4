@@ -37,7 +37,7 @@ window.FarmConfig = {
     // Obstacles (décor). "rect" = zone bloquée c,r → c+w,r+h.
     obstacles: {
         rects: [
-            { c: 4,  r: 3,  w: 4, h: 3 },   // future mare
+            { c: 4,  r: 3,  w: 4, h: 2 },   // future mare (hauteur réduite, ne chevauche plus les cultures)
             { c: 20, r: 12, w: 5, h: 2 },   // future grange
             { c: 11, r: 14, w: 2, h: 2 }    // futur rocher
         ],

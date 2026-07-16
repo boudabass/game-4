@@ -8,10 +8,10 @@
         "rows": 18,
         "tileSize": 64,
         "entryPoint": { "c": 14, "r": 9 },
-        "cultivableTiles": { "c1": 5, "r1": 5, "c2": 10, "r2": 7 },
+        "cultivableTiles": { "c1": 4, "r1": 6, "c2": 12, "r2": 10 },
         "obstacles": {
             "rects": [
-                { "c": 4, "r": 3, "w": 4, "h": 3 },
+                { "c": 4, "r": 3, "w": 4, "h": 2 },
                 { "c": 20, "r": 12, "w": 5, "h": 2 },
                 { "c": 11, "r": 14, "w": 2, "h": 2 }
             ],

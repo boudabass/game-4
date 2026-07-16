@@ -713,10 +713,18 @@ function drawCrops() {
                 text('🌱', cx, cy);
             }
         } else {
-            textSize(ts * 0.22);
-            fill(180, 160, 120, 140);
-            textAlign(CENTER, CENTER);
-            text('clic', cx, cy);
+            // Terre cultivable vide — très visible
+            noStroke();
+            fill(160, 120, 60, 120);
+            rect(x + 4, y + 4, ts - 8, ts - 8, 3);
+            // Motif de points pour indiquer "prêt à être labouré"
+            fill(200, 170, 100, 180);
+            var ds2 = ts * 0.12;
+            circle(cx - ts*0.2, cy - ts*0.2, ds2);
+            circle(cx + ts*0.2, cy - ts*0.2, ds2);
+            circle(cx - ts*0.2, cy + ts*0.2, ds2);
+            circle(cx + ts*0.2, cy + ts*0.2, ds2);
+            circle(cx, cy, ds2 * 1.3);
         }
         textAlign(CENTER, CENTER);
 
