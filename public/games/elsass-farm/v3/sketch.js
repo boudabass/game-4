@@ -654,8 +654,14 @@ function drawCrops() {
         var cx = x + ts/2, cy = y + ts/2;
 
         noStroke();
-        fill(80, 55, 30, 180);
-        rect(x + 2, y + 2, ts - 4, ts - 4, 4);
+        // Fond de terre cultivable — bien distinct du sol standard
+        fill(120, 85, 45, 200);
+        rect(x + 1, y + 1, ts - 2, ts - 2, 4);
+        // Bordure claire pour bien délimiter
+        stroke(180, 140, 80, 160);
+        strokeWeight(1.5);
+        rect(x + 1, y + 1, ts - 2, ts - 2, 4);
+        noStroke();
 
         if (state === 'tilled') {
             stroke(110, 85, 45, 200);
