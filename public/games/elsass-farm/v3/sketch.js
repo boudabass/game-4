@@ -38,6 +38,9 @@ let playerEnergy = 100;    // jauge d'énergie
 let playerGoldEarned = 0;  // or total gagné (cumul vie entière, pour le score)
 let lastDisaster = null;   // {msg, t} dernière catastrophe (pour notification)
 let npcDialogue = null;    // {npcId, lines: [], type: 'talk'|'gift'|'shop', t}
+let dialogueSystem = null; // Engine.DialogueSystem
+let dialoguesData = null;  // données dialogues.json
+let dialogueGiftMode = null; // {npcId, items: [{id,label,qty}], startY, itemH}
 let shopMode = null;       // {npcId, npcData, sellMode: bool} — mode vente/achat
 let bedTriggerZone = null; // zone cliquable du lit (coords monde)
 let sleepBlocked = false;  // empêche de dormir plusieurs fois le même jour
@@ -86,6 +89,7 @@ function preload() {
     outilsData = loadJSON("data/outils.json");
     pnjsData = loadJSON("data/pnjs.json");
     catastrophesData = loadJSON("data/catastrophes.json");
+    dialoguesData = loadJSON("data/dialogues.json");
 }
 
 function setup() {
@@ -187,6 +191,16 @@ function setup() {
     npcSystem = new Engine.NPCSystem();
     if (pnjsData) npcSystem.configure({ npcs: pnjsData, cultures: culturesData });
 
+    // --- Système de dialogue (Phase 02, Groupe 527) ---
+    dialogueSystem = new Engine.DialogueSystem();
+    if (dialoguesData) {
+        dialogueSystem.configure({
+            dialogues: dialoguesData,
+            npcSystem: npcSystem,
+            harvestSystem: harvestSystem
+        });
+    }
+
     // --- Système catastrophes (Phase 02) ---
     disasterSystem = new Engine.DisasterSystem();
     if (catastrophesData) disasterSystem.configure({ disasters: catastrophesData });
@@ -224,6 +238,7 @@ async function boot() {
                 if (cropGrowth) data.crops = cropGrowth.gather();
                 if (harvestSystem) data.harvest = harvestSystem.gather();
                 if (npcSystem) data.npcs = npcSystem.gather();
+                if (dialogueSystem) data.dialogues = dialogueSystem.gather();
                 if (disasterSystem) data.disasters = disasterSystem.gather();
                 return data;
             },
@@ -244,6 +259,7 @@ async function boot() {
                 if (cropGrowth && data.crops) cropGrowth.apply(data.crops);
                 if (harvestSystem && data.harvest) harvestSystem.apply(data.harvest);
                 if (npcSystem && data.npcs) npcSystem.apply(data.npcs);
+                if (dialogueSystem && data.dialogues) dialogueSystem.apply(data.dialogues);
                 if (disasterSystem && data.disasters) disasterSystem.apply(data.disasters);
             }
         });
@@ -1016,85 +1032,243 @@ function drawDisasterNotice() {
     textAlign(CENTER, CENTER);
 }
 
-/* ─── Dialogue PNJ ─── */
+/* ─── Dialogue PNJ (avec arbre de dialogue, Groupe 527) ─── */
 function drawNPCDialogue() {
+    // Priorité au mode cadeau (sélection d'item dans l'inventaire)
+    if (dialogueGiftMode) {
+        drawGiftSelection();
+        return;
+    }
+
     if (!npcDialogue) return;
     var elapsed = millis() - npcDialogue.t;
-    if (elapsed > 8000 && npcDialogue.type === 'talk') { npcDialogue = null; return; }
 
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    if (!zone || zone.id !== 'village') { npcDialogue = null; return; }
+    // Le dialogue ne s'auto-ferme plus — le joueur doit cliquer un choix
+    // (sauf si ended, on nettoie après un délai)
+    if (npcDialogue.ended && elapsed > 3000) {
+        npcDialogue = null;
+        dialogueGiftMode = null;
+        return;
+    }
+
+    var state = npcDialogue;
+    var npc = state.npc;
+    if (!npc) { npcDialogue = null; return; }
+
+    var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
+    var choices = state.choices || [];
+    var hasChoices = choices.length > 0;
+
+    // Hauteur dynamique selon nombre de choix
+    var choiceCount = choices.length;
+    var dh = u(22) + (hasChoices ? choiceCount * u(6.5) : 0) + u(4);
+    var dw = width * 0.75;
+    var dx = width / 2 - dw / 2;
+    var dy = height - dh - u(8);
 
     // Fond de dialogue
-    var dw = width * 0.7;
-    var dh = u(22);
-    var dx = width / 2 - dw / 2;
-    var dy = height - dh - u(12);
-    var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
-
     noStroke();
     fill(20, 20, 40, alpha);
     rect(dx, dy, dw, dh, u(2));
-    stroke(255, 255, 255, alpha * 0.5);
-    strokeWeight(1);
+    stroke(255, 215, 0, alpha * 0.6);
+    strokeWeight(1.5);
     rect(dx, dy, dw, dh, u(2));
     noStroke();
 
-    // Nom du PNJ
-    var npc = npcSystem.getNPC(npcDialogue.npcId);
-    var name = npc ? npc.label : "???";
+    // Nom et emoji du PNJ
     textSize(u(3.5));
     fill(255, 215, 0, alpha);
     textAlign(LEFT, CENTER);
-    text(npc ? npc.emoji + " " + name : name, dx + u(3), dy + u(5));
+    var nameLabel = (npc.emoji || '') + ' ' + (npc.label || '???');
+    text(nameLabel, dx + u(3), dy + u(5));
     textAlign(CENTER, CENTER);
 
-    // Texte
-    textSize(u(3));
+    // Texte du dialogue
+    textSize(u(2.8));
     fill(255, 255, 255, alpha);
-    text(npcDialogue.text, dx + dw/2, dy + dh/2 - u(2));
+    textAlign(LEFT, TOP);
+    var textX = dx + u(3);
+    var textY = dy + u(10);
+    var textW = dw - u(6);
+    var dialogueText = state.text || '';
+    text(dialogueText, textX, textY, textW);
+    textAlign(CENTER, CENTER);
 
     // Jauge de relation
-    if (npc) {
-        var rel = npcSystem.getRelationLevel(npcDialogue.npcId);
-        var barW2 = dw - u(10);
-        var barH2 = u(1.5);
-        var bx = dx + u(5);
-        var by = dy + dh - u(6);
-        fill(60, 60, 60, alpha);
-        rect(bx, by, barW2, barH2, u(0.4));
-        fill(255, 105, 180, alpha);
-        rect(bx, by, barW2 * (rel / 20), barH2, u(0.4));
-        textSize(u(2));
-        fill(255, 255, 255, alpha * 0.7);
-        text('❤️ ' + rel + '/20', bx + barW2 + u(1), by + barH2/2);
+    var rel = npcSystem ? npcSystem.getRelationLevel(state.npcId) : 0;
+    var barW2 = dw - u(10);
+    var barH2 = u(1.8);
+    var bx = dx + u(5);
+    var barY = dy + u(4);
+    fill(40, 40, 60, alpha);
+    rect(bx, barY, barW2, barH2, u(0.4));
+    var heartColor = rel >= 15 ? [255, 80, 120] : (rel >= 5 ? [255, 150, 100] : [255, 180, 180]);
+    fill(heartColor[0], heartColor[1], heartColor[2], alpha);
+    rect(bx, barY, barW2 * (rel / 20), barH2, u(0.4));
+    textSize(u(2.2));
+    fill(255, 255, 255, alpha * 0.8);
+    textAlign(LEFT, CENTER);
+    text('❤️ ' + rel + '/20', bx + barW2 + u(1.5), barY + barH2/2);
+    textAlign(CENTER, CENTER);
 
-        // Instructions — boutons cliquables (100% clic/tap, Pilier 1)
-        textSize(u(2.5));
-        fill(255, 255, 255, alpha * 0.6);
-        textAlign(CENTER, CENTER);
-        var btnY = dy + dh - u(5);
-        // Bouton Vendre
-        var btnW = u(18), btnH = u(4), gap = u(2);
-        var totalBW = btnW * 2 + gap;
-        var btnX1 = dx + dw/2 - totalBW/2;
-        var btnX2 = btnX1 + btnW + gap;
-
-        // Fond boutons
-        fill(100, 180, 100, alpha * 0.8);
-        rect(btnX1, btnY, btnW, btnH, u(1));
-        fill(220, 180, 60, alpha * 0.8);
-        rect(btnX2, btnY, btnW, btnH, u(1));
-
-        fill(255);
-        textSize(u(2.5));
-        text("🛒 Vendre", btnX1 + btnW/2, btnY + btnH/2);
-        text("🌱 Acheter", btnX2 + btnW/2, btnY + btnH/2);
-
-        // Stocker les zones cliquables pour mousePressed
-        npcDialogue._btnSell = { x: btnX1, y: btnY, w: btnW, h: btnH };
-        npcDialogue._btnBuy  = { x: btnX2, y: btnY, w: btnW, h: btnH };
+    // --- Effets spéciaux (paliers de relation débloqués) ---
+    if (!npcDialogue._tiersChecked) {
+        npcDialogue._tiersChecked = true;
+        var unlocked = dialogueSystem ? dialogueSystem.checkTierEffects(state.npcId) : [];
+        if (unlocked.length > 0) {
+            npcDialogue._newTiers = unlocked;
+            npcDialogue._tierFlashT = millis();
+        }
     }
+    if (npcDialogue._newTiers && npcDialogue._tierFlashT) {
+        var tierElapsed = millis() - npcDialogue._tierFlashT;
+        if (tierElapsed < 5000) {
+            var tierAlpha = tierElapsed < 500 ? tierElapsed / 500 : (tierElapsed > 4000 ? (5000 - tierElapsed) / 1000 : 1);
+            var tierY = dy - u(14);
+            for (var ti = 0; ti < npcDialogue._newTiers.length; ti++) {
+                var tier = npcDialogue._newTiers[ti];
+                var lineY = tierY + ti * u(6);
+                fill(0, 0, 0, 200 * tierAlpha);
+                var tW2 = dw - u(4);
+                rect(dx + u(2), lineY, tW2, u(5), u(1));
+                fill(255, 215, 0, 255 * tierAlpha);
+                textSize(u(2.5));
+                textAlign(CENTER, CENTER);
+                var tierMsg = '';
+                if (tier.effect.type === 'discount') {
+                    tierMsg = '🏷️ Remise de ' + Math.round(tier.effect.value * 100) + '% chez ' + npc.label + ' !';
+                } else if (tier.effect.type === 'recipe') {
+                    tierMsg = '📜 Nouvelle recette : ' + tier.effect.id + ' !';
+                }
+                text(tierMsg, dx + dw/2, lineY + u(2.5));
+            }
+        } else {
+            npcDialogue._newTiers = null;
+            npcDialogue._tierFlashT = null;
+        }
+        textAlign(CENTER, CENTER);
+    }
+
+    // --- Boutons de choix ---
+    if (hasChoices) {
+        var btnStartY = textY + u(12); // sous le texte
+        var btnW = dw - u(8);
+        var btnH = u(5.5);
+        var btnGap = u(1.5);
+        var btnX = dx + u(4);
+
+        npcDialogue._choiceBtns = [];
+
+        for (var ci = 0; ci < choices.length; ci++) {
+            var choice = choices[ci];
+            var by = btnStartY + ci * (btnH + btnGap);
+
+            // Fond du bouton
+            var isEndAction = choice.action === 'end';
+            var isShopAction = choice.action === 'open_shop_sell' || choice.action === 'open_shop_buy';
+            var isGiftAction = choice.action === 'open_gift';
+
+            if (isEndAction) {
+                fill(150, 60, 60, alpha * 0.85);
+            } else if (isShopAction) {
+                fill(80, 140, 80, alpha * 0.85);
+            } else if (isGiftAction) {
+                fill(200, 120, 160, alpha * 0.85);
+            } else {
+                fill(60, 80, 140, alpha * 0.85);
+            }
+            stroke(255, 255, 255, alpha * 0.4);
+            strokeWeight(1);
+            rect(btnX, by, btnW, btnH, u(1.2));
+            noStroke();
+
+            fill(255, 255, 255, alpha);
+            textSize(u(2.5));
+            textAlign(CENTER, CENTER);
+            text(choice.label, btnX + btnW/2, by + btnH/2);
+
+            npcDialogue._choiceBtns.push({
+                x: btnX, y: by, w: btnW, h: btnH,
+                index: ci, label: choice.label, action: choice.action
+            });
+        }
+    }
+
+    textAlign(CENTER, CENTER);
+
+    // Indication de fermeture
+    if (!hasChoices) {
+        textSize(u(2));
+        fill(255, 255, 255, 100);
+        text('Échap pour fermer', dx + dw/2, dy + dh - u(3));
+    }
+}
+
+/* Sélection de cadeau dans l'inventaire */
+function drawGiftSelection() {
+    if (!dialogueGiftMode) return;
+
+    var gm = dialogueGiftMode;
+    var items = gm.items;
+    var dw = width * 0.65;
+    var itemH = u(6);
+    var count = Math.min(items.length, 6);
+    var dh = u(14) + count * itemH + u(4);
+    var dx = width / 2 - dw / 2;
+    var dy = height / 2 - dh / 2;
+
+    // Fond
+    noStroke();
+    fill(20, 20, 45, 240);
+    rect(dx, dy, dw, dh, u(2));
+    stroke(255, 180, 200, 180);
+    strokeWeight(2);
+    rect(dx, dy, dw, dh, u(2));
+    noStroke();
+
+    textSize(u(3.5));
+    fill(255, 200, 220);
+    textAlign(CENTER, CENTER);
+    text('🎁 Choisissez un cadeau', dx + dw/2, dy + u(5));
+
+    gm._slots = [];
+    var startY = dy + u(10);
+    for (var i = 0; i < count; i++) {
+        var item = items[i];
+        var iy = startY + i * itemH;
+
+        fill(i % 2 === 0 ? 'rgba(60,60,100,0.4)' : 'rgba(30,30,60,0.4)');
+        rect(dx + u(2), iy, dw - u(4), itemH, u(1));
+
+        textSize(u(2.5));
+        fill(255);
+        textAlign(LEFT, CENTER);
+        text(item.label, dx + u(4), iy + itemH/2);
+        textAlign(RIGHT, CENTER);
+        text('x' + item.qty + '  [OFFRIR]', dx + dw - u(3), iy + itemH/2);
+
+        gm._slots.push({ x: dx + u(2), y: iy, w: dw - u(4), h: itemH, item: item });
+    }
+
+    textAlign(CENTER, CENTER);
+    if (count === 0) {
+        textSize(u(2.5));
+        fill(255, 255, 255, 150);
+        text('Aucun objet à offrir.', dx + dw/2, startY + u(3));
+    }
+
+    // Bouton fermer
+    var closeBy = startY + count * itemH + u(3);
+    var closeBw = u(25);
+    var closeBh = u(5);
+    fill(120, 60, 60, 200);
+    rect(dx + dw/2 - closeBw/2, closeBy, closeBw, closeBh, u(1));
+    fill(255);
+    textSize(u(2.5));
+    text('Annuler', dx + dw/2, closeBy + closeBh/2);
+    gm._closeBtn = { x: dx + dw/2 - closeBw/2, y: closeBy, w: closeBw, h: closeBh };
+
+    textAlign(CENTER, CENTER);
 }
 
 /* ─── Interface boutique ─── */
@@ -1117,7 +1291,9 @@ function drawShopInterface() {
     rect(dx, dy, dw, dh, u(2));
     noStroke();
 
-    var title = shopMode.sellMode ? "🛒 VENDRE au Maraîcher" : "🌱 ACHETER des graines";
+    var title = shopMode.sellMode
+        ? ("🛒 VENDRE à " + npcData.label)
+        : ("🛍️ ACHETER chez " + npcData.label);
     textSize(u(4));
     fill(255, 215, 0);
     text(title, dx + dw/2, dy + u(5));
@@ -1137,21 +1313,47 @@ function drawShopInterface() {
         // Vente : lister l'inventaire du joueur
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
         var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
+        // Filtrer par catégorie si le PNJ n'achète que certaines catégories
+        var buyCategories = npcData.buysCategories || null;
         for (var cropId in inv) {
             if (!inv.hasOwnProperty(cropId)) continue;
-            var cropData = cropGrowth.getCropData(cropId) || culturesData.find(function(cc) { return cc.id === cropId; });
+            var cropData = cropGrowth.getCropData(cropId) || (culturesData ? culturesData.find(function(cc) { return cc.id === cropId; }) : null);
             if (!cropData) continue;
+            // Filtre par catégorie si le PNJ a des préférences d'achat
+            if (buyCategories && cropData.category && buyCategories.indexOf(cropData.category) === -1) continue;
             var price = Math.floor((cropData.sell || 0) * multiplier);
-            items.push({ id: cropId, label: cropData.emoji + " " + cropData.label, qty: inv[cropId], price: price, sell: true });
+            items.push({ id: cropId, label: (cropData.emoji || '') + ' ' + cropData.label, qty: inv[cropId], price: price, sell: true });
         }
     } else {
-        // Achat : lister les graines disponibles chez ce PNJ
-        var seedPrices = npcData.seedPrices || {};
-        for (var seedId in seedPrices) {
-            if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth.getCropData(seedId);
-            if (!cropData2) continue;
-            items.push({ id: seedId, label: cropData2.emoji + " " + cropData2.label, qty: '∞', price: seedPrices[seedId], sell: false });
+        // Achat : lister ce que le PNJ vend
+        // Priorité : liste sells explicite > seedPrices > buyGifts
+        if (npcData.sells && npcData.sells.length > 0) {
+            // PNJ qui vend des items spécifiques (ex: boulangère → farine)
+            for (var si = 0; si < npcData.sells.length; si++) {
+                var sellId = npcData.sells[si];
+                // Chercher dans culturesData pour le prix
+                var sCropData = cropGrowth ? cropGrowth.getCropData(sellId) : null;
+                if (!sCropData && culturesData) {
+                    sCropData = culturesData.find(function(cc) { return cc.id === sellId; });
+                }
+                var sPrice = sCropData ? (sCropData.sell || 10) : 10;
+                items.push({ id: sellId, label: (sCropData ? sCropData.emoji + ' ' : '') + sellId, qty: '∞', price: sPrice, sell: false });
+            }
+        } else if (npcData.seedPrices) {
+            var seedPrices = npcData.seedPrices;
+            for (var seedId in seedPrices) {
+                if (!seedPrices.hasOwnProperty(seedId)) continue;
+                var cropData2 = cropGrowth.getCropData(seedId);
+                if (!cropData2) continue;
+                items.push({ id: seedId, label: cropData2.emoji + ' ' + cropData2.label, qty: '∞', price: seedPrices[seedId], sell: false });
+            }
+        } else if (npcData.buyGifts && npcData.buyGifts.length > 0) {
+            // PNJ qui vend des gifts (produits transformés)
+            for (var gi = 0; gi < npcData.buyGifts.length; gi++) {
+                var giftId = npcData.buyGifts[gi];
+                var gData = cropGrowth ? cropGrowth.getCropData(giftId) : null;
+                items.push({ id: giftId, label: (gData ? gData.emoji + ' ' : '🍞 ') + giftId, qty: '∞', price: 8 + gi * 2, sell: false });
+            }
         }
     }
 
@@ -1214,6 +1416,12 @@ function mousePressed() {
         return;
     }
 
+    // Sélection de cadeau (prioritaire car overlay)
+    if (dialogueGiftMode) {
+        _handleGiftClick(mouseX, mouseY);
+        return;
+    }
+
     // Fermer la boutique si clic hors zone
     if (shopMode) {
         var dw2 = width * 0.75;
@@ -1233,14 +1441,15 @@ function mousePressed() {
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
     if (inRect(mouseX, mouseY, zoomBtns.minus)) { Engine.Camera.zoomOut(); return; }
 
-    // Boutons dialogue PNJ (Vendre / Acheter)
-    if (npcDialogue && npcDialogue._btnSell && inRect(mouseX, mouseY, npcDialogue._btnSell)) {
-        _openShop(true);
-        return;
-    }
-    if (npcDialogue && npcDialogue._btnBuy && inRect(mouseX, mouseY, npcDialogue._btnBuy)) {
-        _openShop(false);
-        return;
+    // Boutons de choix de dialogue (arbre de dialogue, Groupe 527)
+    if (npcDialogue && npcDialogue._choiceBtns) {
+        for (var ci = 0; ci < npcDialogue._choiceBtns.length; ci++) {
+            var cb = npcDialogue._choiceBtns[ci];
+            if (inRect(mouseX, mouseY, cb)) {
+                _handleDialogueChoice(cb.index);
+                return;
+            }
+        }
     }
 
     // Barre d'outils
@@ -1268,7 +1477,7 @@ function mousePressed() {
         var curZoneId = Engine.WorldZone.getCurrent() ? Engine.WorldZone.getCurrent().id : '';
         var npcAtTile = npcSystem.getNPCAt(curZoneId, tile.c, tile.r);
         if (npcAtTile && Engine.ActionZone.contains(player.tile(), tile)) {
-            // Interaction PNJ : dialogue, cadeau
+            // Fermer tout dialogue existant avant d'en ouvrir un nouveau
             _interactNPC(npcAtTile);
             return;
         }
@@ -1292,21 +1501,14 @@ function mousePressed() {
 }
 
 function keyPressed() {
-    if (key === 'v' || key === 'V') {
-        if (npcDialogue) {
-            _openShop(true); // mode vente
-            return false;
-        }
-    }
-    if (key === 'a' || key === 'A') {
-        if (npcDialogue) {
-            _openShop(false); // mode achat
-            return false;
-        }
-    }
     if (keyCode === ESCAPE) {
+        if (dialogueGiftMode) { dialogueGiftMode = null; return false; }
         if (shopMode) { shopMode = null; return false; }
-        if (npcDialogue && npcDialogue.type !== 'talk') { npcDialogue = null; return false; }
+        if (npcDialogue) {
+            npcDialogue = null;
+            dialogueGiftMode = null;
+            return false;
+        }
     }
 }
 
@@ -1431,33 +1633,213 @@ function _doToolAction(toolId, tile) {
     if (window.Engine && Engine.Save) Engine.Save.saveLocal();
 }
 
-/* ─── Interaction PNJ ─── */
+/* ─── Interaction PNJ (nouveau système de dialogue, Groupe 527) ─── */
 function _interactNPC(npc) {
-    if (npcDialogue && npcDialogue.npcId === npc.id && npcDialogue.type === 'talk') {
-        // Au 2e clic, offrir un cadeau = la culture sélectionnée dans l'inventaire
-        if (harvestSystem && npcSystem) {
-            var inv = harvestSystem.getInventory();
-            var invKeys = Object.keys(inv);
-            if (invKeys.length > 0) {
-                var giftId = invKeys[0]; // première récolte dispo
-                var reaction = npcSystem.giveGift(npc.id, giftId);
-                harvestSystem.removeFromInventory(giftId, 1);
-                npcDialogue = { npcId: npc.id, text: reaction, type: 'gift', t: millis() };
-                actionFlash = { c: npc.c, r: npc.r, t: millis(), type: 'gift' };
+    if (!dialogueSystem) return;
+
+    // Si dialogue déjà en cours, un nouveau clic redémarre
+    if (npcDialogue && npcDialogue.npcId === npc.id && !npcDialogue.ended) {
+        // Relancer le dialogue (reset)
+        npcDialogue = null;
+        dialogueGiftMode = null;
+    }
+
+    var result = dialogueSystem.start(npc.id);
+    if (result) {
+        npcDialogue = {
+            npcId: result.npcId,
+            npc: result.npc,
+            text: result.text,
+            choices: result.choices,
+            nodeId: result.nodeId,
+            ended: result.ended,
+            t: millis(),
+            _tiersChecked: false
+        };
+        actionFlash = { c: npc.c, r: npc.r, t: millis(), type: 'gift' };
+    }
+}
+
+/* Gérer un choix dans l'arbre de dialogue */
+function _handleDialogueChoice(choiceIndex) {
+    if (!dialogueSystem || !npcDialogue) return;
+
+    // Cas spécial : après un cadeau, "Continuer" relance le dialogue
+    if (npcDialogue.nodeId === 'gift_done') {
+        var npcId = npcDialogue.npcId;
+        var npc = npcDialogue.npc;
+        var result = dialogueSystem.start(npcId);
+        if (result) {
+            npcDialogue = {
+                npcId: result.npcId,
+                npc: result.npc,
+                text: result.text,
+                choices: result.choices,
+                nodeId: result.nodeId,
+                ended: result.ended,
+                t: millis(),
+                _tiersChecked: false
+            };
+        }
+        return;
+    }
+
+    var result = dialogueSystem.choose(choiceIndex);
+    if (!result) {
+        npcDialogue = null;
+        dialogueGiftMode = null;
+        return;
+    }
+
+    // Vérifier les effets spéciaux
+    if (result.effects) {
+        if (result.effects.openGift) {
+            // Ouvrir la sélection de cadeau
+            _openGiftSelection(npcDialogue.npcId);
+            return;
+        }
+        if (result.effects.openShop) {
+            // Ouvrir la boutique
+            npcDialogue = null;
+            dialogueGiftMode = null;
+            _openShop(result.effects.sellMode);
+            return;
+        }
+    }
+
+    if (result.ended) {
+        // Afficher le texte de fin brièvement puis fermer
+        npcDialogue = {
+            npcId: npcDialogue.npcId,
+            npc: npcDialogue.npc,
+            text: result.text || 'Au revoir !',
+            choices: [],
+            nodeId: 'end',
+            ended: true,
+            t: millis(),
+            _tiersChecked: true
+        };
+        dialogueGiftMode = null;
+        return;
+    }
+
+    // Mettre à jour l'état du dialogue
+    npcDialogue = {
+        npcId: result.npcId,
+        npc: result.npc,
+        text: result.text,
+        choices: result.choices,
+        nodeId: result.nodeId,
+        ended: result.ended,
+        t: millis(),
+        _tiersChecked: false,
+        _newTiers: result.effects ? null : npcDialogue._newTiers,
+        _tierFlashT: result.effects ? null : npcDialogue._tierFlashT
+    };
+}
+
+/* Ouvrir la sélection de cadeau */
+function _openGiftSelection(npcId) {
+    if (!harvestSystem) return;
+    var inv = harvestSystem.getInventory();
+    var invKeys = Object.keys(inv);
+    if (invKeys.length === 0) return;
+
+    var items = [];
+    for (var i = 0; i < invKeys.length; i++) {
+        var cropId = invKeys[i];
+        var qty = inv[cropId];
+        var cropData = cropGrowth ? cropGrowth.getCropData(cropId) : null;
+        if (!cropData && culturesData) {
+            cropData = culturesData.find(function(cc) { return cc.id === cropId; });
+        }
+        var label = cropData ? (cropData.emoji || '') + ' ' + (cropData.label || cropId) : cropId;
+        items.push({ id: cropId, label: label, qty: qty });
+    }
+
+    dialogueGiftMode = { npcId: npcId, items: items };
+}
+
+/* Gérer un clic dans la sélection de cadeau */
+function _handleGiftClick(mx, my) {
+    var gm = dialogueGiftMode;
+    if (!gm) return;
+
+    // Vérifier le bouton Annuler
+    if (gm._closeBtn && inRect(mx, my, gm._closeBtn)) {
+        dialogueGiftMode = null;
+        // Revenir au dialogue précédent
+        if (npcDialogue && dialogueSystem) {
+            var state = dialogueSystem.getState();
+            if (state) {
+                npcDialogue.text = state.text;
+                npcDialogue.choices = state.choices;
+                npcDialogue.nodeId = state.nodeId;
+                npcDialogue.ended = state.ended;
+                npcDialogue.t = millis();
+                npcDialogue._tiersChecked = false;
             }
         }
-    } else {
-        var dialogue = npcSystem.getDialogue(npc.id);
-        npcDialogue = { npcId: npc.id, text: dialogue, type: 'talk', t: millis() };
+        return;
+    }
+
+    // Vérifier les slots d'item
+    if (gm._slots) {
+        for (var i = 0; i < gm._slots.length; i++) {
+            var slot = gm._slots[i];
+            if (inRect(mx, my, slot)) {
+                _doGiveGift(gm.npcId, slot.item.id, slot.item);
+                return;
+            }
+        }
+    }
+}
+
+/* Offrir un cadeau depuis le dialogue */
+function _doGiveGift(npcId, itemId, itemInfo) {
+    if (!dialogueSystem || !harvestSystem || !npcSystem) return;
+
+    var result = dialogueSystem.giveGift(npcId, itemId);
+    if (!result) return;
+
+    // Retirer de l'inventaire
+    harvestSystem.removeFromInventory(itemId, 1);
+
+    // Afficher la réaction
+    dialogueGiftMode = null;
+
+    var giftLabel = itemInfo ? itemInfo.label : itemId;
+    var reactionText = result.text + '\n(❤️ +' + (result.liked ? 2 : 1) + ' — Niveau ' + result.newLevel + ')';
+
+    npcDialogue = {
+        npcId: npcId,
+        npc: npcSystem.getNPC(npcId),
+        text: reactionText,
+        choices: [{ label: '↩️ Continuer', action: null }],
+        nodeId: 'gift_done',
+        ended: false,
+        t: millis(),
+        _tiersChecked: false
+    };
+
+    // Vérifier si un palier a été atteint
+    if (dialogueSystem) {
+        var unlocked = dialogueSystem.checkTierEffects(npcId);
+        if (unlocked.length > 0) {
+            npcDialogue._newTiers = unlocked;
+            npcDialogue._tierFlashT = millis();
+        }
     }
 }
 
 /* ─── Ouverture boutique ─── */
 function _openShop(sellMode) {
-    if (!npcDialogue) return;
-    var npc = npcSystem.getNPC(npcDialogue.npcId);
+    var npcId = npcDialogue ? npcDialogue.npcId : (shopMode ? shopMode.npcId : null);
+    if (!npcId) return;
+    var npc = npcSystem.getNPC(npcId);
     if (!npc) return;
     npcDialogue = null;
+    dialogueGiftMode = null;
     shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode };
 }
 
@@ -1473,6 +1855,7 @@ function _handleShopClick(mx, my, dx, dy, dw) {
     var items = [];
     if (shopMode.sellMode) {
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
+        var buyCategories = npcData.buysCategories || null;
         for (var cropId in inv) {
             if (!inv.hasOwnProperty(cropId)) continue;
             var cropData = cropGrowth ? cropGrowth.getCropData(cropId) : null;
@@ -1484,15 +1867,30 @@ function _handleShopClick(mx, my, dx, dy, dw) {
                 }
             }
             if (!cropData) continue;
+            // Filtre par catégorie
+            if (buyCategories && cropData.category && buyCategories.indexOf(cropData.category) === -1) continue;
             items.push({ id: cropId, data: cropData, qty: inv[cropId], price: Math.floor((cropData.sell || 0) * multiplier), sell: true });
         }
     } else {
-        var seedPrices = npcData.seedPrices || {};
-        for (var seedId in seedPrices) {
-            if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth ? cropGrowth.getCropData(seedId) : null;
-            if (!cropData2) continue;
-            items.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
+        // Achat : priorité sells > seedPrices > buyGifts (comme dans drawShopInterface)
+        if (npcData.sells && npcData.sells.length > 0) {
+            for (var si = 0; si < npcData.sells.length; si++) {
+                var sellId = npcData.sells[si];
+                var sCropData = cropGrowth ? cropGrowth.getCropData(sellId) : null;
+                if (!sCropData && culturesData) {
+                    sCropData = culturesData.find(function(cc) { return cc.id === sellId; });
+                }
+                var sPrice = sCropData ? (sCropData.sell || 10) : 10;
+                items.push({ id: sellId, data: sCropData || { label: sellId }, qty: 999, price: sPrice, sell: false });
+            }
+        } else if (npcData.seedPrices) {
+            var seedPrices = npcData.seedPrices;
+            for (var seedId in seedPrices) {
+                if (!seedPrices.hasOwnProperty(seedId)) continue;
+                var cropData2 = cropGrowth ? cropGrowth.getCropData(seedId) : null;
+                if (!cropData2) continue;
+                items.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
+            }
         }
     }
 

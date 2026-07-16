@@ -1,0 +1,174 @@
+[
+  {
+    "npcId": "boulangere",
+    "tree": {
+      "root": {
+        "text": "Bonjour ! Ma farine est la meilleure de la région. Vous avez du blé ou de l'orge à me vendre ?",
+        "choices": [
+          { "label": "💬 Parler", "next": "talk" },
+          { "label": "🎁 Offrir un cadeau", "next": "gift_prompt", "condition": "has_inventory" },
+          { "label": "🛒 Marchander", "next": "trade_root", "condition": "can_trade" },
+          { "label": "👋 Au revoir", "action": "end" }
+        ]
+      },
+      "warm_root": {
+        "text": "Ah, mon meilleur fournisseur de céréales ! Tenez, prenez ce pain tout juste sorti du four.",
+        "choices": [
+          { "label": "💬 Parler", "next": "talk_warm" },
+          { "label": "🎁 Offrir un cadeau", "next": "gift_prompt", "condition": "has_inventory" },
+          { "label": "🛒 Marchander", "next": "trade_root" },
+          { "label": "❤️ Voir notre relation", "next": "relation_show" },
+          { "label": "👋 Au revoir", "action": "end" }
+        ]
+      },
+      "friend_root": {
+        "text": "Vous êtes comme de la famille ! Je vous garde toujours mes meilleures fournées. Vous voulez du kougelhopf ?",
+        "choices": [
+          { "label": "💬 Parler", "next": "talk_friend" },
+          { "label": "🎁 Offrir un cadeau", "next": "gift_prompt", "condition": "has_inventory" },
+          { "label": "🛒 Marchander", "next": "trade_root" },
+          { "label": "❤️ Voir notre relation", "next": "relation_show" },
+          { "label": "👋 Au revoir", "action": "end" }
+        ]
+      },
+      "talk": {
+        "text": "Je suis la boulangère du village. Je transforme le blé et l'orge en farine, puis en pains, bretzels et kougelhopfs ! Si vous me vendez vos céréales, je vous ferai un bon prix.",
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "talk_warm": {
+        "text": "Vos céréales sont de mieux en mieux. Je n'ai jamais vu un blé aussi doré ! Continuez comme ça et je vous dévoilerai mes meilleures recettes...",
+        "choices": [
+          { "label": "↩️ Retour", "next": "warm_root" }
+        ]
+      },
+      "talk_friend": {
+        "text": "Entre nous, le secret d'un bon kougelhopf c'est le beurre et la patience. Et un peu de cannelle... mais ça, je ne le dis qu'à mes amis !",
+        "choices": [
+          { "label": "↩️ Retour", "next": "friend_root" }
+        ]
+      },
+      "gift_prompt": {
+        "text": "Oh, vous voulez m'offrir quelque chose ? Montrez-moi ce que vous avez !",
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ],
+        "_gift_mode": true
+      },
+      "gift_result_liked": {
+        "text": null,
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "gift_result_neutral": {
+        "text": null,
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "trade_root": {
+        "text": "Bien sûr ! Je vends ma farine et j'achète vos céréales. Que voulez-vous faire ?",
+        "choices": [
+          { "label": "💰 Vendre mes céréales", "action": "open_shop_sell" },
+          { "label": "🛍️ Acheter de la farine", "action": "open_shop_buy" },
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "relation_show": {
+        "text": null,
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ],
+        "_show_relation": true
+      }
+    }
+  },
+  {
+    "npcId": "maraicher",
+    "tree": {
+      "root": {
+        "text": "Bonjour l'ami ! J'ai de belles graines à vendre, et je rachète vos récoltes au meilleur prix.",
+        "choices": [
+          { "label": "💬 Parler", "next": "talk" },
+          { "label": "🎁 Offrir un cadeau", "next": "gift_prompt", "condition": "has_inventory" },
+          { "label": "🛒 Marchander", "next": "trade_root", "condition": "can_trade" },
+          { "label": "👋 Au revoir", "action": "end" }
+        ]
+      },
+      "warm_root": {
+        "text": "Ah, te revoilà ! Les affaires marchent bien, grâce à toi. Tiens, je te fais un petit prix.",
+        "choices": [
+          { "label": "💬 Parler", "next": "talk_warm" },
+          { "label": "🎁 Offrir un cadeau", "next": "gift_prompt", "condition": "has_inventory" },
+          { "label": "🛒 Marchander", "next": "trade_root" },
+          { "label": "❤️ Voir notre relation", "next": "relation_show" },
+          { "label": "👋 Au revoir", "action": "end" }
+        ]
+      },
+      "friend_root": {
+        "text": "Mon meilleur fournisseur ! Tu sais quoi ? Pour toi, c'est -25% sur tout.",
+        "choices": [
+          { "label": "💬 Parler", "next": "talk_friend" },
+          { "label": "🎁 Offrir un cadeau", "next": "gift_prompt", "condition": "has_inventory" },
+          { "label": "🛒 Marchander", "next": "trade_root" },
+          { "label": "❤️ Voir notre relation", "next": "relation_show" },
+          { "label": "👋 Au revoir", "action": "end" }
+        ]
+      },
+      "talk": {
+        "text": "La terre est généreuse par ici. Plantez au bon moment, arrosez chaque jour, et vous verrez, les récoltes seront magnifiques !",
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "talk_warm": {
+        "text": "Tu sais, j'ai rarement vu un fermier aussi efficace. Tes légumes sont les plus beaux du marché !",
+        "choices": [
+          { "label": "↩️ Retour", "next": "warm_root" }
+        ]
+      },
+      "talk_friend": {
+        "text": "Je te considère comme mon partenaire. Si un jour tu as besoin d'un service, n'hésite pas une seconde.",
+        "choices": [
+          { "label": "↩️ Retour", "next": "friend_root" }
+        ]
+      },
+      "gift_prompt": {
+        "text": "Un cadeau pour moi ? Voyons voir...",
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ],
+        "_gift_mode": true
+      },
+      "gift_result_liked": {
+        "text": null,
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "gift_result_neutral": {
+        "text": null,
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "trade_root": {
+        "text": "Marché conclu ! Je vends des graines et j'achète vos récoltes.",
+        "choices": [
+          { "label": "💰 Vendre mes récoltes", "action": "open_shop_sell" },
+          { "label": "🌱 Acheter des graines", "action": "open_shop_buy" },
+          { "label": "↩️ Retour", "next": "root" }
+        ]
+      },
+      "relation_show": {
+        "text": null,
+        "choices": [
+          { "label": "↩️ Retour", "next": "root" }
+        ],
+        "_show_relation": true
+      }
+    }
+  }
+]
