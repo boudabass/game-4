@@ -32,8 +32,10 @@ let toolbarSlots = [];     // zones cliquables de chaque slot [{x,y,w,h,tool}]
 // Systèmes Phase 02 — Vertical Slice
 let npcSystem = null;      // Engine.NPCSystem
 let disasterSystem = null; // Engine.DisasterSystem
+let challengeSystem = null; // Engine.ChallengeSystem (article 528)
 let pnjsData = null;       // données pnjs.json
 let catastrophesData = null; // données catastrophes.json
+let challengesData2 = null;  // données challenges.json (article 432/528)
 let playerEnergy = 100;    // jauge d'énergie
 let playerGoldEarned = 0;  // or total gagné (cumul vie entière, pour le score)
 let lastDisaster = null;   // {msg, t} dernière catastrophe (pour notification)
@@ -86,6 +88,7 @@ function preload() {
     outilsData = loadJSON("data/outils.json");
     pnjsData = loadJSON("data/pnjs.json");
     catastrophesData = loadJSON("data/catastrophes.json");
+    challengesData2 = loadJSON("data/challenges.json");
 }
 
 function setup() {
@@ -147,7 +150,7 @@ function setup() {
             if (cropGrowth) cropGrowth.onNewDay(Engine.Clock.day);
             // Réinitialiser l'arrosage quotidien (les tuiles plantées perdent leur statut watered)
             if (soilSystem) _resetDailyWatering();
-            // Vérifier les catastrophes
+            // Vérifier les catastrophes (ancien système)
             if (disasterSystem) {
                 var season = Engine.Clock.getSeason();
                 var disaster = disasterSystem.check(season, Engine.Clock.day);
@@ -155,6 +158,29 @@ function setup() {
                     var result = disasterSystem.apply(disaster, soilSystem, cropGrowth);
                     disaster._result = result;
                     lastDisaster = { msg: disaster.msg, t: millis(), detail: result };
+                }
+            }
+            // Vérifier les défis article 528 (ChallengeSystem)
+            if (challengeSystem) {
+                var season = Engine.Clock.getSeason();
+                // Nettoyer les effets visuels expirés
+                challengeSystem.cleanEffects(Engine.Clock.day);
+                var triggered = challengeSystem.check(season, Engine.Clock.day);
+                if (triggered) {
+                    var result = challengeSystem.apply(triggered, soilSystem, cropGrowth, Engine.Clock.day);
+                    // Notification : formater comme lastDisaster pour compatibilité
+                    var notif = challengeSystem.getLastNotification();
+                    if (notif) {
+                        notif.t = millis();
+                        lastDisaster = {
+                            icon: notif.icon,
+                            title: notif.title,
+                            msg: notif.icon + ' ' + notif.msg,
+                            t: notif.t,
+                            detail: notif.detail,
+                            isChallenge: true
+                        };
+                    }
                 }
             }
             // Réinitialiser le flag de sommeil
@@ -191,6 +217,10 @@ function setup() {
     disasterSystem = new Engine.DisasterSystem();
     if (catastrophesData) disasterSystem.configure({ disasters: catastrophesData });
 
+    // --- Système défis article 528 (challenges.json) ---
+    challengeSystem = new Engine.ChallengeSystem();
+    if (challengesData2) challengeSystem.configure({ challenges: challengesData2 });
+
     // --- Énergie de départ ---
     playerEnergy = C.energy.max;
 
@@ -225,6 +255,7 @@ async function boot() {
                 if (harvestSystem) data.harvest = harvestSystem.gather();
                 if (npcSystem) data.npcs = npcSystem.gather();
                 if (disasterSystem) data.disasters = disasterSystem.gather();
+                if (challengeSystem) data.challenges = challengeSystem.gather();
                 return data;
             },
             apply: function (data) {
@@ -245,6 +276,7 @@ async function boot() {
                 if (harvestSystem && data.harvest) harvestSystem.apply(data.harvest);
                 if (npcSystem && data.npcs) npcSystem.apply(data.npcs);
                 if (disasterSystem && data.disasters) disasterSystem.apply(data.disasters);
+                if (challengeSystem && data.challenges) challengeSystem.apply(data.challenges);
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
@@ -673,6 +705,24 @@ function drawCrops() {
             text('clic', cx, cy);
         }
         textAlign(CENTER, CENTER);
+
+        // Effet visuel de gel (ChallengeSystem article 528)
+        if (challengeSystem && zone && zone.id === 'ferme') {
+            var fx = challengeSystem.getEffectAt(c, r);
+            if (fx && fx.visual === 'frost') {
+                // Overlay bleu givré
+                noStroke();
+                fill(150, 200, 255, 130);
+                rect(x + 2, y + 2, ts - 4, ts - 4, 4);
+                // Cristaux de glace (❄️ pulsant)
+                var t = millis();
+                var pulse = 0.6 + 0.4 * sin(t * 0.004 + c + r);
+                textSize(ts * 0.35);
+                fill(200, 230, 255, 180 * pulse);
+                textAlign(CENTER, CENTER);
+                text('❄️', cx, cy);
+            }
+        }
     }
 }
 
@@ -990,7 +1040,7 @@ function drawToolbar() {
     textAlign(CENTER, CENTER);
 }
 
-/* ─── Notification de catastrophe ─── */
+/* ─── Notification de catastrophe / défi ─── */
 function drawDisasterNotice() {
     if (!lastDisaster) return;
     var elapsed = millis() - lastDisaster.t;
@@ -998,21 +1048,39 @@ function drawDisasterNotice() {
 
     var alpha = elapsed < 500 ? (elapsed / 500) * 220 : (elapsed > 5000 ? (6000 - elapsed) / 1000 * 220 : 220);
 
-    // Fond bandeau
-    var h = u(7);
+    // Fond bandeau — couleur selon type (défi = bleu/violet, catastrophe = rouge)
+    var isChallenge = lastDisaster.isChallenge;
+    var bgR = isChallenge ? 60 : 180;
+    var bgG = isChallenge ? 80 : 40;
+    var bgB = isChallenge ? 160 : 40;
+
+    var h = u(9);
+    if (lastDisaster.title) h = u(11); // plus haut pour titre + msg
     var y = u(11);
     noStroke();
-    fill(180, 40, 40, alpha);
+    fill(bgR, bgG, bgB, alpha);
     rect(u(5), y, width - u(10), h, u(1.5));
 
+    // Titre (défis uniquement)
+    if (lastDisaster.title && lastDisaster.icon) {
+        textSize(u(3.5));
+        fill(255, 255, 255, alpha);
+        textAlign(CENTER, CENTER);
+        text(lastDisaster.icon + ' ' + lastDisaster.title, width / 2, y + u(4));
+    }
+
+    // Message
     textSize(u(2.8));
     fill(255, 255, 255, alpha);
     textAlign(CENTER, CENTER);
-    var txt = lastDisaster.msg;
-    if (lastDisaster.detail && lastDisaster.detail.cropsDestroyed > 0) {
+    var txt = lastDisaster.msg || '';
+    if (lastDisaster.detail && lastDisaster.detail.cropsAffected > 0) {
+        txt += " (" + lastDisaster.detail.cropsAffected + " culture(s) touchée(s))";
+    } else if (lastDisaster.detail && lastDisaster.detail.cropsDestroyed > 0) {
         txt += " (" + lastDisaster.detail.cropsDestroyed + " culture(s) perdue(s))";
     }
-    text(txt, width / 2, y + h / 2);
+    var msgY = lastDisaster.title ? y + u(7.5) : y + h / 2;
+    text(txt, width / 2, msgY);
     textAlign(CENTER, CENTER);
 }
 
@@ -1743,8 +1811,10 @@ function _submitScore() {
         }
     }
 
-    // Défis surmontés (depuis l'historique)
-    var challengesOvercome = disasterSystem ? disasterSystem.getHistory().length : 0;
+    // Défis surmontés (depuis l'historique des deux systèmes)
+    var challengesOvercome = 0;
+    if (disasterSystem) challengesOvercome += disasterSystem.getHistory().length;
+    if (challengeSystem) challengesOvercome += challengeSystem.getHistory().length;
 
     var score = Math.floor(
         days * 20
