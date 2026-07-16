@@ -28,7 +28,7 @@ window.FarmConfig = {
         dawn:   { hour: 5,  color: [255, 230, 200, 12] },  // aube (très léger)
         day:    { hour: 7,  color: [255, 255, 255, 0] },    // plein jour
         dusk:   { hour: 19, color: [255, 160, 100, 20] },   // crépuscule (discret)
-        night:  { hour: 21, color: [15, 15, 50, 120] },     // nuit (moins opaque)
+        night:  { hour: 21, color: [15, 15, 55, 95] },      // nuit (sombre mais jouable)
     },
 
     // Lit (position dans maison-rdc, déclenche le sommeil)
