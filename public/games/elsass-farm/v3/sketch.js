@@ -200,12 +200,21 @@ function setup() {
 
     // --- Système de sol ---
     soilSystem = new Engine.SoilSystem();
+    // Zone cultivable hardcodée — fallback si zones.json échoue
     var farmZone = C._zonesData && C._zonesData.ferme;
     var ct = farmZone && farmZone.cultivableTiles;
     if (ct) {
         for (var sc = ct.c1; sc <= ct.c2; sc++) {
             for (var sr = ct.r1; sr <= ct.r2; sr++) {
                 soilSystem.setCultivable(sc, sr, true);
+            }
+        }
+    }
+    // FALLBACK : si rien n'a été chargé, zone cultivable par défaut (cols 4-12, rows 6-10)
+    if (Object.keys(soilSystem._cultivable).length === 0) {
+        for (var fc = 4; fc <= 12; fc++) {
+            for (var fr = 6; fr <= 10; fr++) {
+                soilSystem.setCultivable(fc, fr, true);
             }
         }
     }
@@ -972,17 +981,17 @@ function drawWorld() {
 }
 
 function drawHud() {
-    // Nom de la zone (haut centre-gauche)
+    // Nom de la zone (haut droite, à côté de l'or)
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     var zoneLabel = zone ? (zone.emoji || '') + ' ' + (zone.label || zone.id) : 'Ferme';
-    textSize(u(3));
-    var zw = textWidth(zoneLabel) + u(4);
+    textSize(u(2.5));
+    var gold = harvestSystem ? harvestSystem.getGold() : 0;
+    var goldLabel = '🪙 ' + gold + '  |  ' + zoneLabel;
+    var gw = textWidth(goldLabel) + u(4);
     fill(C.colors.hudPanel);
-    rect(u(2), u(2), zw, u(6), u(1.5));
+    rect(width - gw - u(2), u(2), gw, u(6), u(1.5));
     fill(255, 215, 0);
-    textAlign(LEFT, CENTER);
-    text(zoneLabel, u(4), u(2) + u(3));
-    textAlign(CENTER, CENTER);
+    text(goldLabel, width - u(2) - gw/2, u(2) + u(3));
 
     // Bandeau horloge (haut centre)
     var season = Engine.Clock.getSeason();
@@ -994,16 +1003,6 @@ function drawHud() {
     rect(width / 2 - w / 2, u(2), w, u(6), u(1.5));
     fill(C.colors.hudText);
     text(label, width / 2, u(2) + u(3));
-
-    // Or (haut droite)
-    var gold = harvestSystem ? harvestSystem.getGold() : 0;
-    var goldLabel = "🪙 " + gold;
-    textSize(u(3));
-    var gw = textWidth(goldLabel) + u(4);
-    fill(C.colors.hudPanel);
-    rect(width - gw - u(2), u(2), gw, u(6), u(1.5));
-    fill(255, 215, 0);
-    text(goldLabel, width - u(2) - gw/2, u(2) + u(3));
 
     // Énergie (haut gauche)
     var energyPct = Math.max(0, playerEnergy / C.energy.max);
