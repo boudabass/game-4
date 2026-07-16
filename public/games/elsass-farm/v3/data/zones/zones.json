@@ -214,10 +214,14 @@
         },
         "portals": [
             {
-                "id": "etage1-to-entree",
-                "type": "simple",
+                "id": "etage1-elevator",
+                "type": "choice",
                 "from": { "cells": [[5, 9]] },
-                "to": { "zone": "mine-entree", "entry": { "col": 7, "row": 8 } }
+                "choices": [
+                    { "label": "Sortie — Entrée de la mine", "to": { "zone": "mine-entree", "entry": { "col": 7, "row": 8 } } },
+                    { "label": "Étage 2 — Cristaux", "to": { "zone": "mine-etage-2", "entry": { "col": 5, "row": 8 } } },
+                    { "label": "Étage 3 — Trésor", "to": { "zone": "mine-etage-3", "entry": { "col": 5, "row": 8 } } }
+                ]
             }
         ]
     },
@@ -245,10 +249,14 @@
         },
         "portals": [
             {
-                "id": "etage2-to-entree",
-                "type": "simple",
+                "id": "etage2-elevator",
+                "type": "choice",
                 "from": { "cells": [[5, 9]] },
-                "to": { "zone": "mine-entree", "entry": { "col": 7, "row": 8 } }
+                "choices": [
+                    { "label": "Sortie — Entrée de la mine", "to": { "zone": "mine-entree", "entry": { "col": 7, "row": 8 } } },
+                    { "label": "Étage 1 — Galeries", "to": { "zone": "mine-etage-1", "entry": { "col": 5, "row": 8 } } },
+                    { "label": "Étage 3 — Trésor", "to": { "zone": "mine-etage-3", "entry": { "col": 5, "row": 8 } } }
+                ]
             }
         ]
     },
@@ -275,10 +283,14 @@
         },
         "portals": [
             {
-                "id": "etage3-to-entree",
-                "type": "simple",
+                "id": "etage3-elevator",
+                "type": "choice",
                 "from": { "cells": [[5, 9]] },
-                "to": { "zone": "mine-entree", "entry": { "col": 7, "row": 8 } }
+                "choices": [
+                    { "label": "Sortie — Entrée de la mine", "to": { "zone": "mine-entree", "entry": { "col": 7, "row": 8 } } },
+                    { "label": "Étage 1 — Galeries", "to": { "zone": "mine-etage-1", "entry": { "col": 5, "row": 8 } } },
+                    { "label": "Étage 2 — Cristaux", "to": { "zone": "mine-etage-2", "entry": { "col": 5, "row": 8 } } }
+                ]
             }
         ]
     }
