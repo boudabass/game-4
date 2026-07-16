@@ -1,0 +1,22 @@
+[
+  {
+    "id": "gel-tardif",
+    "label": "Gel tardif",
+    "msg": "Un gel tardif a frappé cette nuit ! Certaines de vos cultures ont gelé.",
+    "season": "printemps",
+    "type": "destroy_crops",
+    "probability": 0.15,
+    "maxAffected": 2,
+    "mitigation": "Construisez une serre pour protéger vos cultures."
+  },
+  {
+    "id": "grele",
+    "label": "Grêle",
+    "msg": "Un violent orage de grêle a endommagé vos cultures d'été !",
+    "season": "ete",
+    "type": "destroy_crops",
+    "probability": 0.10,
+    "maxAffected": 1,
+    "mitigation": "Diversifiez vos cultures ou souscrivez une assurance récolte."
+  }
+]

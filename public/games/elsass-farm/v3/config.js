@@ -12,6 +12,28 @@ window.FarmConfig = {
     // Zone d'action : 1 = les 8 tuiles autour du personnage.
     actionRange: 1,
 
+    // Énergie
+    energy: {
+        max: 100,
+        tillCost: 2,
+        plantCost: 1,
+        waterCost: 2,
+        harvestCost: 1,
+        restoreSleep: 100,       // restauré si couché avant minuit
+        restoreFaint: 50,        // restauré après évanouissement (minuit sans dormir)
+    },
+
+    // Cycle jour/nuit : teintes par plage horaire
+    dayTint: {
+        dawn:   { hour: 5,  color: [255, 200, 150, 40] },  // aube
+        day:    { hour: 7,  color: [255, 255, 255, 0] },    // plein jour
+        dusk:   { hour: 19, color: [255, 150, 80, 50] },    // crépuscule
+        night:  { hour: 21, color: [20, 20, 60, 160] },     // nuit
+    },
+
+    // Lit (position dans maison-rdc, déclenche le sommeil)
+    bed: { zone: "maison-rdc", c: 2, r: 6, w: 3, h: 1 },
+
     // Obstacles (décor). "rect" = zone bloquée c,r → c+w,r+h.
     obstacles: {
         rects: [
