@@ -305,6 +305,20 @@ async function boot() {
     }
 
     if (window.Engine && Engine.Loader) Engine.Loader.finish();
+
+    // --- Synchro cloud toutes les 5 minutes ---
+    setInterval(async function () {
+        if (window.Engine && Engine.Save) {
+            await Engine.Save.saveCloud();
+        }
+    }, 5 * 60 * 1000);
+
+    // --- Sauvegarde locale à la fermeture de la page ---
+    window.addEventListener('beforeunload', function () {
+        if (window.Engine && Engine.Save) {
+            Engine.Save.saveLocal();
+        }
+    });
 }
 
 /* ─── Réinitialisation quotidienne de l'arrosage ─── */
