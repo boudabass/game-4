@@ -40,5 +40,33 @@
       "poireau": 20,
       "navet": 15
     }
+  },
+  {
+    "id": "boulangere",
+    "label": "La boulangère",
+    "emoji": "🥨",
+    "fallback": { "shape": "circle", "color": "#8d6e63" },
+    "role": "Vend farine et pains, achète céréales",
+    "zone": "village",
+    "c": 15,
+    "r": 7,
+    "dialogue": "Bonjour ! Ma farine est la meilleure de la région. Vous avez du blé ou de l'orge à me vendre ?",
+    "dialogueWarm": "Ah, mon meilleur fournisseur de céréales ! Tenez, prenez ce pain tout juste sorti du four.",
+    "dialogueFriend": "Vous êtes comme de la famille ! Je vous garde toujours mes meilleures fournées. Vous voulez du kougelhopf ?",
+    "dialogueGiftLiked": "Du blé d'aussi bonne qualité ! Je vais pouvoir faire un pain extraordinaire. Merci infiniment !",
+    "dialogueGiftNeutral": "Merci, c'est gentil. Je trouverai bien une utilisation.",
+    "likedGifts": ["ble", "orge", "farine", "lait", "oeuf"],
+    "buyGifts": ["farine", "pain", "bretzel", "kougelhopf"],
+    "sellCrops": true,
+    "buySeeds": false,
+    "place": "boulangerie",
+    "sells": ["farine"],
+    "buysCategories": ["cereale"],
+    "relationTiers": [
+      { "level": 5,  "effect": { "type": "discount", "value": 0.05 } },
+      { "level": 10, "effect": { "type": "recipe", "id": "kougelhopf" } },
+      { "level": 15, "effect": { "type": "discount", "value": 0.10 } },
+      { "level": 20, "effect": { "type": "recipe", "id": "tarte-flambee" } }
+    ]
   }
 ]
