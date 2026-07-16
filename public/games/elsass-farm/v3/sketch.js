@@ -1573,8 +1573,18 @@ function mousePressed() {
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'action' };
         }
     } else {
-        // Déplacement
-        player.moveTo(tile.c, tile.r);
+        // Déplacement — range=1 pour cultivable et PNJ (s'arrêter à côté)
+        var moveRange = 0;
+        if (npcSystem && Engine.WorldZone) {
+            var cz = Engine.WorldZone.getCurrent();
+            if (cz && npcSystem.getNPCAt(cz.id, tile.c, tile.r)) {
+                moveRange = 1;
+            }
+        }
+        if (moveRange === 0 && soilSystem && soilSystem.isCultivable(tile.c, tile.r)) {
+            moveRange = 1;
+        }
+        player.moveTo(tile.c, tile.r, moveRange);
         var center = Engine.Grid.toWorld(tile.c, tile.r);
         moveMarker = { x: center.x, y: center.y, t: millis() };
     }

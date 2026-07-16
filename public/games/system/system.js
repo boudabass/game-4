@@ -8,7 +8,7 @@
     console.log("🔌 GameSystem Hub Loaded");
 
     // 1. Résolution de la configuration
-    // L'ID numérique de la release Odoo (x_game_release.id) est injecté par la
+    // L'ID numérique du jeu est injecté par la plateforme via ?gid=.
     // plateforme via le paramètre d'URL ?gid=. C'est la SOURCE DE VÉRITÉ.
     // Un éventuel window.DyadGame.id (slug hérité) n'est utilisé qu'en repli.
     let gid = null;
@@ -29,7 +29,7 @@
     }
 
     // Normalisation : tout code existant qui lit window.DyadGame.id récupère
-    // désormais l'ID numérique Odoo (répare les SaveManager locaux hérités).
+    // désormais l'ID numérique du jeu (répare les SaveManager locaux hérités).
     window.DyadGame = { ...legacy, id: finalId, version };
     const config = window.DyadGame;
 

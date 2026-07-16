@@ -107,10 +107,17 @@
                 isMoving: function () { return this._path.length > 0; },
 
                 // Lance (ou relance) un déplacement vers une tuile.
-                moveTo: function (c, r) {
+                // range (optionnel) : nb de cases à retirer de la fin du chemin.
+                //   range=0 (défaut) → va sur la case.
+                //   range=1 → s'arrête une case avant (reste adjacent).
+                moveTo: function (c, r, range) {
                     var from = this.tile();
                     var path = window.Engine.Path.find(this.grid, from, { c: c, r: r });
-                    if (path) this._path = path;
+                    if (!path) return;
+                    if (typeof range === 'number' && range > 0 && path.length > range) {
+                        path = path.slice(0, path.length - range);
+                    }
+                    if (path.length > 0) this._path = path;
                 },
 
                 stop: function () { this._path = []; },
