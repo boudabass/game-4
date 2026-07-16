@@ -843,6 +843,9 @@ function drawWorld() {
             water: 'rgba(33,150,243,0.75)',
             harvest: 'rgba(255,193,7,0.8)',
             gift: 'rgba(255,105,180,0.8)',
+            chop: 'rgba(156,39,176,0.75)',
+            mine: 'rgba(96,125,139,0.75)',
+            blocked: 'rgba(244,67,54,0.6)',
             action: C.colors.actionFlash
         };
         var fc = flashColors[actionFlash.type] || flashColors.action;
@@ -1272,8 +1275,10 @@ function mousePressed() {
     }
 
     if (Engine.ActionZone.contains(player.tile(), tile)) {
-        // Action dans la zone
-        if (soilSystem && soilSystem.isCultivable(tile.c, tile.r)) {
+        // Action dans la zone — outil prioritaire (carte 525)
+        if (selectedTool) {
+            _doToolAction(selectedTool, tile);
+        } else if (soilSystem && soilSystem.isCultivable(tile.c, tile.r)) {
             _doFarmAction(tile);
         } else {
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'action' };
@@ -1349,6 +1354,80 @@ function _doFarmAction(tile) {
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'harvest' };
         }
     }
+    if (window.Engine && Engine.Save) Engine.Save.saveLocal();
+}
+
+/* ─── Action outil (carte 525) ───
+   Utilise l'outil sélectionné sur la tuile cliquée dans la zone d'action.
+   Chaque outil vérifie l'état du sol avant d'agir. */
+function _doToolAction(toolId, tile) {
+    // Trouver les données de l'outil
+    var tool = null;
+    if (outilsData) {
+        for (var i = 0; i < outilsData.length; i++) {
+            if (outilsData[i].id === toolId) { tool = outilsData[i]; break; }
+        }
+    }
+    if (!tool) return;
+
+    var action = tool.action;
+    var state = soilSystem ? soilSystem.getState(tile.c, tile.r) : 'none';
+
+    switch (action) {
+        case 'till': // Pelle — labourer un sol vide
+            if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'empty') {
+                if (playerEnergy < C.energy.tillCost) return;
+                soilSystem.till(tile.c, tile.r);
+                playerEnergy -= C.energy.tillCost;
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
+            } else {
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
+            }
+            break;
+
+        case 'plant': // Graines — planter sur sol labouré
+            if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'tilled') {
+                if (playerEnergy < C.energy.plantCost) return;
+                var season = Engine.Clock.getSeason();
+                var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
+                var toPlant = null;
+                for (var ci = 0; ci < crops.length; ci++) {
+                    if (crops[ci].season === season) { toPlant = crops[ci]; break; }
+                }
+                if (toPlant) {
+                    soilSystem.plant(tile.c, tile.r, toPlant.id);
+                    cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
+                    playerEnergy -= C.energy.plantCost;
+                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
+                }
+            } else {
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
+            }
+            break;
+
+        case 'water': // Arrosoir — arroser une culture plantée
+            if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'planted' && !soilSystem.isWatered(tile.c, tile.r)) {
+                if (playerEnergy < C.energy.waterCost) return;
+                soilSystem.water(tile.c, tile.r);
+                playerEnergy -= C.energy.waterCost;
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
+            } else {
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
+            }
+            break;
+
+        case 'chop': // Hache — couper (placeholder, flash seulement)
+            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'chop' };
+            break;
+
+        case 'mine': // Pioche — miner (placeholder, flash seulement)
+            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'mine' };
+            break;
+
+        default:
+            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'action' };
+    }
+
     if (window.Engine && Engine.Save) Engine.Save.saveLocal();
 }
 
