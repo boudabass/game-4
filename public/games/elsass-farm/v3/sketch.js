@@ -1181,7 +1181,7 @@ function drawNPCDialogue() {
     var gaugeH = hasNPC ? u(9) : 0;
     var btnH = hasNPC ? u(6) : 0;
 
-    var totalH = pad + nameH + gap + textH + gap + gap + gaugeH + (gaugeH > 0 ? gap : 0) + btnH + pad;
+    var totalH = pad + nameH + gap + textH + gap + (hasNPC ? gap : 0) + gaugeH + (gaugeH > 0 ? gap : 0) + btnH + pad;
 
     var dw = width * 0.7;
     var dx = width / 2 - dw / 2;
@@ -1222,6 +1222,9 @@ function drawNPCDialogue() {
     textAlign(CENTER, CENTER);
     text(npcDialogue.text, dx + dw/2, cy + textH/2);
     cy += textH + gap;
+
+    // Espace entre texte et jauge
+    if (hasNPC) cy += gap;
 
     // ── Bloc 3 : Jauge ──
     if (hasNPC) {
