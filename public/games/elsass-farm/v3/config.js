@@ -120,7 +120,7 @@ window.FarmConfig = {
             "batiment/farm_grange_fenetre.png"
         ],
 
-        // Objets farm
+        // Objets farm + town (outils, pièces, sacs de graines)
         objet: [
             "objet/farm_hache.png",
             "objet/farm_pelle.png",
@@ -128,7 +128,33 @@ window.FarmConfig = {
             "objet/farm_seau_eau.png",
             "objet/farm_seau_lait.png",
             "objet/farm_pot_lait.png",
-            "objet/farm_pain.png"
+            "objet/farm_pain.png",
+            "objet/town_pioche.png",
+            "objet/town_piece_or.png",
+            "objet/farm_carotte_sac.png",
+            "objet/farm_aubergine_sac.png",
+            "objet/farm_mais_sac.png",
+            "objet/farm_tomate_sac.png",
+            "objet/farm_chou_sac.png",
+            "objet/farm_ble_sac.png"
+        ],
+
+        // UI assets (chiffres, cadres, icônes HUD)
+        ui: [
+            "ui/shmup_hud_cadre.png",
+            "ui/battle_hud_carburant.png",
+            "ui/fish_hud_chiffre_0.png",
+            "ui/fish_hud_chiffre_1.png",
+            "ui/fish_hud_chiffre_2.png",
+            "ui/fish_hud_chiffre_3.png",
+            "ui/fish_hud_chiffre_4.png",
+            "ui/fish_hud_chiffre_5.png",
+            "ui/fish_hud_chiffre_6.png",
+            "ui/fish_hud_chiffre_7.png",
+            "ui/fish_hud_chiffre_8.png",
+            "ui/fish_hud_chiffre_9.png",
+            "ui/fish_hud_deuxpoints.png",
+            "ui/fish_hud_dollar.png"
         ]
     }
 };

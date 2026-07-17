@@ -77,6 +77,7 @@ function preload() {
     loadCat("perso");
     loadCat("batiment");
     loadCat("objet");
+    loadCat("ui");
 
     C._zonesData = loadJSON("data/zones/zones.json");
 
@@ -101,6 +102,7 @@ function preload() {
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
+    noSmooth();
     textAlign(CENTER, CENTER);
 
     // --- Zones & Portails ---
@@ -497,6 +499,80 @@ function drawTileImg(img, c, r, ts) {
     if (!img) return;
     ts = ts || Engine.Grid.tileSize;
     image(img, c * ts, r * ts, ts, ts);
+}
+
+/* ─── Helpers de rendu UI — assets pixel art ─── */
+
+/* Calcule un multiple entier >= baseSize qui tient dans available */
+function _fitMult(available, baseSize) {
+    return Math.max(1, Math.floor(available / baseSize));
+}
+
+/* Dessine un nombre (0-9999) avec les chiffres fish_hud_chiffre_* 
+   Retourne la largeur totale dessinée */
+function _drawFishNumber(x, y, num, digitSize) {
+    var s = num.toString();
+    var totalW = 0;
+    var glyphs = [];
+    for (var i = 0; i < s.length; i++) {
+        var ch = s[i];
+        if (ch === '-') { totalW += digitSize * 0.6; continue; }
+        var g = img("ui", "fish_hud_chiffre_" + ch);
+        if (g) {
+            glyphs.push({ img: g, w: digitSize });
+            totalW += digitSize;
+        } else {
+            totalW += digitSize * 0.6;
+        }
+    }
+    // Centrer horizontalement
+    var cx = x - totalW / 2;
+    for (var i = 0; i < glyphs.length; i++) {
+        image(glyphs[i].img, cx, y, glyphs[i].w, digitSize);
+        cx += glyphs[i].w;
+    }
+    return totalW;
+}
+
+/* Dessine une chaîne de time (ex "07:35") avec chiffres + deuxpoints */
+function _drawFishTime(x, y, timeStr, digitSize) {
+    var s = timeStr;
+    var totalW = 0;
+    var chunks = [];
+    var colonW = digitSize * 0.5;
+    for (var i = 0; i < s.length; i++) {
+        var ch = s[i];
+        if (ch === ':') {
+            var dp = img("ui", "fish_hud_deuxpoints");
+            if (dp) { chunks.push({ img: dp, w: colonW }); totalW += colonW; }
+            else { totalW += colonW; }
+        } else if (ch >= '0' && ch <= '9') {
+            var g = img("ui", "fish_hud_chiffre_" + ch);
+            if (g) { chunks.push({ img: g, w: digitSize }); totalW += digitSize; }
+            else { totalW += digitSize * 0.6; }
+        }
+    }
+    var cx = x - totalW / 2;
+    for (var i = 0; i < chunks.length; i++) {
+        image(chunks[i].img, cx, y, chunks[i].w, digitSize);
+        cx += chunks[i].w;
+    }
+    return totalW;
+}
+
+/* Dessine le sélecteur d'outil avec bordure asset (shmup_hud_cadre) */
+function _drawToolSelector(x, y, w, h) {
+    var frame = img("ui", "shmup_hud_cadre");
+    if (frame) {
+        image(frame, x - 2, y - 2, w + 4, h + 4);
+    } else {
+        // Fallback dessiné
+        noFill();
+        stroke(255, 215, 0, 255);
+        strokeWeight(u(0.5));
+        rect(x, y, w, h, u(1.5));
+        noStroke();
+    }
 }
 
 function drawGround() {
@@ -995,61 +1071,109 @@ function drawWorld() {
 }
 
 function drawHud() {
-    // Nom de la zone (haut droite, à côté de l'or)
+    // ── Compteur d'or (haut droite) ──
+    var gold = harvestSystem ? harvestSystem.getGold() : 0;
+    // Zone + nom de zone
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     var zoneLabel = zone ? (zone.emoji || '') + ' ' + (zone.label || zone.id) : 'Ferme';
     textSize(u(2.5));
-    var gold = harvestSystem ? harvestSystem.getGold() : 0;
-    var goldLabel = '🪙 ' + gold + '  |  ' + zoneLabel;
-    var gw = textWidth(goldLabel) + u(4);
-    fill(C.colors.hudPanel);
-    rect(width - gw - u(2), u(2), gw, u(6), u(1.5));
-    fill(255, 215, 0);
-    text(goldLabel, width - u(2) - gw/2, u(2) + u(3));
+    var zW = textWidth(zoneLabel) + u(2);
+    fill(C.colors.hudText);
+    textAlign(RIGHT, CENTER);
+    text(zoneLabel, width - u(2), u(5));
 
-    // Bandeau horloge (haut centre)
+    // Icône or + chiffres
+    var coinSize = u(4);
+    var m = _fitMult(coinSize, 64);
+    coinSize = 64 * m;
+    var coin = img("objet", "town_piece_or");
+    if (coin) {
+        var coinY = u(2) + (u(6) - coinSize) / 2;
+        var coinX = width - u(2) - coinSize;
+        image(coin, coinX, coinY, coinSize, coinSize);
+    }
+    var digitH = u(4);
+    var dm = _fitMult(digitH, 64);
+    digitH = 64 * dm;
+    var goldStr = Math.floor(gold).toString();
+    var gTotalW = goldStr.length * digitH;
+    var gX = width - u(2) - (coin ? coinSize + u(1) : 0) - gTotalW / 2;
+    _drawFishNumber(gX, u(2) + (u(6) - digitH) / 2, Math.floor(gold), digitH);
+
+    // Fond or + zone
+    var orW = (coin ? coinSize + u(1) : 0) + gTotalW + zW + u(4);
+    var orX = width - orW - u(2);
+    fill(C.colors.hudPanel);
+    noStroke();
+    rect(orX, u(2), orW, u(6), u(1.5));
+
+    // ── Horloge (haut centre) ──
     var season = Engine.Clock.getSeason();
     var seasonEmoji = { printemps: '🌸', ete: '☀️', automne: '🍂', hiver: '❄️' };
-    var label = "Jour " + Engine.Clock.day + " " + (seasonEmoji[season] || '') + " — " + Engine.Clock.timeString();
-    textSize(u(3.2));
-    var w = textWidth(label) + u(6);
-    fill(C.colors.hudPanel);
-    rect(width / 2 - w / 2, u(2), w, u(6), u(1.5));
-    fill(C.colors.hudText);
-    text(label, width / 2, u(2) + u(3));
+    var timeStr = Engine.Clock.timeString();
+    var dayStr = "Jour " + Engine.Clock.day + " " + (seasonEmoji[season] || '');
 
-    // Énergie (haut gauche)
+    var clockDigitH = u(4);
+    var cdm = _fitMult(clockDigitH, 64);
+    clockDigitH = 64 * cdm;
+    var clockW = timeStr.length * clockDigitH + (clockDigitH * 0.5); // approx
+    textSize(u(2.5));
+    var dayW = textWidth(dayStr) + u(2);
+    var totalClockW = dayW + clockW + u(2);
+    var clockX = width / 2 - totalClockW / 2;
+
+    fill(C.colors.hudPanel);
+    rect(clockX - u(2), u(2), totalClockW + u(4), u(6), u(1.5));
+
+    // Texte jour + saison
+    fill(C.colors.hudText);
+    textAlign(LEFT, CENTER);
+    text(dayStr, clockX, u(5));
+    // Chiffres heure
+    _drawFishTime(clockX + dayW + u(2), u(2) + (u(6) - clockDigitH) / 2, timeStr, clockDigitH);
+    textAlign(CENTER, CENTER);
+
+    // ── Énergie (haut gauche) ──
     var energyPct = Math.max(0, playerEnergy / C.energy.max);
     var energyColor = energyPct > 0.5 ? [100, 220, 80] : (energyPct > 0.25 ? [255, 200, 40] : [255, 80, 80]);
     var barW = u(18);
     var barH = u(2.5);
     var barX = u(2);
     var barY = u(2);
+
     fill(C.colors.hudPanel);
-    rect(barX - u(0.5), barY - u(0.5), barW + u(1), barH + u(1), u(1));
+    rect(barX - u(0.5), barY - u(0.5), barW + u(1), barH + u(1.5) + u(2) + u(1), u(1));
     // Fond barre
     fill(40, 40, 40, 200);
     rect(barX, barY, barW, barH, u(0.5));
-    // Barre énergie
+    // Barre remplie
     fill(energyColor[0], energyColor[1], energyColor[2], 220);
     rect(barX, barY, barW * energyPct, barH, u(0.5));
-    // Texte
+    // Icône carburant
+    var fuelSize = u(3);
+    var fm = _fitMult(fuelSize, 16);
+    fuelSize = 16 * fm;
+    var fuel = img("ui", "battle_hud_carburant");
+    if (fuel) {
+        image(fuel, barX + u(0.5), barY + barH + u(0.5), fuelSize, fuelSize);
+    }
+    // Texte énergie à côté de l'icône
     fill(255);
     textSize(u(2));
     textAlign(LEFT, CENTER);
-    text("⚡ " + playerEnergy, barX + u(1), barY + barH/2);
+    text(playerEnergy, barX + fuelSize + u(1.5), barY + barH + fuelSize / 2 + u(0.5));
     textAlign(CENTER, CENTER);
 
-    // Météo du jour
-    var weatherLabel = _isRainyDay(season) ? '🌧️ Pluie' : '☀️ Beau';
+    // ── Météo du jour ──
+    var weatherLabel = _isRainyDay(season) ? '\uD83C\uDF27\uFE0F Pluie' : '\u2600\uFE0F Beau';
     textSize(u(2.5));
     fill(C.colors.hudPanel);
     var ww = textWidth(weatherLabel) + u(3);
-    rect(barX, barY + barH + u(1), ww, u(4.5), u(1));
+    rect(barX, barY + barH + u(1.5) + fuelSize + u(1), ww, u(4.5), u(1));
     fill(C.colors.hudText);
-    text(weatherLabel, barX + ww/2, barY + barH + u(3.2));
+    text(weatherLabel, barX + ww / 2, barY + barH + u(1.5) + fuelSize + u(3.2));
 
-    // Boutons zoom + / − (bas droite)
+    // ── Boutons zoom +/− (bas droite) ──
     var size = u(9);
     var x = width - size - u(3);
     var yPlus = height - size * 2 - u(5);
@@ -1062,12 +1186,12 @@ function drawHud() {
     fill(C.colors.buttonText);
     textSize(u(5));
     text("+", x + size / 2, yPlus + size / 2);
-    text("−", x + size / 2, yMinus + size / 2);
+    text("\u2212", x + size / 2, yMinus + size / 2);
 
-    // Barre d'outils
+    // ── Barre d'outils ──
     drawToolbar();
 
-    // Popup de portail
+    // ── Popup de portail ──
     drawPortalChoice();
 }
 
@@ -1080,6 +1204,9 @@ function drawToolbar() {
     var startX = width / 2 - totalW / 2;
     var y = height - slotSize - u(3);
 
+    // Taille de l'icône outil : multiple entier de 16 (taille native du pixel art)
+    var iconSize = 16 * _fitMult(slotSize * 0.65, 16);
+
     toolbarSlots = [];
 
     for (var i = 0; i < outilsData.length; i++) {
@@ -1087,6 +1214,7 @@ function drawToolbar() {
         var x = startX + i * (slotSize + gap);
         var isSelected = selectedTool === tool.id;
 
+        // Fond du slot
         if (isSelected) {
             fill(255, 215, 0, 220);
         } else {
@@ -1097,23 +1225,98 @@ function drawToolbar() {
         rect(x, y, slotSize, slotSize, u(1.5));
         noStroke();
 
-        textSize(slotSize * 0.55);
-        fill(isSelected ? 0 : C.colors.hudText);
-        textAlign(CENTER, CENTER);
-        text(tool.emoji, x + slotSize / 2, y + slotSize / 2);
+        // Icône asset
+        var toolImg = _getToolAsset(tool.id);
+        if (toolImg) {
+            var ix = x + (slotSize - iconSize) / 2;
+            var iy = y + (slotSize - iconSize) / 2;
+            image(toolImg, ix, iy, iconSize, iconSize);
+        } else {
+            // Fallback emoji
+            textSize(slotSize * 0.55);
+            fill(isSelected ? 0 : C.colors.hudText);
+            textAlign(CENTER, CENTER);
+            text(tool.emoji, x + slotSize / 2, y + slotSize / 2);
+        }
 
+        // Cadre de sélection
         if (isSelected) {
-            noFill();
-            stroke(255, 215, 0, 255);
-            strokeWeight(u(0.5));
-            rect(x, y, slotSize, slotSize, u(1.5));
-            noStroke();
+            _drawToolSelector(x - u(0.3), y - u(0.3), slotSize + u(0.6), slotSize + u(0.6));
         }
 
         toolbarSlots.push({ x: x, y: y, w: slotSize, h: slotSize, tool: tool });
     }
 
     textAlign(CENTER, CENTER);
+}
+
+/* Retourne l'image asset pour un outil, ou null */
+function _getToolAsset(toolId) {
+    switch (toolId) {
+        case 'pelle': return img("objet", "farm_pelle");
+        case 'arrosoir': return img("objet", "farm_seau_eau");
+        case 'graines': return _getSeasonSeedSac();
+        case 'hache': return img("objet", "farm_hache");
+        case 'pioche': return img("objet", "town_pioche");
+        default: return null;
+    }
+}
+
+/* Retourne le sac de graines de la culture de saison courante */
+function _getSeasonSeedSac() {
+    if (!culturesData || !culturesData.length) return null;
+    var season = Engine.Clock.getSeason();
+    // Trouver la première culture de la saison courante
+    for (var i = 0; i < culturesData.length; i++) {
+        if (culturesData[i].season === season) {
+            var cid = culturesData[i].id;
+            // Convertir nom culture en nom de fichier sac
+            var sacKey = _cropIdToSacKey(cid);
+            if (sacKey) return img("objet", sacKey);
+            break;
+        }
+    }
+    // Fallback : premier sac disponible
+    var sacCandidates = [
+        "farm_carotte_sac", "farm_ble_sac", "farm_tomate_sac",
+        "farm_mais_sac", "farm_chou_sac", "farm_aubergine_sac"
+    ];
+    for (var i = 0; i < sacCandidates.length; i++) {
+        var s = img("objet", sacCandidates[i]);
+        if (s) return s;
+    }
+    return null;
+}
+
+/* Mappe un cropId vers le nom de fichier du sac */
+function _cropIdToSacKey(cropId) {
+    // Les cultures disponibles : carotte, ble, tomate, mais, chou, aubergine
+    // Leurs sacs : farm_carotte_sac, farm_ble_sac, farm_tomate_sac, farm_mais_sac, farm_chou_sac, farm_aubergine_sac
+    var map = {
+        "carotte": "farm_carotte_sac",
+        "ble": "farm_ble_sac",
+        "tomate": "farm_tomate_sac",
+        "mais": "farm_mais_sac",
+        "choux-choucroute": "farm_chou_sac",
+        "aubergine": "farm_aubergine_sac",
+        "asperge": "farm_carotte_sac",       // fallback carotte
+        "pomme-de-terre": "farm_carotte_sac", // fallback carotte
+        "houblon": "farm_ble_sac",            // fallback blé
+        "orge": "farm_ble_sac",               // fallback blé
+        "tournesol": "farm_mais_sac",         // fallback maïs
+        "framboise": "farm_tomate_sac",       // fallback tomate
+        "potiron": "farm_chou_sac",           // fallback chou
+        "raisin": "farm_aubergine_sac",       // fallback aubergine
+        "oignon": "farm_carotte_sac",         // fallback carotte
+        "navet": "farm_chou_sac",             // fallback chou
+        "salade": "farm_chou_sac",            // fallback chou
+        "poireau": "farm_carotte_sac",        // fallback carotte
+        "fraise": "farm_tomate_sac",          // fallback tomate
+        "mirabelle": "farm_mais_sac",         // fallback maïs
+        "courgette": "farm_tomate_sac",       // fallback tomate
+        "muguet": "farm_carotte_sac"          // fallback carotte
+    };
+    return map[cropId] || null;
 }
 
 /* ─── Notification de catastrophe / défi ─── */
