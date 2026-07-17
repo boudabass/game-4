@@ -1171,9 +1171,9 @@ function drawNPCDialogue() {
 
     // Fond de dialogue
     var dw = width * 0.7;
-    var dh = u(22);
+    var dh = u(24);
     var dx = width / 2 - dw / 2;
-    var dy = height - dh - u(12);
+    var dy = height - dh - u(15);
     var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
 
     noStroke();
@@ -1187,33 +1187,30 @@ function drawNPCDialogue() {
     // Nom du PNJ
     var npc = npcSystem.getNPC(npcDialogue.npcId);
     var name = npc ? npc.label : "???";
-    textSize(u(3.5));
+    textSize(u(3.2));
     fill(255, 215, 0, alpha);
     textAlign(LEFT, CENTER);
-    text(npc ? npc.emoji + " " + name : name, dx + u(3), dy + u(5));
+    text(npc ? npc.emoji + " " + name : name, dx + u(3), dy + u(4));
     textAlign(CENTER, CENTER);
 
     // Texte
-    textSize(u(3));
+    textSize(u(2.8));
     fill(255, 255, 255, alpha);
-    text(npcDialogue.text, dx + dw/2, dy + dh/2 - u(2));
+    text(npcDialogue.text, dx + dw/2, dy + u(9));
 
-    // Jauge de relation (p5.js, 0-100, avec paliers relationTiers)
+    // Jauge de relation + boutons
     if (npc) {
-        _drawRelationGauge(npc, npcDialogue.npcId, dx, dy, dw, dh, alpha);
+        // Jauge (haut, compacte)
+        var gaugeY = dy + u(13);
+        _drawRelationGauge(npc, npcDialogue.npcId, dx, gaugeY, dw, alpha);
 
-        // Instructions — boutons cliquables (100% clic/tap, Pilier 1)
-        textSize(u(2.5));
-        fill(255, 255, 255, alpha * 0.6);
-        textAlign(CENTER, CENTER);
+        // Boutons Vendre / Acheter (bas, sous la jauge)
         var btnY = dy + dh - u(5);
-        // Bouton Vendre
         var btnW = u(18), btnH = u(4), gap = u(2);
         var totalBW = btnW * 2 + gap;
         var btnX1 = dx + dw/2 - totalBW/2;
         var btnX2 = btnX1 + btnW + gap;
 
-        // Fond boutons
         fill(100, 180, 100, alpha * 0.8);
         rect(btnX1, btnY, btnW, btnH, u(1));
         fill(220, 180, 60, alpha * 0.8);
@@ -1221,10 +1218,10 @@ function drawNPCDialogue() {
 
         fill(255);
         textSize(u(2.5));
+        textAlign(CENTER, CENTER);
         text("🛒 Vendre", btnX1 + btnW/2, btnY + btnH/2);
         text("🌱 Acheter", btnX2 + btnW/2, btnY + btnH/2);
 
-        // Stocker les zones cliquables pour mousePressed
         npcDialogue._btnSell = { x: btnX1, y: btnY, w: btnW, h: btnH };
         npcDialogue._btnBuy  = { x: btnX2, y: btnY, w: btnW, h: btnH };
     }
@@ -1235,20 +1232,19 @@ function drawNPCDialogue() {
  * Affiche : barre de progression avec gradient, paliers relationTiers, label 0-100.
  * Persistance via NPCSystem.gather()/apply() → Engine.Save.
  */
-function _drawRelationGauge(npc, npcId, dx, dy, dw, dh, alpha) {
+function _drawRelationGauge(npc, npcId, dx, gaugeY, dw, alpha) {
     var level = npcSystem.getRelationLevel(npcId);
-    var pct = Math.min(100, level * 5);          // 0-20 → 0-100
+    var pct = Math.min(100, level * 5);
 
     var barW = dw - u(12);
-    var barH = u(4);
+    var barH = u(3);
     var bx = dx + u(6);
-    // Placer la jauge entre le texte de dialogue et les boutons
-    var by = dy + dh - u(14);
+    var by = gaugeY;
 
     // Fond de la jauge
     noStroke();
     fill(40, 40, 60, alpha * 0.8);
-    rect(bx - u(1), by - u(5.5), barW + u(2), barH + u(12), u(1.5));
+    rect(bx - u(1), by - u(4), barW + u(2), barH + u(8), u(1.5));
 
     // Label "Relation"
     textSize(u(2.2));
