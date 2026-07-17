@@ -1164,29 +1164,24 @@ function drawDisasterNotice() {
 function drawNPCDialogue() {
     if (!npcDialogue) return;
     var elapsed = millis() - npcDialogue.t;
-    if (elapsed > 8000 && npcDialogue.type === 'talk') { npcDialogue = null; return; }
 
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'village') { npcDialogue = null; return; }
 
     var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
     var pad = u(3);
-    var gap = u(2);
+    var gap = u(3);
 
     var npc = npcSystem.getNPC(npcDialogue.npcId);
     var hasNPC = !!npc;
 
-    // === BLOCS EMPILÉS (chaque bloc = sa propre hauteur) ===
-    // Bloc 1 : Nom du PNJ
+    // === BLOCS EMPILÉS ===
     var nameH = u(5);
-    // Bloc 2 : Texte du dialogue
     var textH = u(7);
-    // Bloc 3 : Jauge de relation
     var gaugeH = hasNPC ? u(9) : 0;
-    // Bloc 4 : Boutons
     var btnH = hasNPC ? u(6) : 0;
 
-    var totalH = pad + nameH + gap + textH + gap + gaugeH + (gaugeH > 0 ? gap : 0) + btnH + pad;
+    var totalH = pad + nameH + gap + textH + gap + gap + gaugeH + (gaugeH > 0 ? gap : 0) + btnH + pad;
 
     var dw = width * 0.7;
     var dx = width / 2 - dw / 2;
@@ -1200,6 +1195,16 @@ function drawNPCDialogue() {
     strokeWeight(1);
     rect(dx, dy, dw, totalH, u(2));
     noStroke();
+
+    // Bouton fermer ✕ (haut droite)
+    var closeW = u(4);
+    fill(255, 255, 255, alpha * 0.3);
+    rect(dx + dw - closeW - u(1), dy + u(1), closeW, closeW, u(0.8));
+    fill(255, 255, 255, alpha * 0.7);
+    textSize(u(2.5));
+    textAlign(CENTER, CENTER);
+    text('✕', dx + dw - closeW/2 - u(1), dy + u(1) + closeW/2);
+    npcDialogue._btnClose = { x: dx + dw - closeW - u(1), y: dy + u(1), w: closeW, h: closeW };
 
     var cy = dy + pad;
 
@@ -1512,7 +1517,11 @@ function mousePressed() {
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
     if (inRect(mouseX, mouseY, zoomBtns.minus)) { Engine.Camera.zoomOut(); return; }
 
-    // Boutons dialogue PNJ (Vendre / Acheter)
+    // Boutons dialogue PNJ
+    if (npcDialogue && npcDialogue._btnClose && inRect(mouseX, mouseY, npcDialogue._btnClose)) {
+        npcDialogue = null;
+        return;
+    }
     if (npcDialogue && npcDialogue._btnSell && inRect(mouseX, mouseY, npcDialogue._btnSell)) {
         _openShop(true);
         return;
