@@ -1450,12 +1450,12 @@ function drawNPCDialogue() {
     var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
     var npc = npcSystem.getNPC(npcDialogue.npcId);
 
-    // 4 blocs empilés
+    // Layout : blocs empilés (nom → texte → jauge → boutons)
     var pad = u(4);
     var gap = u(3);
-    var nameH = u(5);
-    var textH = u(8);
-    var gaugeH = npc ? u(8) : 0;
+    var nameH = u(6);
+    var textH = u(7);
+    var gaugeH = npc ? u(6) : 0;
     var btnH = npc ? u(5) : 0;
 
     var totalH = pad + nameH + gap + textH + gap + gaugeH + gap + btnH + pad;
@@ -1463,195 +1463,125 @@ function drawNPCDialogue() {
     var dx = width / 2 - dw / 2;
     var dy = height - totalH - u(15);
 
-    // Fond
+    // ── Panneau : fond crème #F5E7C8 + bordure bois #8B5E3C + coins arrondis ──
     noStroke();
-    fill(20, 20, 40, alpha);
-    rect(dx, dy, dw, totalH, u(2));
-    stroke(255, 255, 255, alpha * 0.5);
-    strokeWeight(1);
-    rect(dx, dy, dw, totalH, u(2));
+    fill(245, 231, 200, alpha * 0.95);  // #F5E7C8
+    rect(dx, dy, dw, totalH, u(1.5));
+    noFill();
+    stroke(139, 94, 60, alpha);  // #8B5E3C
+    strokeWeight(u(0.4));
+    rect(dx, dy, dw, totalH, u(1.5));
     noStroke();
 
-    // Fermer ✕
-    var cx = u(4);
-    fill(255, 255, 255, alpha * 0.3);
-    rect(dx + dw - cx - u(1), dy + u(1), cx, cx, u(0.8));
-    fill(255, 255, 255, alpha * 0.7);
-    textSize(u(2.5));
-    textAlign(CENTER, CENTER);
-    text('✕', dx + dw - cx/2 - u(1), dy + u(1) + cx/2);
-    npcDialogue._btnClose = { x: dx + dw - cx - u(1), y: dy + u(1), w: cx, h: cx };
+    // ── Bouton Fermer : shmup_hud_croix (pas d'auto-close) ──
+    var croix = img("ui", "shmup_hud_croix");
+    if (croix) {
+        var cMult = _fitMult(u(5), 16);
+        var cSz = 16 * cMult;
+        var cx2 = dx + dw - cSz - u(2);
+        var cy2 = dy + u(2);
+        image(croix, cx2, cy2, cSz, cSz);
+        npcDialogue._btnClose = { x: cx2, y: cy2, w: cSz, h: cSz };
+    }
 
     var y = dy + pad;
 
     // ── Bloc 1 : Nom ──
     textSize(u(3));
-    fill(255, 215, 0, alpha);
+    fill(61, 43, 31, alpha);  // texte foncé sur fond crème
     textAlign(LEFT, CENTER);
     text(npc ? npc.emoji + ' ' + npc.label : '???', dx + pad, y + nameH/2);
     y += nameH + gap;
 
     // ── Bloc 2 : Texte ──
     textSize(u(2.7));
-    fill(255, 255, 255, alpha);
+    fill(61, 43, 31, alpha * 0.9);
     textAlign(CENTER, CENTER);
     text(npcDialogue.text, dx + dw/2, y + textH/2);
     y += textH + gap;
 
     if (npc) {
-        // ── Bloc 3 : Jauge ──
-        _drawRelationGauge(npc, npcDialogue.npcId, dx + pad, y, dw - pad*2, alpha);
+        // ── Bloc 3 : Jauge relation (rangée de coeurs battle_hud_coeur) ──
+        _drawRelationHearts(npc, npcDialogue.npcId, dx + pad, y, dw - pad*2, alpha);
         y += gaugeH + gap;
 
-        // ── Bloc 4 : Boutons ──
-        var bW = u(18), bH = u(4), bGap = u(2);
+        // ── Bloc 4 : Boutons réponses (rogrpg_bouton_<couleur> + _marque) ──
+        var bW = u(18), bH = u(5), bGap = u(2);
         var totalBW = bW * 2 + bGap;
         var bx1 = dx + dw/2 - totalBW/2;
         var bx2 = bx1 + bW + bGap;
 
-        fill(100, 180, 100, alpha * 0.8);
-        rect(bx1, y, bW, bH, u(1));
-        fill(220, 180, 60, alpha * 0.8);
-        rect(bx2, y, bW, bH, u(1));
+        // Vendre = vert
+        var sellPressed = npcDialogue._pressedBtn === 'sell' && millis() - npcDialogue._pressedTime < 300;
+        var sellImg = img("ui", sellPressed ? "rogrpg_bouton_vert_marque" : "rogrpg_bouton_vert");
+        if (sellImg) image(sellImg, bx1, y, bW, bH);
 
-        fill(255);
+        // Acheter = orange
+        var buyPressed = npcDialogue._pressedBtn === 'buy' && millis() - npcDialogue._pressedTime < 300;
+        var buyImg = img("ui", buyPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
+        if (buyImg) image(buyImg, bx2, y, bW, bH);
+
+        // Labels sur les boutons (blanc, centré)
+        fill(255, alpha);
         textSize(u(2.5));
         textAlign(CENTER, CENTER);
-        text('🛒 Vendre', bx1 + bW/2, y + bH/2);
-        text('🌱 Acheter', bx2 + bW/2, y + bH/2);
+        text('Vendre', bx1 + bW/2, y + bH/2);
+        text('Acheter', bx2 + bW/2, y + bH/2);
 
         npcDialogue._btnSell = { x: bx1, y: y, w: bW, h: bH };
         npcDialogue._btnBuy  = { x: bx2, y: y, w: bW, h: bH };
     }
 }
 
-/* ─── Jauge de relation PNJ (p5.js, 0-100, engine/v2) ───
- * Intégrée avec NPCSystem.getRelationLevel(), NPCSystem.giveGift().
- * Affiche : barre de progression avec gradient, paliers relationTiers, label 0-100.
- * Persistance via NPCSystem.gather()/apply() → Engine.Save.
+/* ─── Jauge de relation PNJ : rangée de coeurs (battle_hud_coeur) ───
+ * Remplace l'ancienne barre gradient par 5 coeurs style Stardew Valley.
+ * Coeurs pleins = niveaux gagnés, partiel = progression, vides = à débloquer.
  */
-function _drawRelationGauge(npc, npcId, gx, gy, gw, alpha) {
+function _drawRelationHearts(npc, npcId, gx, gy, gw, alpha) {
     var level = npcSystem.getRelationLevel(npcId);
     var pct = Math.min(100, level * 5);
 
-    var barW = gw;
-    var barH = u(3);
-    var bx = gx;
-    var by = gy;
-
-    // Fond de la jauge
-    noStroke();
-    fill(40, 40, 60, alpha * 0.8);
-    rect(bx - u(1), by - u(4), barW + u(2), barH + u(8), u(1.5));
+    var totalHearts = 5;
+    var heartsFilled = Math.floor(pct / 20);  // 0-5
+    var heartPartial = (pct % 20) / 20;       // 0-0.999...
 
     // Label "Relation"
     textSize(u(2.2));
-    fill(255, 255, 255, alpha * 0.8);
+    fill(61, 43, 31, alpha * 0.85);
     textAlign(LEFT, CENTER);
-    text("❤️ Relation", bx, by - u(1));
+    text("Relation", gx, gy + u(1.5));
 
-    // Pourcentage
-    textSize(u(2.5));
-    fill(255, 215, 0, alpha * 0.95);
-    textAlign(RIGHT, CENTER);
-    text(pct + "/100", bx + barW, by - u(1));
-    textAlign(CENTER, CENTER);
+    var coeur = img("ui", "battle_hud_coeur");
+    if (!coeur) return;
 
-    // Barre de fond
-    noStroke();
-    fill(20, 20, 40, alpha * 0.7);
-    rect(bx, by, barW, barH, u(0.6));
+    var hMult = _fitMult(u(3.5), 16);
+    var hSz = 16 * hMult;
+    var hGap = u(1.5);
+    var heartAreaWidth = totalHearts * (hSz + hGap);
+    var startX = gx + gw - heartAreaWidth;
+    if (startX < gx + u(10)) startX = gx + u(10);
 
-    // Barre remplie avec gradient (froid → chaud selon relation)
-    if (pct > 0) {
-        var fillW = barW * (pct / 100);
-        // Dégradé horizontal : bleu(0%) → vert(40%) → jaune(70%) → rose(100%)
-        var steps = Math.max(2, Math.floor(fillW / u(1)));
-        var stepW = fillW / steps;
-        for (var s = 0; s < steps; s++) {
-            var t2 = s / steps;
-            var r, g, b;
-            if (t2 < 0.4) {
-                // Bleu → Vert
-                var tt = t2 / 0.4;
-                r = Math.round(100 + tt * 50);
-                g = Math.round(150 + tt * 80);
-                b = Math.round(220 - tt * 140);
-            } else if (t2 < 0.7) {
-                // Vert → Jaune
-                var tt2 = (t2 - 0.4) / 0.3;
-                r = Math.round(150 + tt2 * 105);
-                g = Math.round(230 - tt2 * 30);
-                b = Math.round(80 - tt2 * 50);
-            } else {
-                // Jaune → Rose
-                var tt3 = (t2 - 0.7) / 0.3;
-                r = Math.round(255 - tt3 * 35);
-                g = Math.round(200 - tt3 * 120);
-                b = Math.round(30 + tt3 * 115);
-            }
-            fill(r, g, b, alpha * 0.85);
-            rect(bx + s * stepW, by, stepW + 0.5, barH);
+    for (var hi = 0; hi < totalHearts; hi++) {
+        var hx = startX + hi * (hSz + hGap);
+        var hy = gy + u(0.8);
+
+        // Reset tint au début de chaque coeur
+        noTint();
+
+        if (hi < heartsFilled) {
+            // Coeur plein — 100%
+            tint(255, alpha);
+        } else if (hi === heartsFilled && heartPartial > 0) {
+            // Coeur partiel — atténué selon progression
+            var partAlpha = 0.3 + heartPartial * 0.7;
+            tint(255, alpha * partAlpha);
+        } else {
+            // Coeur vide — très atténué
+            tint(255, alpha * 0.18);
         }
+        image(coeur, hx, hy, hSz, hSz);
     }
-
-    // Bordure de la barre
-    noFill();
-    stroke(255, 255, 255, alpha * 0.3);
-    strokeWeight(u(0.3));
-    rect(bx, by, barW, barH, u(0.6));
-    noStroke();
-
-    // Paliers relationTiers (marqueurs et labels)
-    var tiers = npc.relationTiers;
-    if (tiers && tiers.length) {
-        for (var ti = 0; ti < tiers.length; ti++) {
-            var tier = tiers[ti];
-            var tierPct = Math.min(100, tier.level * 5); // level → %
-            var mx = bx + barW * (tierPct / 100);
-
-            // Trait vertical
-            stroke(255, 255, 255, alpha * 0.5);
-            strokeWeight(u(0.2));
-            line(mx, by - u(1), mx, by + barH + u(1));
-
-            // Petit losange marqueur
-            noStroke();
-            fill(255, 215, 0, alpha * 0.9);
-            var ds = u(0.8);
-            quad(mx, by + barH + u(1.2),
-                 mx + ds, by + barH + u(2.2),
-                 mx, by + barH + u(3.2),
-                 mx - ds, by + barH + u(2.2));
-
-            // Label d'effet (compact)
-            var effectLabel = '';
-            if (tier.effect) {
-                if (tier.effect.type === 'discount') {
-                    effectLabel = '-' + Math.round(tier.effect.value * 100) + '%';
-                } else if (tier.effect.type === 'recipe') {
-                    effectLabel = '📜 ' + (tier.effect.id || '?');
-                }
-            }
-            if (effectLabel) {
-                textSize(u(1.6));
-                fill(255, 255, 255, alpha * 0.65);
-                textAlign(CENTER, TOP);
-                text(effectLabel, mx, by + barH + u(4));
-                textAlign(CENTER, CENTER);
-            }
-        }
-    }
-
-    // Niveau actuel : marqueur sur la barre
-    if (pct > 0) {
-        var curX = bx + barW * (pct / 100);
-        noStroke();
-        fill(255, 255, 255, alpha * 0.9);
-        circle(curX, by + barH/2, u(1.5));
-        fill(255, 215, 0, alpha);
-        circle(curX, by + barH/2, u(2.5));
-    }
+    noTint();
 }
 
 /* ─── Interface boutique ─── */
@@ -1848,10 +1778,14 @@ function mousePressed() {
         return;
     }
     if (npcDialogue && npcDialogue._btnSell && inRect(mouseX, mouseY, npcDialogue._btnSell)) {
+        npcDialogue._pressedBtn = 'sell';
+        npcDialogue._pressedTime = millis();
         _openShop(true);
         return;
     }
     if (npcDialogue && npcDialogue._btnBuy && inRect(mouseX, mouseY, npcDialogue._btnBuy)) {
+        npcDialogue._pressedBtn = 'buy';
+        npcDialogue._pressedTime = millis();
         _openShop(false);
         return;
     }

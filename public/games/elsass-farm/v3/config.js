@@ -139,13 +139,19 @@ window.FarmConfig = {
             "objet/farm_ble_sac.png"
         ],
 
-        // UI assets (chiffres, cadres, icônes HUD)
+        // UI assets (chiffres, cadres, icônes HUD, dialogue PNJ)
         ui: [
             "ui/shmup_hud_cadre.png",
+            "ui/shmup_hud_croix.png",
             "ui/battle_hud_carburant.png",
+            "ui/battle_hud_coeur.png",
             "ui/battle_cadre_selection.png",
             "ui/battle_hachures.png",
             "ui/battle_hud_curseur_main.png",
+            "ui/rogrpg_bouton_vert.png",
+            "ui/rogrpg_bouton_vert_marque.png",
+            "ui/rogrpg_bouton_orange.png",
+            "ui/rogrpg_bouton_orange_marque.png",
             "ui/fish_hud_chiffre_0.png",
             "ui/fish_hud_chiffre_1.png",
             "ui/fish_hud_chiffre_2.png",
