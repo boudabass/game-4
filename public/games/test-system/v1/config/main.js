@@ -25,11 +25,14 @@ Object.assign(window.Config, {
         sensitivity: 0.001
     },
 
-    // Assets
+    // Assets — dossiers triés (source de vérité : /games/system/assets/catalogue.json)
     assets: {
-        groundPath: '/games/system/assets/ground/',
-        groundPrefix: 'FieldsTile_',
-        groundCount: 64
+        groundPath: '/games/system/assets/sol/',
+        groundTiles: [
+            'town_herbe_centre.png',    // herbe verte unie
+            'town_herbe_centre_v2.png', // herbe avec touffes
+            'town_herbe_fleurs.png'     // herbe avec fleurs jaunes scintillantes
+        ]
     }
 });
 
