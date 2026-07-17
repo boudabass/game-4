@@ -63,3 +63,7 @@ data/*
 # Contexte local (contient la config réelle — ne pas publier)
 CLAUDE.md
 documentation/DOMAINE_COOKIES_SSO.md
+
+# Matériel de tri des assets — ne doit jamais revenir dans le repo
+_atelier-assets/
+**/Assets_pack/
