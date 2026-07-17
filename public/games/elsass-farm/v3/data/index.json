@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "generated": "2026-07-15T03:00:00Z",
-    "source_catalogue": "tri/catalogue.json",
+    "source_catalogue": "/games/system/assets/catalogue.json",
     "source_gdd": "Odoo 430",
     "source_cultures": "data/cultures.json",
     "source_zones": "data/zones/zones.json",
