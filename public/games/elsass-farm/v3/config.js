@@ -64,10 +64,11 @@ window.FarmConfig = {
         buttonText: "#ffffff"
     },
 
-    // Assets Tiny Farm (chargés dans preload())
-    // Base path relative à sketch.js → ../../system/assets/
+    // Assets triés (chargés dans preload())
+    // Base relative au jeu → public/games/system/assets/ (dossiers triés : sol/, decor/, perso/, batiment/, objet/…)
+    // Source de vérité des noms de fichiers : public/games/system/assets/catalogue.json
     assets: {
-        base: "../../system/assets/Assets_pack/tri/",
+        base: "../../system/assets/",
 
         // Sol (ground tiles)
         sol: [
