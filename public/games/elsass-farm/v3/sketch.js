@@ -1163,26 +1163,23 @@ function drawDisasterNotice() {
 /* ─── Dialogue PNJ ─── */
 function drawNPCDialogue() {
     if (!npcDialogue) return;
-    var elapsed = millis() - npcDialogue.t;
 
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'village') { npcDialogue = null; return; }
 
+    var elapsed = millis() - npcDialogue.t;
     var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
-    var pad = u(3);
-    var gap = u(3);
-
     var npc = npcSystem.getNPC(npcDialogue.npcId);
-    var hasNPC = !!npc;
 
-    // === BLOCS EMPILÉS ===
+    // 4 blocs empilés
+    var pad = u(4);
+    var gap = u(3);
     var nameH = u(5);
-    var textH = u(7);
-    var gaugeH = hasNPC ? u(9) : 0;
-    var btnH = hasNPC ? u(6) : 0;
+    var textH = u(8);
+    var gaugeH = npc ? u(8) : 0;
+    var btnH = npc ? u(5) : 0;
 
-    var totalH = pad + nameH + gap + textH + gap + (hasNPC ? gap : 0) + gaugeH + (gaugeH > 0 ? gap : 0) + btnH + pad;
-
+    var totalH = pad + nameH + gap + textH + gap + gaugeH + gap + btnH + pad;
     var dw = width * 0.7;
     var dx = width / 2 - dw / 2;
     var dy = height - totalH - u(15);
@@ -1196,62 +1193,56 @@ function drawNPCDialogue() {
     rect(dx, dy, dw, totalH, u(2));
     noStroke();
 
-    // Bouton fermer ✕ (haut droite)
-    var closeW = u(4);
+    // Fermer ✕
+    var cx = u(4);
     fill(255, 255, 255, alpha * 0.3);
-    rect(dx + dw - closeW - u(1), dy + u(1), closeW, closeW, u(0.8));
+    rect(dx + dw - cx - u(1), dy + u(1), cx, cx, u(0.8));
     fill(255, 255, 255, alpha * 0.7);
     textSize(u(2.5));
     textAlign(CENTER, CENTER);
-    text('✕', dx + dw - closeW/2 - u(1), dy + u(1) + closeW/2);
-    npcDialogue._btnClose = { x: dx + dw - closeW - u(1), y: dy + u(1), w: closeW, h: closeW };
+    text('✕', dx + dw - cx/2 - u(1), dy + u(1) + cx/2);
+    npcDialogue._btnClose = { x: dx + dw - cx - u(1), y: dy + u(1), w: cx, h: cx };
 
-    var cy = dy + pad;
+    var y = dy + pad;
 
     // ── Bloc 1 : Nom ──
     textSize(u(3));
     fill(255, 215, 0, alpha);
     textAlign(LEFT, CENTER);
-    var nameLabel = npc ? npc.emoji + ' ' + npc.label : '???';
-    text(nameLabel, dx + pad, cy + nameH/2);
-    cy += nameH + gap;
+    text(npc ? npc.emoji + ' ' + npc.label : '???', dx + pad, y + nameH/2);
+    y += nameH + gap;
 
     // ── Bloc 2 : Texte ──
     textSize(u(2.7));
     fill(255, 255, 255, alpha);
     textAlign(CENTER, CENTER);
-    text(npcDialogue.text, dx + dw/2, cy + textH/2);
-    cy += textH + gap;
+    text(npcDialogue.text, dx + dw/2, y + textH/2);
+    y += textH + gap;
 
-    // Espace entre texte et jauge
-    if (hasNPC) cy += gap;
+    if (npc) {
+        // ── Bloc 3 : Jauge ──
+        _drawRelationGauge(npc, npcDialogue.npcId, dx + pad, y, dw - pad*2, alpha);
+        y += gaugeH + gap;
 
-    // ── Bloc 3 : Jauge ──
-    if (hasNPC) {
-        _drawRelationGauge(npc, npcDialogue.npcId, dx + pad, cy, dw - pad*2, alpha);
-        cy += gaugeH + gap;
-    }
-
-    // ── Bloc 4 : Boutons ──
-    if (hasNPC) {
-        var btnW = u(18), btnH2 = u(4), btnGap = u(2);
-        var totalBW = btnW * 2 + btnGap;
-        var btnX1 = dx + dw/2 - totalBW/2;
-        var btnX2 = btnX1 + btnW + btnGap;
+        // ── Bloc 4 : Boutons ──
+        var bW = u(18), bH = u(4), bGap = u(2);
+        var totalBW = bW * 2 + bGap;
+        var bx1 = dx + dw/2 - totalBW/2;
+        var bx2 = bx1 + bW + bGap;
 
         fill(100, 180, 100, alpha * 0.8);
-        rect(btnX1, cy, btnW, btnH2, u(1));
+        rect(bx1, y, bW, bH, u(1));
         fill(220, 180, 60, alpha * 0.8);
-        rect(btnX2, cy, btnW, btnH2, u(1));
+        rect(bx2, y, bW, bH, u(1));
 
         fill(255);
         textSize(u(2.5));
         textAlign(CENTER, CENTER);
-        text('🛒 Vendre', btnX1 + btnW/2, cy + btnH2/2);
-        text('🌱 Acheter', btnX2 + btnW/2, cy + btnH2/2);
+        text('🛒 Vendre', bx1 + bW/2, y + bH/2);
+        text('🌱 Acheter', bx2 + bW/2, y + bH/2);
 
-        npcDialogue._btnSell = { x: btnX1, y: cy, w: btnW, h: btnH2 };
-        npcDialogue._btnBuy  = { x: btnX2, y: cy, w: btnW, h: btnH2 };
+        npcDialogue._btnSell = { x: bx1, y: y, w: bW, h: bH };
+        npcDialogue._btnBuy  = { x: bx2, y: y, w: bW, h: bH };
     }
 }
 
