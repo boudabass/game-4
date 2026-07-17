@@ -7,9 +7,15 @@
  * compare local vs cloud et on applique la plus récente (self-contained, ne
  * dépend pas du write_date renvoyé par l'API).
  *
+ * Chaque jeu déclare sa version de schéma et ses migrations via
+ * configure({version, migrations}) : _wrap() embarque _v dans la sauvegarde,
+ * et load() applique les migrations de _v+1 jusqu'à version avant apply().
+ *
  * Utilisation dans un jeu :
  *   Engine.Save.configure({
- *     key: 'montjeu',
+ *     key: 'monjeu',
+ *     version: 2,
+ *     migrations: { 2: function (d) { d.nouveauChamp = 0; return d; } },
  *     gather: () => ({ score: state.score }),
  *     apply: (data) => { state.score = data.score; }
  *   });
@@ -22,6 +28,8 @@
 
     window.Engine.Save = {
         _key: null,
+        _version: 1,
+        _migrations: {},
         _gather: function () { return {}; },
         _apply: function () {},
 
@@ -30,11 +38,27 @@
             if (opts.key) this._key = "engine-save-" + opts.key;
             if (typeof opts.gather === "function") this._gather = opts.gather;
             if (typeof opts.apply === "function") this._apply = opts.apply;
+            if (typeof opts.version === "number") this._version = opts.version;
+            if (opts.migrations) this._migrations = opts.migrations;
             return this;
         },
 
         _wrap: function () {
-            return { _savedAt: Date.now(), data: this._gather() };
+            return { _savedAt: Date.now(), _v: this._version, data: this._gather() };
+        },
+
+        // --- Migration de schéma ---
+        // Applique les migrations de fromV+1 jusqu'à _version sur le payload
+        _migrate: function (data, fromV) {
+            var v = fromV;
+            while (v < this._version) {
+                var next = v + 1;
+                if (typeof this._migrations[next] === "function") {
+                    data = this._migrations[next](data);
+                }
+                v = next;
+            }
+            return data;
         },
 
         // --- Écriture locale (synchrone, fréquente) ---
@@ -98,7 +122,14 @@
             }
 
             var payload = chosen && chosen.data ? chosen.data : chosen;
-            if (payload) this._apply(payload);
+            if (payload) {
+                // migration de schéma avant apply()
+                var saveV = chosen && chosen._v ? chosen._v : 1;
+                if (saveV < this._version) {
+                    payload = this._migrate(payload, saveV);
+                }
+                this._apply(payload);
+            }
             return true;
         }
     };
