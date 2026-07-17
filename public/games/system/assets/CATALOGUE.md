@@ -1,22 +1,22 @@
-# Catalogue des assets triés (`assets/tri/`)
+# Catalogue des assets triés (`public/games/system/assets/`)
 
-> Généré et mis à jour par Claude à chaque passe de tri. Une ligne par
-> fichier : nom, description, taille, origine. Sert à savoir ce qui existe
-> sans ouvrir les images. Voir `ASSETS_TEST.md` pour le processus et
-> `ASSETS_TEXTURE_PACKS.md` pour l'usage prévu de chaque pack.
+> Source de vérité des assets du repo : une ligne par fichier — nom,
+> description, taille, origine. Sert à savoir ce qui existe sans ouvrir
+> les images. Équivalent machine : `catalogue.json` (même dossier).
+> Archives du processus de tri : articles Odoo 412, 421, 422 (hub Elsass Game).
 
+## État : tri TERMINÉ (17/07/2026)
 
-## Cible finale (décision John, 14/07/2026)
-
-À la fin du tri, le CONTENU de `tri/` remonte directement dans
-`games/system/assets/` (assets/sol/, assets/decor/, assets/catalogue.json…)
-et TOUT le reste disparaît : les packs restants (vidés au fil des passes),
-`_rejetes/` (supprimé à la fin — les packs Kenney sont re-téléchargeables,
-la règle "jamais supprimé" ne vaut que pendant le tri), `Assets_pack/`,
-`box/`, `decor/`, `house/`, `tent/`, `Tiled_files/`, `ground/` (part avec
-la refonte de test-system), l'outil assets-test et la route
-/api/assets/scan. Les seuls fichiers utilisés par les jeux seront ceux
-issus du tri.
+La « cible finale » (décision John, 14/07/2026) est réalisée : le contenu de
+l'atelier `tri/` a remonté directement dans `games/system/assets/`
+(`batiment/`, `decor/`, `eau/`, `objet/`, `perso/`, `sol/`, `ui/`,
+`vehicule/`, `_references/`, `catalogue.json`) et TOUT le reste a été
+supprimé du repo (commits `66f7fb5` + `891d372`, branche dev) : packs bruts
+`Assets_pack/`, `_rejetes/`, `box/`, `house/`, `tent/`, `Tiled_files/`,
+`ground/`, l'ancien `decor/`, l'outil assets-test et la route
+/api/assets/scan. Gitignore : `_atelier-assets/`, `**/Assets_pack/`.
+Les seuls fichiers utilisés par les jeux sont ceux issus du tri, sous les
+noms exacts du catalogue.
 
 ## Catégorie : ui
 
