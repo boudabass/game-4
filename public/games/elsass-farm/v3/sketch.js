@@ -1169,61 +1169,81 @@ function drawNPCDialogue() {
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'village') { npcDialogue = null; return; }
 
-    // Fond de dialogue
-    var dw = width * 0.7;
-    var dh = u(24);
-    var dx = width / 2 - dw / 2;
-    var dy = height - dh - u(15);
     var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
+    var pad = u(3);
+    var gap = u(2);
 
+    var npc = npcSystem.getNPC(npcDialogue.npcId);
+    var hasNPC = !!npc;
+
+    // === BLOCS EMPILÉS (chaque bloc = sa propre hauteur) ===
+    // Bloc 1 : Nom du PNJ
+    var nameH = u(5);
+    // Bloc 2 : Texte du dialogue
+    var textH = u(7);
+    // Bloc 3 : Jauge de relation
+    var gaugeH = hasNPC ? u(9) : 0;
+    // Bloc 4 : Boutons
+    var btnH = hasNPC ? u(6) : 0;
+
+    var totalH = pad + nameH + gap + textH + gap + gaugeH + (gaugeH > 0 ? gap : 0) + btnH + pad;
+
+    var dw = width * 0.7;
+    var dx = width / 2 - dw / 2;
+    var dy = height - totalH - u(15);
+
+    // Fond
     noStroke();
     fill(20, 20, 40, alpha);
-    rect(dx, dy, dw, dh, u(2));
+    rect(dx, dy, dw, totalH, u(2));
     stroke(255, 255, 255, alpha * 0.5);
     strokeWeight(1);
-    rect(dx, dy, dw, dh, u(2));
+    rect(dx, dy, dw, totalH, u(2));
     noStroke();
 
-    // Nom du PNJ
-    var npc = npcSystem.getNPC(npcDialogue.npcId);
-    var name = npc ? npc.label : "???";
-    textSize(u(3.2));
+    var cy = dy + pad;
+
+    // ── Bloc 1 : Nom ──
+    textSize(u(3));
     fill(255, 215, 0, alpha);
     textAlign(LEFT, CENTER);
-    text(npc ? npc.emoji + " " + name : name, dx + u(3), dy + u(4));
-    textAlign(CENTER, CENTER);
+    var nameLabel = npc ? npc.emoji + ' ' + npc.label : '???';
+    text(nameLabel, dx + pad, cy + nameH/2);
+    cy += nameH + gap;
 
-    // Texte
-    textSize(u(2.8));
+    // ── Bloc 2 : Texte ──
+    textSize(u(2.7));
     fill(255, 255, 255, alpha);
-    text(npcDialogue.text, dx + dw/2, dy + u(9));
+    textAlign(CENTER, CENTER);
+    text(npcDialogue.text, dx + dw/2, cy + textH/2);
+    cy += textH + gap;
 
-    // Jauge de relation + boutons
-    if (npc) {
-        // Jauge (haut, compacte)
-        var gaugeY = dy + u(13);
-        _drawRelationGauge(npc, npcDialogue.npcId, dx, gaugeY, dw, alpha);
+    // ── Bloc 3 : Jauge ──
+    if (hasNPC) {
+        _drawRelationGauge(npc, npcDialogue.npcId, dx + pad, cy, dw - pad*2, alpha);
+        cy += gaugeH + gap;
+    }
 
-        // Boutons Vendre / Acheter (bas, sous la jauge)
-        var btnY = dy + dh - u(5);
-        var btnW = u(18), btnH = u(4), gap = u(2);
-        var totalBW = btnW * 2 + gap;
+    // ── Bloc 4 : Boutons ──
+    if (hasNPC) {
+        var btnW = u(18), btnH2 = u(4), btnGap = u(2);
+        var totalBW = btnW * 2 + btnGap;
         var btnX1 = dx + dw/2 - totalBW/2;
-        var btnX2 = btnX1 + btnW + gap;
+        var btnX2 = btnX1 + btnW + btnGap;
 
         fill(100, 180, 100, alpha * 0.8);
-        rect(btnX1, btnY, btnW, btnH, u(1));
+        rect(btnX1, cy, btnW, btnH2, u(1));
         fill(220, 180, 60, alpha * 0.8);
-        rect(btnX2, btnY, btnW, btnH, u(1));
+        rect(btnX2, cy, btnW, btnH2, u(1));
 
         fill(255);
         textSize(u(2.5));
         textAlign(CENTER, CENTER);
-        text("🛒 Vendre", btnX1 + btnW/2, btnY + btnH/2);
-        text("🌱 Acheter", btnX2 + btnW/2, btnY + btnH/2);
+        text('🛒 Vendre', btnX1 + btnW/2, cy + btnH2/2);
+        text('🌱 Acheter', btnX2 + btnW/2, cy + btnH2/2);
 
-        npcDialogue._btnSell = { x: btnX1, y: btnY, w: btnW, h: btnH };
-        npcDialogue._btnBuy  = { x: btnX2, y: btnY, w: btnW, h: btnH };
+        npcDialogue._btnSell = { x: btnX1, y: cy, w: btnW, h: btnH2 };
+        npcDialogue._btnBuy  = { x: btnX2, y: cy, w: btnW, h: btnH2 };
     }
 }
 
@@ -1232,14 +1252,14 @@ function drawNPCDialogue() {
  * Affiche : barre de progression avec gradient, paliers relationTiers, label 0-100.
  * Persistance via NPCSystem.gather()/apply() → Engine.Save.
  */
-function _drawRelationGauge(npc, npcId, dx, gaugeY, dw, alpha) {
+function _drawRelationGauge(npc, npcId, gx, gy, gw, alpha) {
     var level = npcSystem.getRelationLevel(npcId);
     var pct = Math.min(100, level * 5);
 
-    var barW = dw - u(12);
+    var barW = gw;
     var barH = u(3);
-    var bx = dx + u(6);
-    var by = gaugeY;
+    var bx = gx;
+    var by = gy;
 
     // Fond de la jauge
     noStroke();
