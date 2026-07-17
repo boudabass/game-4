@@ -20,6 +20,12 @@ let moveMarker = null;    // { x, y, t } dernière destination cliquée
 let actionFlash = null;   // { c, r, t, type } tuile "actionnée"
 let zoomBtns = {};        // zones cliquables des boutons + / −
 
+// UI-2: Feedbacks visuels (survol, interdit, curseur d'action)
+let hoveredTile = null;       // {c, r} tuile survolée (souris) ou null
+let hoverType = 'none';       // 'cultivable' | 'blocked' | 'action' | 'none'
+let touchHighlight = null;    // {c, r, t} surbrillance tactile (tap avant action)
+let isTouchDevice = false;    // détecté via touchStarted
+
 // Systèmes de culture Phase 02
 let soilSystem = null;    // Engine.SoilSystem
 let cropGrowth = null;   // Engine.CropGrowth
@@ -1018,6 +1024,10 @@ function drawWorld() {
     // Portails
     drawPortals();
 
+    // UI-2: Feedbacks visuels (survol, interdit, curseur d'action)
+    // Dessiné après le décor/cultures mais avant le player et les overlays HUD
+    _drawHoverFeedback();
+
     // PNJ
     drawNPCs();
 
@@ -1363,6 +1373,72 @@ function drawDisasterNotice() {
     textAlign(CENTER, CENTER);
 }
 
+/* ─── UI-2: Feedbacks visuels (survol, interdit, curseur d'action) ───
+ *   Dessine les overlays hover dans le monde (appelé par drawWorld).
+ *   Assets 16×16 du catalogue, agrandissement multiple entier.
+ */
+function _drawHoverFeedback() {
+    var ts = Engine.Grid.tileSize;
+
+    // --- Surbrillance tactile (touch) ---
+    if (touchHighlight && millis() - touchHighlight.t < 400) {
+        _drawFeedbackOverlay(touchHighlight.c, touchHighlight.r, ts, 'cultivable');
+        if (millis() - touchHighlight.t > 380) touchHighlight = null;
+        return; // Ne pas mélanger survol et tactile
+    }
+    if (!hoveredTile || hoverType === 'none') return;
+
+    var c = hoveredTile.c;
+    var r = hoveredTile.r;
+
+    switch (hoverType) {
+        case 'cultivable':
+            _drawFeedbackOverlay(c, r, ts, 'cultivable');
+            break;
+        case 'action_cultivable':
+            _drawFeedbackOverlay(c, r, ts, 'cultivable');
+            _drawFeedbackOverlay(c, r, ts, 'action');
+            break;
+        case 'blocked':
+            _drawFeedbackOverlay(c, r, ts, 'blocked');
+            break;
+        case 'action':
+            // Outil sélectionné : curseur main sur la tuile
+            _drawFeedbackOverlay(c, r, ts, 'action');
+            break;
+    }
+}
+
+/* Dessine un overlay sur une tuile selon le type de feedback */
+function _drawFeedbackOverlay(c, r, ts, type) {
+    if (type === 'cultivable') {
+        var cadre = img("ui", "battle_cadre_selection");
+        if (cadre) {
+            var m = _fitMult(ts, 16);
+            var sz = 16 * m;
+            var ox = (ts - sz) / 2;
+            var oy = (ts - sz) / 2;
+            image(cadre, c * ts + ox, r * ts + oy, sz, sz);
+        }
+    } else if (type === 'blocked') {
+        var hach = img("ui", "battle_hachures");
+        if (hach) {
+            var m = _fitMult(ts, 16);
+            var sz = 16 * m;
+            image(hach, c * ts, r * ts, sz, sz);
+        }
+    } else if (type === 'action') {
+        var hand = img("ui", "battle_hud_curseur_main");
+        if (hand) {
+            var m = _fitMult(Math.floor(ts * 0.5), 16);
+            var sz = 16 * m;
+            var ox = ts - sz - (ts * 0.05);
+            var oy = ts * 0.05;
+            image(hand, c * ts + ox, r * ts + oy, sz, sz);
+        }
+    }
+}
+
 /* ─── Dialogue PNJ ─── */
 function drawNPCDialogue() {
     if (!npcDialogue) return;
@@ -1676,6 +1752,58 @@ function drawShopInterface() {
 
 function inRect(mx, my, b) {
     return b && mx > b.x && mx < b.x + b.w && my > b.y && my < b.y + b.h;
+}
+
+/* ─── UI-2: Survol souris (non tactile) ─── */
+function mouseMoved() {
+    if (zoneTransition || sleepTransition || shopMode || portalChoice || npcDialogue) {
+        hoveredTile = null;
+        hoverType = 'none';
+        return;
+    }
+    var w = Engine.Camera.screenToWorld(mouseX, mouseY);
+    var tile = Engine.Grid.toTile(w.x, w.y);
+    if (!tile || tile.c < 0 || tile.r < 0) {
+        hoveredTile = null;
+        hoverType = 'none';
+        return;
+    }
+    hoveredTile = tile;
+
+    // Déterminer le type de feedback
+    var cultivable = soilSystem && soilSystem.isCultivable(tile.c, tile.r);
+    var walkable = Engine.Grid.isWalkable(tile.c, tile.r);
+    var hasTool = selectedTool !== null;
+    var playerTile = player.tile();
+    var inActionZone = playerTile && Engine.ActionZone.contains(playerTile, tile);
+
+    // Priorité : bloqué > cultivable+cadre > main
+    if (!walkable) {
+        // Case interdite/bloquée → hachures
+        hoverType = 'blocked';
+    } else if (cultivable) {
+        // Case cultivable → cadre de sélection (et main si outil)
+        hoverType = hasTool && inActionZone ? 'action_cultivable' : 'cultivable';
+    } else if (hasTool && inActionZone) {
+        // Outil sélectionné + dans la zone d'action → curseur main
+        hoverType = 'action';
+    } else {
+        hoverType = 'none';
+    }
+}
+
+/* ─── UI-2: Détection tactile ─── */
+function touchStarted() {
+    isTouchDevice = true;
+    // Sur tactile : highlight la case tapée avant action
+    if (zoneTransition || sleepTransition || shopMode || portalChoice) return;
+    var w = Engine.Camera.screenToWorld(mouseX, mouseY);
+    var tile = Engine.Grid.toTile(w.x, w.y);
+    if (tile && tile.c >= 0 && tile.r >= 0) {
+        touchHighlight = { c: tile.c, r: tile.r, t: millis() };
+    }
+    // Ne pas empêcher mousePressed de se déclencher
+    return undefined;
 }
 
 function mousePressed() {

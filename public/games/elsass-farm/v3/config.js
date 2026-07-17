@@ -143,6 +143,9 @@ window.FarmConfig = {
         ui: [
             "ui/shmup_hud_cadre.png",
             "ui/battle_hud_carburant.png",
+            "ui/battle_cadre_selection.png",
+            "ui/battle_hachures.png",
+            "ui/battle_hud_curseur_main.png",
             "ui/fish_hud_chiffre_0.png",
             "ui/fish_hud_chiffre_1.png",
             "ui/fish_hud_chiffre_2.png",
