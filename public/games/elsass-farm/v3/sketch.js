@@ -1119,41 +1119,70 @@ function drawHud() {
     noStroke();
     rect(orX, u(2), orW, u(6), u(1.5));
 
-    // ── Horloge (haut centre) ──
+    // ── Panneau Jour + Heure (haut centre, design John 18/07) ──
     var season = Engine.Clock.getSeason();
-    var seasonName = { printemps: 'Printemps', ete: 'Été', automne: 'Automne', hiver: 'Hiver' };
     var timeStr = Engine.Clock.timeString();
-    var dayStr = "Jour " + Engine.Clock.day + " · " + (seasonName[season] || '');
 
     var clockDigitH = u(4);
     var cdm = _fitMult(clockDigitH, 64);
     clockDigitH = 64 * cdm;
-    // Largeur réelle : digit = clockDigitH, ':' = 0.5*clockDigitH
     var colonW = clockDigitH * 0.5;
+
+    // Largeur réelle de l'heure (bloc droit)
     var realClockW = 0;
     for (var i = 0; i < timeStr.length; i++) {
         realClockW += timeStr[i] === ':' ? colonW : clockDigitH;
     }
-    textSize(u(2.5));
-    var dayW = textWidth(dayStr) + u(2);
+
+    // Bloc gauche : lettre J + numéro du jour
+    var jFontSize = clockDigitH;
+    textSize(jFontSize);
+    var jW = textWidth('J');
+    var dayNum = Engine.Clock.day;
+    var dayDigitsW = dayNum.toString().length * clockDigitH;
+    var gapJtoDigits = u(0.5);
+    var leftBlockW = jW + gapJtoDigits + dayDigitsW;
+
+    // Panneau global
     var gap = u(2);
-    var innerW = dayW + gap + realClockW;
-    var pad = u(2);
+    var pad = u(1.5);
+    var innerW = leftBlockW + gap + realClockW;
     var panelW = innerW + pad * 2;
     var panelX = width / 2 - panelW / 2;
-    var contentX = panelX + pad;  // bord gauche du contenu
+    var panelY = u(2);
+    var panelH = u(6);
+    var panelContentY = panelY + (panelH - clockDigitH) / 2;
 
+    // Fond global
     fill(C.colors.hudPanel);
-    rect(panelX, u(2), panelW, u(6), u(1.5));
+    noStroke();
+    rect(panelX, panelY, panelW, panelH, u(1.5));
 
-    // Texte jour + saison
+    // Sous-encadré GAUCHE (Jour : J + numéro)
+    var leftSubX = panelX + pad - u(0.3);
+    var leftSubW = leftBlockW + u(0.6);
+    fill(20, 40, 70, 180);
+    rect(leftSubX, panelY + u(0.4), leftSubW, panelH - u(0.8), u(0.8));
+
+    // Contenu gauche : lettre J (texte) + numéro (assets)
     fill(C.colors.hudText);
     textAlign(LEFT, CENTER);
-    text(dayStr, contentX, u(5));
-    // Chiffres heure (centré dans son emplacement)
-    var timeSlotX = contentX + dayW + gap;
-    var timeCenterX = timeSlotX + realClockW / 2;
-    _drawFishTime(timeCenterX, u(2) + (u(6) - clockDigitH) / 2, timeStr, clockDigitH);
+    textSize(jFontSize);
+    var cx = panelX + pad;
+    text('J', cx, panelY + panelH / 2);
+    cx += jW + gapJtoDigits;
+    var dayCenterX = cx + dayDigitsW / 2;
+    _drawFishNumber(dayCenterX, panelContentY, dayNum, clockDigitH);
+
+    // Sous-encadré DROITE (Heure)
+    var rightSubX = panelX + pad + leftBlockW + gap - u(0.3);
+    var rightSubW = realClockW + u(0.6);
+    fill(15, 30, 55, 180);
+    rect(rightSubX, panelY + u(0.4), rightSubW, panelH - u(0.8), u(0.8));
+
+    // Contenu droite : heure (assets)
+    var timeCenterX = panelX + pad + leftBlockW + gap + realClockW / 2;
+    _drawFishTime(timeCenterX, panelContentY, timeStr, clockDigitH);
     textAlign(CENTER, CENTER);
 
     // ── Énergie (haut gauche) ──
