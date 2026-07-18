@@ -514,60 +514,6 @@ function _fitMult(available, baseSize) {
     return Math.max(1, Math.floor(available / baseSize));
 }
 
-/* Dessine un nombre (0-9999) avec les chiffres fish_hud_chiffre_* 
-   Retourne la largeur totale dessinée */
-/* _drawFishNumber / _drawFishTime : x = CENTRE du bloc */
-function _drawFishNumber(x, y, num, digitSize) {
-    var s = num.toString();
-    var totalW = 0;
-    var glyphs = [];
-    for (var i = 0; i < s.length; i++) {
-        var ch = s[i];
-        if (ch === '-') { totalW += digitSize * 0.6; continue; }
-        var g = img("ui", "fish_hud_chiffre_" + ch);
-        if (g) {
-            glyphs.push({ img: g, w: digitSize });
-            totalW += digitSize;
-        } else {
-            totalW += digitSize * 0.6;
-        }
-    }
-    // Centrer horizontalement
-    var cx = x - totalW / 2;
-    for (var i = 0; i < glyphs.length; i++) {
-        image(glyphs[i].img, cx, y, glyphs[i].w, digitSize);
-        cx += glyphs[i].w;
-    }
-    return totalW;
-}
-
-/* _drawFishNumber / _drawFishTime : x = CENTRE du bloc */
-/* Dessine une chaîne de time (ex "07:35") avec chiffres + deuxpoints */
-function _drawFishTime(x, y, timeStr, digitSize) {
-    var s = timeStr;
-    var totalW = 0;
-    var chunks = [];
-    var colonW = digitSize * 0.5;
-    for (var i = 0; i < s.length; i++) {
-        var ch = s[i];
-        if (ch === ':') {
-            var dp = img("ui", "fish_hud_deuxpoints");
-            if (dp) { chunks.push({ img: dp, w: colonW }); totalW += colonW; }
-            else { totalW += colonW; }
-        } else if (ch >= '0' && ch <= '9') {
-            var g = img("ui", "fish_hud_chiffre_" + ch);
-            if (g) { chunks.push({ img: g, w: digitSize }); totalW += digitSize; }
-            else { totalW += digitSize * 0.6; }
-        }
-    }
-    var cx = x - totalW / 2;
-    for (var i = 0; i < chunks.length; i++) {
-        image(chunks[i].img, cx, y, chunks[i].w, digitSize);
-        cx += chunks[i].w;
-    }
-    return totalW;
-}
-
 /* Dessine le sélecteur d'outil avec bordure asset (shmup_hud_cadre) */
 function _drawToolSelector(x, y, w, h) {
     var frame = img("ui", "shmup_hud_cadre");
@@ -1104,13 +1050,16 @@ function drawHud() {
         var coinX = width - u(2) - coinSize;
         image(coin, coinX, coinY, coinSize, coinSize);
     }
-    var digitH = u(4);
-    var dm = _fitMult(digitH, 64);
-    digitH = 64 * dm;
+    // Montant en texte Pixelify Sans (plus de sprites chiffres)
     var goldStr = Math.floor(gold).toString();
-    var gTotalW = goldStr.length * digitH;
+    textFont('Pixelify Sans');
+    textSize(u(4));
+    var gTotalW = textWidth(goldStr);
     var gX = width - u(2) - (coin ? coinSize + u(1) : 0) - gTotalW / 2;
-    _drawFishNumber(gX, u(2) + (u(6) - digitH) / 2, Math.floor(gold), digitH);
+    fill(C.colors.hudText);
+    textAlign(LEFT, CENTER);
+    text(goldStr, gX, u(2) + u(3));
+    textFont('sans-serif');
 
     // Fond or + zone
     var orW = (coin ? coinSize + u(1) : 0) + gTotalW + zW + u(4);
@@ -1120,69 +1069,64 @@ function drawHud() {
     rect(orX, u(2), orW, u(6), u(1.5));
 
     // ── Panneau Jour + Heure (haut centre, design John 18/07) ──
+    // RÈGLE 30% : largeur ≤ 0.30 × width. Texte Pixelify Sans, plus de sprites.
     var season = Engine.Clock.getSeason();
     var timeStr = Engine.Clock.timeString();
+    var dayStr = Engine.Clock.day.toString();
 
-    var clockDigitH = u(4);
-    var cdm = _fitMult(clockDigitH, 64);
-    clockDigitH = 64 * cdm;
-    var colonW = clockDigitH * 0.5;
-
-    // Largeur réelle de l'heure (bloc droit)
-    var realClockW = 0;
-    for (var i = 0; i < timeStr.length; i++) {
-        realClockW += timeStr[i] === ':' ? colonW : clockDigitH;
-    }
-
-    // Bloc gauche : lettre J + numéro du jour
-    var jFontSize = clockDigitH;
-    textSize(jFontSize);
-    var jW = textWidth('J');
-    var dayNum = Engine.Clock.day;
-    var dayDigitsW = dayNum.toString().length * clockDigitH;
-    var gapJtoDigits = u(0.5);
-    var leftBlockW = jW + gapJtoDigits + dayDigitsW;
-
-    // Panneau global
-    var gap = u(2);
+    var maxPanelW = 0.30 * width;
     var pad = u(1.5);
-    var innerW = leftBlockW + gap + realClockW;
-    var panelW = innerW + pad * 2;
-    var panelX = width / 2 - panelW / 2;
+    var gap = u(2);
+    var jDayGap = u(0.5);
     var panelY = u(2);
     var panelH = u(6);
-    var panelContentY = panelY + (panelH - clockDigitH) / 2;
+
+    // Trouver la taille de police max qui tient dans 30% de la largeur
+    textFont('Pixelify Sans');
+    var trySize = u(5);
+    var jW = 0, dW = 0, tW = 0, pw = 0;
+    var leftBlockW = 0, innerW = 0;
+    while (trySize >= 6) {
+        textSize(trySize);
+        jW = textWidth('J');
+        dW = textWidth(dayStr);
+        tW = textWidth(timeStr);
+        leftBlockW = jW + jDayGap + dW;
+        innerW = leftBlockW + gap + tW;
+        pw = innerW + pad * 2;
+        if (pw <= maxPanelW) break;
+        trySize -= 0.5;
+    }
+    // trySize now fits (or is 6 minimum), last iteration's measurements are valid
 
     // Fond global
     fill(C.colors.hudPanel);
     noStroke();
-    rect(panelX, panelY, panelW, panelH, u(1.5));
+    rect(width / 2 - pw / 2, panelY, pw, panelH, u(1.5));
 
-    // Sous-encadré GAUCHE (Jour : J + numéro)
-    var leftSubX = panelX + pad - u(0.3);
-    var leftSubW = leftBlockW + u(0.6);
+    // Sous-encadré GAUCHE (Jour : J + numéro du jour)
     fill(20, 40, 70, 180);
-    rect(leftSubX, panelY + u(0.4), leftSubW, panelH - u(0.8), u(0.8));
+    rect(width / 2 - pw / 2 + pad - u(0.3), panelY + u(0.4), leftBlockW + u(0.6), panelH - u(0.8), u(0.8));
 
-    // Contenu gauche : lettre J (texte) + numéro (assets)
+    // Contenu gauche : lettre J + numéro en texte Pixelify Sans
     fill(C.colors.hudText);
     textAlign(LEFT, CENTER);
-    textSize(jFontSize);
-    var cx = panelX + pad;
+    textSize(trySize);
+    var cx = width / 2 - pw / 2 + pad;
     text('J', cx, panelY + panelH / 2);
-    cx += jW + gapJtoDigits;
-    var dayCenterX = cx + dayDigitsW / 2;
-    _drawFishNumber(dayCenterX, panelContentY, dayNum, clockDigitH);
+    cx += jW + jDayGap;
+    text(dayStr, cx, panelY + panelH / 2);
 
     // Sous-encadré DROITE (Heure)
-    var rightSubX = panelX + pad + leftBlockW + gap - u(0.3);
-    var rightSubW = realClockW + u(0.6);
     fill(15, 30, 55, 180);
-    rect(rightSubX, panelY + u(0.4), rightSubW, panelH - u(0.8), u(0.8));
+    rect(width / 2 - pw / 2 + pad + leftBlockW + gap - u(0.3), panelY + u(0.4), tW + u(0.6), panelH - u(0.8), u(0.8));
 
-    // Contenu droite : heure (assets)
-    var timeCenterX = panelX + pad + leftBlockW + gap + realClockW / 2;
-    _drawFishTime(timeCenterX, panelContentY, timeStr, clockDigitH);
+    // Contenu droite : heure en texte Pixelify Sans
+    fill(C.colors.hudText);
+    textAlign(CENTER, CENTER);
+    textSize(trySize);
+    text(timeStr, width / 2 - pw / 2 + pad + leftBlockW + gap + tW / 2, panelY + panelH / 2);
+    textFont('sans-serif');
     textAlign(CENTER, CENTER);
 
     // ── Énergie (haut gauche) ──
