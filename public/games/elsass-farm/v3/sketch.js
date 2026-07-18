@@ -110,6 +110,7 @@ function setup() {
     createCanvas(windowWidth, windowHeight);
     noSmooth();
     textAlign(CENTER, CENTER);
+    if (document.fonts && document.fonts.load) { document.fonts.load("16px 'Pixelify Sans'"); }
 
     // --- Zones & Portails ---
     if (Engine.WorldZone && C._zonesData) {
@@ -1057,7 +1058,7 @@ function drawHud() {
     var gTotalW = textWidth(goldStr);
     var gX = width - u(2) - (coin ? coinSize + u(1) : 0) - gTotalW / 2;
     fill(C.colors.hudText);
-    textAlign(LEFT, CENTER);
+    textAlign(CENTER, CENTER);
     text(goldStr, gX, u(2) + u(3));
     textFont('sans-serif');
 
