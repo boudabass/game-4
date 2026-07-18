@@ -1036,10 +1036,8 @@ function drawHud() {
     var zoneLabel = zone ? (zone.label || zone.id) : 'Ferme'; // zéro emoji
     var goldStr = Math.floor(gold).toString();
 
-    // Pièce : dimension fixe
+    // Pièce : dimension fixe (plus de _fitMult — une icône seule se réduit proprement)
     var coinSize = u(4);
-    var m = _fitMult(coinSize, 64);
-    coinSize = 64 * m;
     var coin = img("objet", "town_piece_or");
     var hasCoin = !!coin;
 
@@ -1060,7 +1058,7 @@ function drawHud() {
     var zoneW = textWidth(zoneLabel);
     textSize(goldSize);
     var montantW = textWidth(goldStr);
-    var panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+    var panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
 
     // Mobile : réduire si > 30 % de la largeur (zone d'abord, montant ensuite)
     if (panelW > maxPanelW) {
@@ -1068,13 +1066,13 @@ function drawHud() {
             zoneSize -= 0.5;
             textSize(zoneSize);
             zoneW = textWidth(zoneLabel);
-            panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+            panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
         }
         while (goldSize > 6 && panelW > maxPanelW) {
             goldSize -= 0.5;
             textSize(goldSize);
             montantW = textWidth(goldStr);
-            panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+            panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
         }
     }
 
@@ -1083,35 +1081,35 @@ function drawHud() {
     zoneW = textWidth(zoneLabel);
     textSize(goldSize);
     montantW = textWidth(goldStr);
-    panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+    panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
     var panelX = width - u(2) - panelW;
 
-    // ORDRE DE DESSIN : 1. fond, 2. zone, 3. montant, 4. pièce — de gauche à droite
+    // ORDRE DE DESSIN : 1. fond, 2. pièce, 3. montant, 4. zone — de gauche à droite
 
     // 1. Fond panneau
     fill(C.colors.hudPanel);
     noStroke();
     rect(panelX, panelY, panelW, panelH, u(1.5));
 
-    // 2. Nom de zone (Pixelify Sans, taille zoneSize)
+    // 2. Pièce or (gauche)
+    var cx = panelX + pad;
+    if (coin) {
+        var coinY = panelY + (panelH - coinSize) / 2;
+        image(coin, cx, coinY, coinSize, coinSize);
+        cx += coinSize + gap;
+    }
+
+    // 3. Montant or (Pixelify Sans, taille goldSize)
     fill(C.colors.hudText);
     textAlign(LEFT, CENTER);
     textFont('Pixelify Sans');
-    textSize(zoneSize);
-    var cx = panelX + pad;
-    text(zoneLabel, cx, panelY + panelH / 2);
-    cx += zoneW + gap;
-
-    // 3. Montant or (Pixelify Sans, taille goldSize)
     textSize(goldSize);
     text(goldStr, cx, panelY + panelH / 2);
     cx += montantW + gap;
 
-    // 4. Pièce or
-    if (coin) {
-        var coinY = panelY + (panelH - coinSize) / 2;
-        image(coin, cx, coinY, coinSize, coinSize);
-    }
+    // 4. Nom de zone (Pixelify Sans, taille zoneSize)
+    textSize(zoneSize);
+    text(zoneLabel, cx, panelY + panelH / 2);
 
     textFont('sans-serif');
 
