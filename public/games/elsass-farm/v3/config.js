@@ -120,7 +120,7 @@ window.FarmConfig = {
             "batiment/farm_grange_fenetre.png"
         ],
 
-        // Objets farm + town (outils, pièces, sacs de graines)
+        // Objets farm + town (outils, pièces, sacs de graines, icônes récolte)
         objet: [
             "objet/farm_hache.png",
             "objet/farm_pelle.png",
@@ -132,14 +132,20 @@ window.FarmConfig = {
             "objet/town_pioche.png",
             "objet/town_piece_or.png",
             "objet/farm_carotte_sac.png",
+            "objet/farm_carotte_icone.png",
             "objet/farm_aubergine_sac.png",
+            "objet/farm_aubergine_icone.png",
             "objet/farm_mais_sac.png",
+            "objet/farm_mais_icone.png",
             "objet/farm_tomate_sac.png",
+            "objet/farm_tomate_icone.png",
             "objet/farm_chou_sac.png",
-            "objet/farm_ble_sac.png"
+            "objet/farm_chou_icone.png",
+            "objet/farm_ble_sac.png",
+            "objet/farm_ble_icone.png"
         ],
 
-        // UI assets (chiffres, cadres, icônes HUD, dialogue PNJ)
+        // UI assets (chiffres, cadres, icônes HUD, dialogue PNJ, boutique)
         ui: [
             "ui/shmup_hud_cadre.png",
             "ui/shmup_hud_croix.png",
@@ -148,10 +154,16 @@ window.FarmConfig = {
             "ui/battle_cadre_selection.png",
             "ui/battle_hachures.png",
             "ui/battle_hud_curseur_main.png",
+            "ui/battle_hud_verrou.png",
             "ui/rogrpg_bouton_vert.png",
             "ui/rogrpg_bouton_vert_marque.png",
             "ui/rogrpg_bouton_orange.png",
             "ui/rogrpg_bouton_orange_marque.png",
+            "ui/rogrpg_fleche_vert_gauche_petite.png",
+            "ui/rogrpg_fleche_vert_droite_petite.png",
+            "ui/rogrpg_fleche_orange_gauche_petite.png",
+            "ui/rogrpg_fleche_orange_droite_petite.png",
+            "ui/farm_aide_inconnu.png",
             "ui/fish_hud_chiffre_0.png",
             "ui/fish_hud_chiffre_1.png",
             "ui/fish_hud_chiffre_2.png",

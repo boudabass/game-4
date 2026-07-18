@@ -1329,6 +1329,35 @@ function _getSeasonSeedSac() {
     return null;
 }
 
+/* Retourne l'asset icône pour une culture (farm_<culture>_icone) */
+function _cropIdToIconKey(cropId) {
+    var map = {
+        "carotte": "farm_carotte_icone",
+        "ble": "farm_ble_icone",
+        "tomate": "farm_tomate_icone",
+        "mais": "farm_mais_icone",
+        "choux-choucroute": "farm_chou_icone",
+        "aubergine": "farm_aubergine_icone",
+        "asperge": "farm_carotte_icone",
+        "pomme-de-terre": "farm_carotte_icone",
+        "houblon": "farm_ble_icone",
+        "orge": "farm_ble_icone",
+        "tournesol": "farm_mais_icone",
+        "framboise": "farm_tomate_icone",
+        "potiron": "farm_chou_icone",
+        "raisin": "farm_aubergine_icone",
+        "oignon": "farm_carotte_icone",
+        "navet": "farm_chou_icone",
+        "salade": "farm_chou_icone",
+        "poireau": "farm_carotte_icone",
+        "fraise": "farm_tomate_icone",
+        "mirabelle": "farm_mais_icone",
+        "courgette": "farm_tomate_icone",
+        "muguet": "farm_carotte_icone"
+    };
+    return map[cropId] || null;
+}
+
 /* Mappe un cropId vers le nom de fichier du sac */
 function _cropIdToSacKey(cropId) {
     // Les cultures disponibles : carotte, ble, tomate, mais, chou, aubergine
@@ -1615,98 +1644,335 @@ function _drawRelationHearts(npc, npcId, gx, gy, gw, alpha) {
     noTint();
 }
 
-/* ─── Interface boutique ─── */
+/* ─── Interface boutique habillée (UI-4) ─── */
 function drawShopInterface() {
     if (!shopMode) return;
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'village') { shopMode = null; return; }
 
-    var dw = width * 0.75;
-    var dh = height * 0.5;
+    var alpha = 230;
+    var pad = u(3);
+    var gap = u(2.5);
+
+    // Layout global
+    var dw = width * 0.78;
     var dx = width / 2 - dw / 2;
-    var dy = height / 2 - dh / 2;
+    var dy = height * 0.08;
 
-    // Fond
-    noStroke();
-    fill(20, 20, 50, 235);
-    rect(dx, dy, dw, dh, u(2));
-    stroke(255, 215, 0, 180);
-    strokeWeight(2);
-    rect(dx, dy, dw, dh, u(2));
-    noStroke();
+    // Titre + or + mode = hauteur fixe
+    var headerH = u(5);  // titre
+    var goldH = u(5);    // or
+    var modeH = u(6);    // mode tabs
+    var totalItems = 0;
 
-    var title = shopMode.sellMode ? "🛒 VENDRE au Maraîcher" : "🌱 ACHETER des graines";
-    textSize(u(4));
-    fill(255, 215, 0);
-    text(title, dx + dw/2, dy + u(5));
-
-    // Or disponible
-    var gold = harvestSystem ? harvestSystem.getGold() : 0;
-    textSize(u(2.8));
-    fill(255, 255, 255);
-    text("🪙 " + Math.floor(gold) + " or", dx + dw/2, dy + u(9));
-
+    // Compter les items pour la hauteur variable
     var npcData = shopMode.npcData;
-    var startY = dy + u(13);
-    var itemH = u(5);
-    var items = [];
-
+    var itemList = [];
     if (shopMode.sellMode) {
-        // Vente : lister l'inventaire du joueur
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
         var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
         for (var cropId in inv) {
             if (!inv.hasOwnProperty(cropId)) continue;
-            var cropData = cropGrowth.getCropData(cropId) || culturesData.find(function(cc) { return cc.id === cropId; });
+            var cropData = cropGrowth.getCropData(cropId) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId; }));
             if (!cropData) continue;
             var price = Math.floor((cropData.sell || 0) * multiplier);
-            items.push({ id: cropId, label: cropData.emoji + " " + cropData.label, qty: inv[cropId], price: price, sell: true });
+            itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
         }
     } else {
-        // Achat : lister les graines disponibles chez ce PNJ
         var seedPrices = npcData.seedPrices || {};
         for (var seedId in seedPrices) {
             if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth.getCropData(seedId);
+            var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
             if (!cropData2) continue;
-            items.push({ id: seedId, label: cropData2.emoji + " " + cropData2.label, qty: '∞', price: seedPrices[seedId], sell: false });
+            itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
 
-    // Scroll si trop d'items
-    var maxVisible = 6;
-    for (var i = 0; i < Math.min(items.length, maxVisible); i++) {
-        var item = items[i];
-        var iy = startY + i * itemH;
+    var itemH = u(6);
+    var itemGap = u(1.5);
+    var maxVisible = 5;
+    var visibleItems = Math.min(itemList.length, maxVisible);
+    var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+    var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
 
-        // Fond ligne
-        fill(i % 2 === 0 ? 'rgba(60,60,100,0.5)' : 'rgba(30,30,60,0.5)');
-        rect(dx + u(2), iy, dw - u(4), itemH, u(1));
-
-        textSize(u(2.5));
-        fill(255);
-        textAlign(LEFT, CENTER);
-        text(item.label, dx + u(4), iy + itemH/2);
-        textAlign(RIGHT, CENTER);
-        if (item.sell) {
-            text("x" + item.qty + "  →  🪙" + item.price + "/u  [VENDRE]", dx + dw - u(3), iy + itemH/2);
-        } else {
-            text("🪙" + item.price + "  [ACHETER]", dx + dw - u(3), iy + itemH/2);
-        }
+    // Ajuster la hauteur max pour ne pas sortir de l'écran
+    var maxH = height - u(4);
+    if (totalH > maxH) {
+        // Réduire le nombre d'items visibles
+        var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
+        var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
+        visibleItems = Math.min(itemList.length, newVisible);
+        listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+        totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
     }
 
-    if (items.length === 0) {
-        textSize(u(3));
-        fill(255, 255, 255, 150);
-        textAlign(CENTER, CENTER);
-        text(shopMode.sellMode ? "Rien à vendre pour le moment." : "Pas de graines disponibles.", dx + dw/2, startY + itemH * 2);
+    var dy = (height - totalH) / 2;
+
+    // ── PANNAU CRÈME #F5E7C8 + BORDURE BOIS #8B5E3C (comme UI-3) ──
+    noStroke();
+    fill(245, 231, 200, alpha * 0.95);
+    rect(dx, dy, dw, totalH, u(1.5));
+    noFill();
+    stroke(139, 94, 60, alpha);
+    strokeWeight(u(0.4));
+    rect(dx, dy, dw, totalH, u(1.5));
+    noStroke();
+
+    var y = dy + pad;
+
+    // ── RANGÉE HAUTE : Aide (gauche) + Titre + Fermer (droite) ──
+    // Aide
+    var aide = img("ui", "farm_aide_inconnu");
+    if (aide) {
+        var aMult = _fitMult(u(4), 16);
+        var aSz = 16 * aMult;
+        image(aide, dx + u(1), y + (headerH - aSz) / 2, aSz, aSz);
     }
 
+    // Titre
+    textFont('Pixelify Sans');
+    textSize(u(3.5));
+    fill(61, 43, 31, alpha);
     textAlign(CENTER, CENTER);
-    // Fermeture
-    textSize(u(2.2));
-    fill(255, 255, 255, 120);
-    text("Échap ou clic hors boutique pour fermer", dx + dw/2, dy + dh - u(3));
+    text("Boutique", dx + dw / 2, y + headerH / 2);
+
+    // Bouton Fermer
+    var croix = img("ui", "shmup_hud_croix");
+    if (croix) {
+        var cMult = _fitMult(u(4.5), 16);
+        var cSz = 16 * cMult;
+        var cx2 = dx + dw - cSz - u(1.5);
+        var cy2 = y + (headerH - cSz) / 2;
+        image(croix, cx2, cy2, cSz, cSz);
+        shopMode._btnClose = { x: cx2, y: cy2, w: cSz, h: cSz };
+    }
+    y += headerH + gap;
+
+    // ── OR ──
+    var gold = harvestSystem ? harvestSystem.getGold() : 0;
+    var goldStr = Math.floor(gold).toString();
+    var dollar = img("ui", "fish_hud_dollar");
+    var dMult = _fitMult(u(3.5), 16);
+    var dSz = 16 * dMult;
+    var dollarX = dx + dw / 2 - u(6);
+    var dollarY = y + (goldH - dSz) / 2;
+    if (dollar) {
+        image(dollar, dollarX, dollarY, dSz, dSz);
+    }
+    textSize(u(3.2));
+    fill(61, 43, 31, alpha * 0.9);
+    textAlign(LEFT, CENTER);
+    text(goldStr, dollarX + dSz + u(1), y + goldH / 2);
+    y += goldH + gap;
+
+    // ── TABS MODE ──
+    var tabW = u(20);
+    var tabGap = u(2);
+    var tabTotalW = tabW * 2 + tabGap;
+    var tabX1 = dx + dw / 2 - tabTotalW / 2;
+    var tabX2 = tabX1 + tabW + tabGap;
+
+    // Tab "VENDRE" (orange)
+    var sellPressed = shopMode.sellMode;
+    var sellTabImg = img("ui", sellPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
+    if (sellTabImg) image(sellTabImg, tabX1, y, tabW, modeH);
+    fill(255, alpha);
+    textSize(u(2.5));
+    textAlign(CENTER, CENTER);
+    textFont('Pixelify Sans');
+    text("VENDRE", tabX1 + tabW / 2, y + modeH / 2);
+
+    // Tab "ACHETER" (vert)
+    var buyPressed = !shopMode.sellMode;
+    var buyTabImg = img("ui", buyPressed ? "rogrpg_bouton_vert_marque" : "rogrpg_bouton_vert");
+    if (buyTabImg) image(buyTabImg, tabX2, y, tabW, modeH);
+    fill(255, alpha);
+    text("ACHETER", tabX2 + tabW / 2, y + modeH / 2);
+
+    shopMode._btnSellTab = { x: tabX1, y: y, w: tabW, h: modeH };
+    shopMode._btnBuyTab  = { x: tabX2, y: y, w: tabW, h: modeH };
+    y += modeH + gap;
+
+    // ── ITEMS ──
+    var itemX = dx + u(2);
+    var itemW = dw - u(4);
+    shopMode._itemAreas = [];
+
+    for (var ii = 0; ii < visibleItems; ii++) {
+        var item = itemList[ii];
+        var iy = y + ii * (itemH + itemGap);
+
+        // Fond de ligne
+        fill(61, 43, 31, 30);
+        rect(itemX, iy, itemW, itemH, u(1));
+
+        // Espacement interne
+        var innerPad = u(1.5);
+        var cx = itemX + innerPad;
+
+        // ── Icône article ──
+        var iconImg = null;
+        if (item.sell) {
+            // Mode vente : icône de récolte
+            var iconKey = _cropIdToIconKey(item.id);
+            if (iconKey) iconImg = img("objet", iconKey);
+        } else {
+            // Mode achat : sac de graines
+            var sacKey = _cropIdToSacKey(item.id);
+            if (sacKey) iconImg = img("objet", sacKey);
+        }
+        if (iconImg) {
+            var iMult = _fitMult(itemH * 0.65, 16);
+            var iSz = 16 * iMult;
+            image(iconImg, cx, iy + (itemH - iSz) / 2, iSz, iSz);
+            cx += iSz + innerPad;
+        }
+
+        // ── Nom ──
+        textSize(u(2.4));
+        fill(61, 43, 31, alpha * 0.9);
+        textAlign(LEFT, CENTER);
+        textFont('Pixelify Sans');
+        text(item.data.label, cx, iy + itemH / 2);
+        cx += textWidth(item.data.label) + u(2);
+
+        // ── Prix ($ + texte Pixelify) ──
+        var priceStr = item.price.toString();
+        // dollar icon
+        if (dollar) {
+            var pMult = _fitMult(itemH * 0.35, 16);
+            var pSz = 16 * pMult;
+            image(dollar, cx, iy + (itemH - pSz) / 2, pSz, pSz);
+            cx += pSz + u(0.5);
+        }
+        textSize(u(2.4));
+        fill(61, 43, 31, alpha);
+        text(priceStr, cx, iy + itemH / 2);
+        cx += textWidth(priceStr) + u(2);
+
+        // ── Quantité / Action ──
+        var rightEdge = itemX + itemW - innerPad;
+
+        if (item.sell) {
+            // Mode VENTE : compteur quantité à vendre + flèches
+            // Initialiser le compteur
+            if (typeof shopMode._quantities === 'undefined') {
+                shopMode._quantities = {};
+            }
+            if (typeof shopMode._quantities[ii] === 'undefined') {
+                shopMode._quantities[ii] = 0;
+            }
+            // Quantité à vendre (via _quantities)
+            var sellQty = shopMode._quantities[ii] || 0;
+            var sellQtyStr = sellQty.toString();
+            // Total disponible en inventaire
+            var totalQty = item.qty;
+
+            // Flèche moins (orange)
+            var flecheG = img("ui", "rogrpg_fleche_orange_gauche_petite");
+            var fMult = _fitMult(itemH * 0.5, 16);
+            var fSz = 16 * fMult;
+            if (flecheG) {
+                image(flecheG, rightEdge - fSz * 3.5, iy + (itemH - fSz) / 2, fSz, fSz);
+                shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: rightEdge - fSz * 3.5, y: iy + (itemH - fSz) / 2, w: fSz, h: fSz });
+            }
+
+            // Quantité (texte Pixelify)
+            textSize(u(2.4));
+            fill(61, 43, 31, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text(sellQtyStr, rightEdge - fSz * 2, iy + itemH / 2);
+
+            // Petite indication du total disponible
+            textSize(u(1.4));
+            fill(61, 43, 31, 120);
+            text("(" + totalQty + ")", rightEdge - fSz * 2, iy + itemH / 2 + u(1.8));
+
+            // Flèche plus (vert)
+            var flecheD = img("ui", "rogrpg_fleche_vert_droite_petite");
+            if (flecheD) {
+                image(flecheD, rightEdge - fSz * 0.5, iy + (itemH - fSz) / 2, fSz, fSz);
+                shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: rightEdge - fSz * 0.5, y: iy + (itemH - fSz) / 2, w: fSz, h: fSz });
+            }
+
+            // Bouton VENDRE (orange) à côté des flèches
+            var btnW2 = u(14);
+            var btnH2 = itemH * 0.75;
+            var btnX = rightEdge - fSz * 4 - btnW2 - u(1);
+            var sellBtnImg = img("ui", "rogrpg_bouton_orange");
+            if (sellBtnImg) image(sellBtnImg, btnX, iy + (itemH - btnH2) / 2, btnW2, btnH2);
+            textSize(u(1.8));
+            fill(255, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text("VENDRE", btnX + btnW2 / 2, iy + itemH / 2);
+
+            shopMode._itemAreas.push({ type: 'sell_btn', idx: ii, x: btnX, y: iy + (itemH - btnH2) / 2, w: btnW2, h: btnH2 });
+        } else {
+            // Mode ACHAT : flèches +/- quantités + bouton ACHETER
+            // Initialiser le compteur si pas fait
+            if (typeof shopMode._quantities === 'undefined') {
+                shopMode._quantities = {};
+            }
+            if (typeof shopMode._quantities[ii] === 'undefined') {
+                shopMode._quantities[ii] = 0;
+            }
+            var buyQty = shopMode._quantities[ii] || 0;
+            var buyQtyStr = buyQty.toString();
+
+            // Flèche moins (orange)
+            var flecheG2 = img("ui", "rogrpg_fleche_orange_gauche_petite");
+            var fMult2 = _fitMult(itemH * 0.5, 16);
+            var fSz2 = 16 * fMult2;
+            if (flecheG2) {
+                image(flecheG2, rightEdge - fSz2 * 3.5, iy + (itemH - fSz2) / 2, fSz2, fSz2);
+                shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: rightEdge - fSz2 * 3.5, y: iy + (itemH - fSz2) / 2, w: fSz2, h: fSz2 });
+            }
+
+            // Quantité (texte Pixelify)
+            textSize(u(2.4));
+            fill(61, 43, 31, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text(buyQtyStr, rightEdge - fSz2 * 2, iy + itemH / 2);
+
+            // Flèche plus (vert)
+            var flecheD2 = img("ui", "rogrpg_fleche_vert_droite_petite");
+            if (flecheD2) {
+                image(flecheD2, rightEdge - fSz2 * 0.5, iy + (itemH - fSz2) / 2, fSz2, fSz2);
+                shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: rightEdge - fSz2 * 0.5, y: iy + (itemH - fSz2) / 2, w: fSz2, h: fSz2 });
+            }
+
+            // Bouton ACHETER (vert)
+            var btnW3 = u(16);
+            var btnH3 = itemH * 0.75;
+            var btnX2 = rightEdge - fSz2 * 4 - btnW3 - u(1);
+            var buyBtnImg = img("ui", "rogrpg_bouton_vert");
+            if (buyBtnImg) image(buyBtnImg, btnX2, iy + (itemH - btnH3) / 2, btnW3, btnH3);
+            textSize(u(1.8));
+            fill(255, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text("ACHETER", btnX2 + btnW3 / 2, iy + itemH / 2);
+
+            shopMode._itemAreas.push({ type: 'buy_btn', idx: ii, x: btnX2, y: iy + (itemH - btnH3) / 2, w: btnW3, h: btnH3 });
+        }
+
+        textAlign(LEFT, CENTER);
+    }
+
+    // ── Message si liste vide ──
+    if (itemList.length === 0) {
+        textSize(u(2.5));
+        fill(61, 43, 31, 150);
+        textAlign(CENTER, CENTER);
+        textFont('Pixelify Sans');
+        text(shopMode.sellMode ? "Rien à vendre." : "Rien à acheter.", dx + dw / 2, y + itemH);
+    }
+
+    textFont('sans-serif');
+    textAlign(CENTER, CENTER);
 }
 
 /* ─── Input ─── */
@@ -1784,18 +2050,9 @@ function mousePressed() {
         return;
     }
 
-    // Fermer la boutique si clic hors zone
+    // Boutique — gérée entièrement dans _handleShopClick
     if (shopMode) {
-        var dw2 = width * 0.75;
-        var dh2 = height * 0.5;
-        var dx2 = width / 2 - dw2 / 2;
-        var dy2 = height / 2 - dh2 / 2;
-        if (!inRect(mouseX, mouseY, { x: dx2, y: dy2, w: dw2, h: dh2 })) {
-            shopMode = null;
-            return;
-        }
-        // Gestion des clics dans la boutique
-        _handleShopClick(mouseX, mouseY, dx2, dy2, dw2);
+        _handleShopClick(mouseX, mouseY);
         return;
     }
 
@@ -2075,59 +2332,176 @@ function _openShop(sellMode) {
     shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode };
 }
 
-function _handleShopClick(mx, my, dx, dy, dw) {
-    var startY = dy + u(13);
-    var itemH = u(5);
-    var maxVisible = 6;
+function _handleShopClick(mx, my) {
+    if (!shopMode) return;
 
-    var seller = shopMode.npcId;
-    var multiplier = npcSystem ? npcSystem.getSellMultiplier(seller) : 1.0;
+    var pad = u(3);
+    var gap = u(2.5);
+    var dw = width * 0.78;
+    var dx = width / 2 - dw / 2;
+    var headerH = u(5);
+    var goldH = u(5);
+    var modeH = u(6);
+
+    // Calculer la hauteur totale (même logique que drawShopInterface)
     var npcData = shopMode.npcData;
-
-    var items = [];
+    var itemList = [];
     if (shopMode.sellMode) {
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
+        var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
         for (var cropId in inv) {
             if (!inv.hasOwnProperty(cropId)) continue;
-            var cropData = cropGrowth ? cropGrowth.getCropData(cropId) : null;
-            if (!cropData) {
-                // fallback: chercher dans culturesData
-                var arr = culturesData || [];
-                for (var i = 0; i < arr.length; i++) {
-                    if (arr[i].id === cropId) { cropData = arr[i]; break; }
-                }
-            }
+            var cropData = cropGrowth.getCropData(cropId) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId; }));
             if (!cropData) continue;
-            items.push({ id: cropId, data: cropData, qty: inv[cropId], price: Math.floor((cropData.sell || 0) * multiplier), sell: true });
+            var price = Math.floor((cropData.sell || 0) * multiplier);
+            itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
         }
     } else {
         var seedPrices = npcData.seedPrices || {};
         for (var seedId in seedPrices) {
             if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth ? cropGrowth.getCropData(seedId) : null;
+            var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
             if (!cropData2) continue;
-            items.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
+            itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
 
-    for (var i = 0; i < Math.min(items.length, maxVisible); i++) {
-        var item = items[i];
-        var iy = startY + i * itemH;
-        if (my > iy && my < iy + itemH && mx > dx && mx < dx + dw) {
-            if (item.sell) {
-                // Vendre 1 unité
-                var earned = harvestSystem.sell(item.id, 1, item.price);
+    var itemH = u(6);
+    var itemGap = u(1.5);
+    var maxVisible = 5;
+    var visibleItems = Math.min(itemList.length, maxVisible);
+    var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+    var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
+
+    var maxH = height - u(4);
+    if (totalH > maxH) {
+        var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
+        var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
+        visibleItems = Math.min(itemList.length, newVisible);
+        listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+        totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
+    }
+
+    var dy = (height - totalH) / 2;
+
+    // Vérifier clic hors panneau → fermer
+    if (!inRect(mx, my, { x: dx, y: dy, w: dw, h: totalH })) {
+        shopMode = null;
+        return;
+    }
+
+    // 1. Bouton fermer
+    if (shopMode._btnClose && inRect(mx, my, shopMode._btnClose)) {
+        shopMode = null;
+        return;
+    }
+
+    // 2. Tabs mode — switch entre VENDRE et ACHETER
+    if (shopMode._btnSellTab && inRect(mx, my, shopMode._btnSellTab)) {
+        shopMode.sellMode = true;
+        delete shopMode._quantities;
+        return;
+    }
+    if (shopMode._btnBuyTab && inRect(mx, my, shopMode._btnBuyTab)) {
+        shopMode.sellMode = false;
+        shopMode._quantities = {};
+        return;
+    }
+
+    // 3. Zones items (flèches + boutons)
+    var areas = shopMode._itemAreas;
+    if (!areas) return;
+
+    // Reconstruire itemList pour trouver les données
+    var itemList2 = [];
+    var seller = shopMode.npcId;
+    var multiplier2 = npcSystem ? npcSystem.getSellMultiplier(seller) : 1.0;
+    var npcData2 = shopMode.npcData;
+    if (shopMode.sellMode) {
+        var inv2 = harvestSystem ? harvestSystem.getInventory() : {};
+        for (var cropId2 in inv2) {
+            if (!inv2.hasOwnProperty(cropId2)) continue;
+            var cropData3 = cropGrowth.getCropData(cropId2) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId2; }));
+            if (!cropData3) continue;
+            var price2 = Math.floor((cropData3.sell || 0) * multiplier2);
+            itemList2.push({ id: cropId2, data: cropData3, qty: inv2[cropId2], price: price2, sell: true });
+        }
+    } else {
+        var seedPrices2 = npcData2.seedPrices || {};
+        for (var seedId2 in seedPrices2) {
+            if (!seedPrices2.hasOwnProperty(seedId2)) continue;
+            var cropData4 = cropGrowth.getCropData(seedId2) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId2; }));
+            if (!cropData4) continue;
+            itemList2.push({ id: seedId2, data: cropData4, qty: 999, price: seedPrices2[seedId2], sell: false });
+        }
+    }
+
+    for (var ai = 0; ai < areas.length; ai++) {
+        var area = areas[ai];
+        if (!inRect(mx, my, area)) continue;
+        var item = itemList2[area.idx];
+        if (!item) continue;
+
+        if (area.type === 'qty_minus' && !item.sell) {
+            // Mode achat : réduire la quantité
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur = shopMode._quantities[area.idx] || 0;
+            if (cur > 0) shopMode._quantities[area.idx] = cur - 1;
+            return;
+        }
+        if (area.type === 'qty_plus' && !item.sell) {
+            // Mode achat : augmenter la quantité
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur2 = shopMode._quantities[area.idx] || 0;
+            if (cur2 < 99) shopMode._quantities[area.idx] = cur2 + 1;
+            return;
+        }
+        if (area.type === 'qty_minus' && item.sell) {
+            // Mode vente : ajuster la quantité à vendre
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur3 = shopMode._quantities[area.idx] || 0;
+            if (cur3 > 0) shopMode._quantities[area.idx] = cur3 - 1;
+            return;
+        }
+        if (area.type === 'qty_plus' && item.sell) {
+            // Mode vente : augmenter la quantité à vendre
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur4 = shopMode._quantities[area.idx] || 0;
+            if (cur4 < item.qty) shopMode._quantities[area.idx] = cur4 + 1;
+            return;
+        }
+        if (area.type === 'sell_btn') {
+            // Exécuter la vente
+            var sellQty = 1;
+            if (shopMode._quantities && shopMode._quantities[area.idx]) {
+                sellQty = shopMode._quantities[area.idx];
+            }
+            if (sellQty > item.qty) sellQty = item.qty;
+            if (sellQty > 0) {
+                var earned = harvestSystem.sell(item.id, sellQty, item.price);
                 if (earned > 0) {
                     playerGoldEarned += earned;
+                    delete shopMode._quantities; // reset qty
                 }
             } else {
-                // Acheter 1 graine
-                if (harvestSystem && harvestSystem.spendGold(item.price)) {
-                    harvestSystem.addToInventory(item.id + '_seed', 1);
-                    // Les graines sont un item spécial : on pourrait les stocker,
-                    // mais pour simplifier, on les plante directement depuis l'achat ?
-                    // Non, on les ajoute juste à l'inventaire.
+                // Vente rapide de 1
+                var earned2 = harvestSystem.sell(item.id, 1, item.price);
+                if (earned2 > 0) {
+                    playerGoldEarned += earned2;
                 }
+            }
+            return;
+        }
+        if (area.type === 'buy_btn') {
+            // Exécuter l'achat
+            var buyQty = 1;
+            if (shopMode._quantities && shopMode._quantities[area.idx]) {
+                buyQty = shopMode._quantities[area.idx];
+            }
+            var totalCost = buyQty * item.price;
+            if (harvestSystem && harvestSystem.spendGold(totalCost)) {
+                harvestSystem.addToInventory(item.id + '_seed', buyQty);
+                shopMode._quantities[area.idx] = 0; // reset
             }
             return;
         }
