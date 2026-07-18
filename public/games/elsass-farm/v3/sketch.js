@@ -1030,44 +1030,90 @@ function drawWorld() {
 }
 
 function drawHud() {
-    // ── Compteur d'or (haut droite) ──
+    // ── Compteur d'or + zone (haut droite, design John 18/07) ──
     var gold = harvestSystem ? harvestSystem.getGold() : 0;
-    // Zone + nom de zone
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    var zoneLabel = zone ? (zone.emoji || '') + ' ' + (zone.label || zone.id) : 'Ferme';
-    textSize(u(2.5));
-    var zW = textWidth(zoneLabel) + u(2);
-    fill(C.colors.hudText);
-    textAlign(RIGHT, CENTER);
-    text(zoneLabel, width - u(2), u(5));
+    var zoneLabel = zone ? (zone.label || zone.id) : 'Ferme'; // zéro emoji
+    var goldStr = Math.floor(gold).toString();
 
-    // Icône or + chiffres
+    // Pièce : dimension fixe
     var coinSize = u(4);
     var m = _fitMult(coinSize, 64);
     coinSize = 64 * m;
     var coin = img("objet", "town_piece_or");
-    if (coin) {
-        var coinY = u(2) + (u(6) - coinSize) / 2;
-        var coinX = width - u(2) - coinSize;
-        image(coin, coinX, coinY, coinSize, coinSize);
-    }
-    // Montant en texte Pixelify Sans (plus de sprites chiffres)
-    var goldStr = Math.floor(gold).toString();
-    textFont('Pixelify Sans');
-    textSize(u(4));
-    var gTotalW = textWidth(goldStr);
-    var gX = width - u(2) - (coin ? coinSize + u(1) : 0) - gTotalW / 2;
-    fill(C.colors.hudText);
-    textAlign(CENTER, CENTER);
-    text(goldStr, gX, u(2) + u(3));
-    textFont('sans-serif');
+    var hasCoin = !!coin;
 
-    // Fond or + zone
-    var orW = (coin ? coinSize + u(1) : 0) + gTotalW + zW + u(4);
-    var orX = width - orW - u(2);
+    // Panneau : ancré à droite, hauteur fixe
+    var pad = u(1);
+    var gap = u(1);
+    var panelY = u(2);
+    var panelH = u(6);
+    var maxPanelW = 0.30 * width;
+
+    // Tailles de police de départ
+    textFont('Pixelify Sans');
+    var zoneSize = u(2.5);
+    var goldSize = u(4);
+
+    // Mesures initiales
+    textSize(zoneSize);
+    var zoneW = textWidth(zoneLabel);
+    textSize(goldSize);
+    var montantW = textWidth(goldStr);
+    var panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+
+    // Mobile : réduire si > 30 % de la largeur (zone d'abord, montant ensuite)
+    if (panelW > maxPanelW) {
+        while (zoneSize > 6 && panelW > maxPanelW) {
+            zoneSize -= 0.5;
+            textSize(zoneSize);
+            zoneW = textWidth(zoneLabel);
+            panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+        }
+        while (goldSize > 6 && panelW > maxPanelW) {
+            goldSize -= 0.5;
+            textSize(goldSize);
+            montantW = textWidth(goldStr);
+            panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+        }
+    }
+
+    // Dernière mesure avec les tailles finales
+    textSize(zoneSize);
+    zoneW = textWidth(zoneLabel);
+    textSize(goldSize);
+    montantW = textWidth(goldStr);
+    panelW = pad + zoneW + gap + montantW + gap + (hasCoin ? coinSize : 0) + pad;
+    var panelX = width - u(2) - panelW;
+
+    // ORDRE DE DESSIN : 1. fond, 2. zone, 3. montant, 4. pièce — de gauche à droite
+
+    // 1. Fond panneau
     fill(C.colors.hudPanel);
     noStroke();
-    rect(orX, u(2), orW, u(6), u(1.5));
+    rect(panelX, panelY, panelW, panelH, u(1.5));
+
+    // 2. Nom de zone (Pixelify Sans, taille zoneSize)
+    fill(C.colors.hudText);
+    textAlign(LEFT, CENTER);
+    textFont('Pixelify Sans');
+    textSize(zoneSize);
+    var cx = panelX + pad;
+    text(zoneLabel, cx, panelY + panelH / 2);
+    cx += zoneW + gap;
+
+    // 3. Montant or (Pixelify Sans, taille goldSize)
+    textSize(goldSize);
+    text(goldStr, cx, panelY + panelH / 2);
+    cx += montantW + gap;
+
+    // 4. Pièce or
+    if (coin) {
+        var coinY = panelY + (panelH - coinSize) / 2;
+        image(coin, cx, coinY, coinSize, coinSize);
+    }
+
+    textFont('sans-serif');
 
     // ── Panneau Jour + Heure (haut centre, design John 18/07) ──
     // RÈGLE 30% : largeur ≤ 0.30 × width. Texte Pixelify Sans, plus de sprites.
