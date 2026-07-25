@@ -2021,16 +2021,7 @@ function mouseMoved() {
 
 /* ─── UI-2: Détection tactile ─── */
 function touchStarted() {
-    isTouchDevice = true;
-    // Sur tactile : highlight la case tapée avant action
-    if (zoneTransition || sleepTransition || shopMode || portalChoice) return false;
-    var w = Engine.Camera.screenToWorld(mouseX, mouseY);
-    var tile = Engine.Grid.toTile(w.x, w.y);
-    if (tile && tile.c >= 0 && tile.r >= 0) {
-        touchHighlight = { c: tile.c, r: tile.r, t: millis() };
-    }
-    // p5.js 1.11.4 : return false → preventDefault() sur touchstart
-    // nécessaire pour que le navigateur mobile n'intercepte pas le geste
+    mousePressed();
     return false;
 }
 
