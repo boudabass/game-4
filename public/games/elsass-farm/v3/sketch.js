@@ -292,6 +292,9 @@ async function boot() {
                 if (disasterSystem) data.disasters = disasterSystem.gather();
                 if (challengeSystem) data.challenges = challengeSystem.gather();
                 if (sleepSystem) data.sleep = sleepSystem.gather();
+                // B5 fix — persistance météo
+                data.rainyToday = _rainyToday;
+                data.rainComputedDay = _rainComputedDay;
                 return data;
             },
             apply: function (data) {
