@@ -43,7 +43,6 @@ let pnjsData = null;       // données pnjs.json
 let catastrophesData = null; // données catastrophes.json
 let challengesData2 = null;  // données challenges.json (article 432/528)
 let sleepSystem = null;    // Engine.SleepSystem — sommeil + énergie + teinte jour/nuit
-let bedTriggerZone = null; // zone cliquable du lit (coords monde) — délégué à SleepSystem
 let playerGoldEarned = 0;  // or total gagné (cumul vie entière, pour le score)
 let lastDisaster = null;   // {msg, t} dernière catastrophe (pour notification)
 let npcDialogue = null;    // {npcId, lines: [], type: 'talk'|'gift'|'shop', t}
@@ -252,9 +251,7 @@ function setup() {
         });
     }
 
-    // --- Énergie de départ ---
-    playerEnergy = C.energy.max;
-
+    // Le SleepSystem.configure() initialise l'énergie à C.energy.max
     boot();
 }
 
@@ -830,8 +827,9 @@ function drawNPCs() {
     }
 }
 
-/* ─── Rendu des PNJ dans le monde ─── */
-function drawNPCs() {
+/* ─── Rendu du monde ─── */
+function drawWorld() {
+    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     var zoneId = zone ? zone.id : 'ferme';
 
     // Sol selon la zone
@@ -1089,8 +1087,9 @@ function drawHud() {
     textFont('sans-serif');
     textAlign(CENTER, CENTER);
 
-    // ── Énergie (haut gauche) ──
-    var energyPct = Math.max(0, playerEnergy / C.energy.max);
+    // ── Énergie (haut gauche) — engine SleepSystem gère la jauge ---
+    var energyVal = sleepSystem ? sleepSystem.getEnergy() : 100;
+    var energyPct = Math.max(0, energyVal / C.energy.max);
     var energyColor = energyPct > 0.5 ? [100, 220, 80] : (energyPct > 0.25 ? [255, 200, 40] : [255, 80, 80]);
     var barW = u(18);
     var barH = u(2.5);
@@ -1117,7 +1116,7 @@ function drawHud() {
     fill(255);
     textSize(u(2));
     textAlign(LEFT, CENTER);
-    text(playerEnergy, barX + fuelSize + u(1.5), barY + barH + fuelSize / 2 + u(0.5));
+    text(energyVal, barX + fuelSize + u(1.5), barY + barH + fuelSize / 2 + u(0.5));
     textAlign(CENTER, CENTER);
 
     // ── Météo du jour ──
@@ -1898,7 +1897,7 @@ function inRect(mx, my, b) {
 
 /* ─── UI-2: Survol souris (non tactile) ─── */
 function mouseMoved() {
-    if (zoneTransition || sleepTransition || shopMode || portalChoice || npcDialogue) {
+    if (zoneTransition || (sleepSystem && sleepSystem.isSleeping()) || shopMode || portalChoice || npcDialogue) {
         hoveredTile = null;
         hoverType = 'none';
         return;
@@ -1941,7 +1940,7 @@ function touchStarted() {
 }
 
 function mousePressed() {
-    if (zoneTransition || sleepTransition) return;
+    if (zoneTransition || (sleepSystem && sleepSystem.isSleeping())) return;
 
     // Popup portail
     if (portalChoice) {
@@ -1999,9 +1998,9 @@ function mousePressed() {
     var tile = Engine.Grid.toTile(w.x, w.y);
     if (!tile) return;
 
-    // Vérifier le lit (sommeil)
-    if (bedTriggerZone && inRect(w.x, w.y, bedTriggerZone)) {
-        _doSleep();
+    // Vérifier le lit (sommeil) — délégué à SleepSystem (engine)
+    var curZoneId = Engine.WorldZone && Engine.WorldZone.getCurrent() ? Engine.WorldZone.getCurrent().id : '';
+    if (sleepSystem && sleepSystem.isBedInZone(curZoneId) && sleepSystem.handleBedClick(curZoneId, tile.c, tile.r)) {
         return;
     }
 
@@ -2092,12 +2091,11 @@ function keyPressed() {
 function _doFarmAction(tile) {
     var state = soilSystem.getState(tile.c, tile.r);
     if (state === 'empty') {
-        if (playerEnergy < C.energy.tillCost) return;
+        if (!sleepSystem || !sleepSystem.consume(C.energy.tillCost)) return;
         soilSystem.till(tile.c, tile.r);
-        playerEnergy -= C.energy.tillCost;
         actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
     } else if (state === 'tilled') {
-        if (playerEnergy < C.energy.plantCost) return;
+        if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
         var season = Engine.Clock.getSeason();
         var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
         var toPlant = null;
@@ -2107,17 +2105,15 @@ function _doFarmAction(tile) {
         if (toPlant) {
             soilSystem.plant(tile.c, tile.r, toPlant.id);
             cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-            playerEnergy -= C.energy.plantCost;
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
         }
     } else if (state === 'planted') {
         if (!soilSystem.isWatered(tile.c, tile.r)) {
-            if (playerEnergy < C.energy.waterCost) return;
+            if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
             soilSystem.water(tile.c, tile.r);
-            playerEnergy -= C.energy.waterCost;
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
         } else if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
-            if (playerEnergy < C.energy.harvestCost) return;
+            if (!sleepSystem || !sleepSystem.consume(C.energy.harvestCost)) return;
             var cropId = cropGrowth.getCropId(tile.c, tile.r);
             var cropData = cropId ? cropGrowth.getCropData(cropId) : null;
             if (cropData && harvestSystem) {
@@ -2128,7 +2124,6 @@ function _doFarmAction(tile) {
             }
             soilSystem.till(tile.c, tile.r);
             cropGrowth.resetTile(tile.c, tile.r);
-            playerEnergy -= C.energy.harvestCost;
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'harvest' };
         }
     }
@@ -2415,7 +2410,6 @@ function _handleShopClick(mx, my) {
     }
 }
 
-/* ─── Sommeil avec transition (carte 526) ─── */
 /* ─── Sommeil avec transition (géré par SleepSystem engine) ─── */
 function _doSleep() {
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
@@ -2424,76 +2418,6 @@ function _doSleep() {
 
     // Déléguer à SleepSystem (engine)
     sleepSystem.triggerSleep();
-}
-
-/* Appelé chaque frame depuis draw() pour gérer la transition sommeil */
-function _updateSleepTransition() {
-    if (!sleepTransition) return;
-
-    var elapsed = millis() - sleepTransition.t;
-    var progress = min(elapsed / sleepTransition.duration, 1);
-
-    if (sleepTransition.phase === 'out') {
-        if (progress >= 1) {
-            // Avancer au lendemain matin (7h)
-            var restoreAmount = Engine.Clock.hour < 24 ? C.energy.restoreSleep : C.energy.restoreFaint;
-            playerEnergy = Math.min(C.energy.max, playerEnergy + restoreAmount);
-
-            // Calculer le score
-            _submitScore();
-
-            // Forcer le passage au jour suivant
-            Engine.Clock.hour = 6;
-            Engine.Clock.minute = 59;
-
-            // Sauvegarder
-            if (window.Engine && Engine.Save) Engine.Save.save();
-
-            sleepTransition.phase = 'wakeup';
-            sleepTransition.t = millis();
-        }
-    } else if (sleepTransition.phase === 'wakeup') {
-        if (progress >= 1) {
-            sleepTransition.phase = 'in';
-            sleepTransition.t = millis();
-        }
-    } else if (sleepTransition.phase === 'in') {
-        if (progress >= 1) {
-            sleepTransition = null;
-            // Retour à la ferme
-            switchToZone('ferme', { c: 14, r: 9 });
-        }
-    }
-}
-
-/* Rendu du fondu de sommeil. Appelé depuis draw() après le monde. */
-function _drawSleepFade() {
-    if (!sleepTransition) return;
-
-    var elapsed = millis() - sleepTransition.t;
-    var progress = min(elapsed / sleepTransition.duration, 1);
-    var alpha = 0;
-
-    if (sleepTransition.phase === 'out') {
-        alpha = progress * 255;
-    } else if (sleepTransition.phase === 'wakeup') {
-        alpha = 255;
-    } else if (sleepTransition.phase === 'in') {
-        alpha = (1 - progress) * 255;
-    }
-
-    noStroke();
-    fill(0, 0, 0, alpha);
-    rect(0, 0, width, height);
-
-    // Texte Zzz pendant le sommeil
-    if (sleepTransition.phase === 'out' || sleepTransition.phase === 'wakeup') {
-        textAlign(CENTER, CENTER);
-        textSize(u(6));
-        fill(255, 255, 255, Math.min(255, alpha + 60));
-        text('Zzz...', width / 2, height / 2);
-        textAlign(CENTER, CENTER);
-    }
 }
 
 /* ─── Score ─── */
@@ -2621,8 +2545,7 @@ function drawZoneFade() {
                         Engine.Camera.snapTo(player.x, player.y);
                     }
                 }
-                // Réinitialiser bedTriggerZone après transition
-                bedTriggerZone = null;
+                // Le lit est géré par SleepSystem — pas de nettoyage nécessaire
             });
             zoneTransition.phase = 'in';
             zoneTransition.t = millis();
