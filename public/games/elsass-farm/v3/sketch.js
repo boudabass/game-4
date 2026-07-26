@@ -42,21 +42,19 @@ let challengeSystem = null; // Engine.ChallengeSystem (article 528)
 let pnjsData = null;       // données pnjs.json
 let catastrophesData = null; // données catastrophes.json
 let challengesData2 = null;  // données challenges.json (article 432/528)
-let playerEnergy = 100;    // jauge d'énergie
+let sleepSystem = null;    // Engine.SleepSystem — sommeil + énergie + teinte jour/nuit
+let bedTriggerZone = null; // zone cliquable du lit (coords monde) — délégué à SleepSystem
 let playerGoldEarned = 0;  // or total gagné (cumul vie entière, pour le score)
 let lastDisaster = null;   // {msg, t} dernière catastrophe (pour notification)
 let npcDialogue = null;    // {npcId, lines: [], type: 'talk'|'gift'|'shop', t}
 let shopMode = null;       // {npcId, npcData, sellMode: bool} — mode vente/achat
-let bedTriggerZone = null; // zone cliquable du lit (coords monde)
-let sleepBlocked = false;  // empêche de dormir plusieurs fois le même jour
-let dayTintAlpha = 0;      // alpha courant du filtre jour/nuit
-let dayTintColor = [255,255,255,0];
 let _rainyToday = false;   // météo pluvieuse du jour (calculée une fois par jour)
 let _rainComputedDay = -1; // jour pour lequel _rainyToday a été calculé
 
 // Transition de zone (fondue)
 let zoneTransition = null;
 let portalChoice = null;
+let _cloudSyncTimerId = null;   // ID du setInterval cloud (nettoyé en transition)
 
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
 function u(n) {
@@ -167,17 +165,9 @@ function setup() {
             if (cropGrowth) cropGrowth.onNewDay(Engine.Clock.day);
             // Réinitialiser l'arrosage quotidien (les tuiles plantées perdent leur statut watered)
             if (soilSystem) _resetDailyWatering();
-            // Vérifier les catastrophes (ancien système)
-            if (disasterSystem) {
-                var season = Engine.Clock.getSeason();
-                var disaster = disasterSystem.check(season, Engine.Clock.day);
-                if (disaster) {
-                    var result = disasterSystem.apply(disaster, soilSystem, cropGrowth);
-                    disaster._result = result;
-                    lastDisaster = { msg: disaster.msg, t: millis(), detail: result };
-                }
-            }
-            // Vérifier les défis article 528 (ChallengeSystem)
+            // Vérifier les défis météo article 528 (ChallengeSystem — seul système, remplace DisasterSystem)
+            // Note: DisasterSystem est déprécié (B2 fix — plus d'appel dans onNewDay).
+            // Les données catastrophes.json sont conservées pour compatibilité des sauvegardes existantes.
             if (challengeSystem) {
                 var season = Engine.Clock.getSeason();
                 // Nettoyer les effets visuels expirés
@@ -200,8 +190,7 @@ function setup() {
                     }
                 }
             }
-            // Réinitialiser le flag de sommeil
-            sleepBlocked = false;
+            // Le flag de sommeil est géré par SleepSystem
             // Sauvegarde nuage à chaque nouveau jour
             if (window.Engine && Engine.Save) Engine.Save.save();
         }
@@ -247,6 +236,22 @@ function setup() {
     challengeSystem = new Engine.ChallengeSystem();
     if (challengesData2) challengeSystem.configure({ challenges: challengesData2 });
 
+    // --- Système sommeil + cycle jour/nuit (engine = source unique de vérité) ---
+    if (window.Engine && Engine.SleepSystem) {
+        sleepSystem = new Engine.SleepSystem();
+        sleepSystem.configure({
+            bed: C.bed,
+            energy: C.energy,
+            dayTint: C.dayTint
+        });
+        // Hook au réveil complet : soumettre le score, sauvegarder, retour ferme
+        sleepSystem.onWake(function() {
+            _submitScore();
+            if (window.Engine && Engine.Save) Engine.Save.save();
+            switchToZone('ferme', { c: 14, r: 9 });
+        });
+    }
+
     // --- Énergie de départ ---
     playerEnergy = C.energy.max;
 
@@ -263,6 +268,14 @@ async function boot() {
     if (window.Engine && Engine.Save) {
         Engine.Save.configure({
             key: "elsass-farm-v3",
+            version: 2,
+            migrations: {
+                2: function (d) {
+                    d.rainyToday = false;
+                    d.rainComputedDay = -1;
+                    return d;
+                }
+            },
             gather: function () {
                 var t = player.tile() || { c: C.player.c, r: C.player.r };
                 var data = {
@@ -270,7 +283,6 @@ async function boot() {
                     hour: Engine.Clock.hour,
                     minute: Engine.Clock.minute,
                     c: t.c, r: t.r,
-                    energy: playerEnergy,
                     goldEarned: playerGoldEarned
                 };
                 if (Engine.WorldZone && Engine.WorldZone.getCurrent()) {
@@ -282,6 +294,7 @@ async function boot() {
                 if (npcSystem) data.npcs = npcSystem.gather();
                 if (disasterSystem) data.disasters = disasterSystem.gather();
                 if (challengeSystem) data.challenges = challengeSystem.gather();
+                if (sleepSystem) data.sleep = sleepSystem.gather();
                 return data;
             },
             apply: function (data) {
@@ -295,14 +308,19 @@ async function boot() {
                     player.placeAt(data.c, data.r);
                     Engine.Camera.snapTo(player.x, player.y);
                 }
-                if (typeof data.energy === "number") playerEnergy = data.energy;
                 if (typeof data.goldEarned === "number") playerGoldEarned = data.goldEarned;
+                // Restaurer la météo persistée (B5 fix — version 2)
+                if (typeof data.rainyToday === "boolean") {
+                    _rainyToday = data.rainyToday;
+                    _rainComputedDay = Engine.Clock.day;
+                }
                 if (soilSystem && data.soil) soilSystem.apply(data.soil);
                 if (cropGrowth && data.crops) cropGrowth.apply(data.crops);
                 if (harvestSystem && data.harvest) harvestSystem.apply(data.harvest);
                 if (npcSystem && data.npcs) npcSystem.apply(data.npcs);
                 if (disasterSystem && data.disasters) disasterSystem.apply(data.disasters);
                 if (challengeSystem && data.challenges) challengeSystem.apply(data.challenges);
+                if (sleepSystem && data.sleep) sleepSystem.apply(data.sleep);
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
@@ -316,7 +334,7 @@ async function boot() {
     if (window.Engine && Engine.Loader) Engine.Loader.finish();
 
     // --- Synchro cloud toutes les 5 minutes ---
-    setInterval(async function () {
+    _cloudSyncTimerId = setInterval(async function () {
         if (window.Engine && Engine.Save) {
             await Engine.Save.saveCloud();
         }
@@ -357,77 +375,16 @@ function _isRainyDay(season) {
     return _rainyToday;
 }
 
-/* ─── Teinte jour/nuit avec interpolation lisse (carte 526) ─── */
-function _getDayTint(hour, minute) {
-    var dt = C.dayTint;
-    // Heure décimale pour interpolation précise
-    var t = hour + (minute || 0) / 60;
-
-    // Phases ordonnées par heure
-    var phases = [
-        { hour: dt.dawn.hour,  color: dt.dawn.color  },
-        { hour: dt.day.hour,   color: dt.day.color   },
-        { hour: dt.dusk.hour,  color: dt.dusk.color  },
-        { hour: dt.night.hour, color: dt.night.color }
-    ];
-
-    // Trouver l'intervalle [prev, next]
-    var prev = phases[3]; // night (dernière)
-    var next = phases[0]; // dawn
-    var prevHour = prev.hour;
-    var nextHour = next.hour;
-
-    // Cas spécial : avant la première phase (entre night et dawn)
-    if (t < phases[0].hour) {
-        prev = phases[3];       // night (21h)
-        next = phases[0];       // dawn (5h)
-        prevHour = prev.hour;
-        nextHour = next.hour + 24; // lendemain
-    } else {
-        for (var i = 0; i < phases.length; i++) {
-            if (t < phases[i].hour) {
-                prev = i === 0 ? phases[phases.length - 1] : phases[i - 1];
-                next = phases[i];
-                prevHour = prev.hour;
-                nextHour = next.hour;
-                break;
-            }
-            if (i === phases.length - 1) {
-                // Après night (21h) → wrap vers dawn lendemain
-                prev = phases[i];
-                next = { hour: phases[0].hour + 24, color: phases[0].color };
-                prevHour = prev.hour;
-                nextHour = next.hour;
-            }
-        }
-    }
-
-    var range = nextHour - prevHour;
-    if (range <= 0) range = 24;
-    var progress = (t - prevHour) / range;
-    progress = Math.max(0, Math.min(1, progress));
-
-    // Smoothstep pour transition douce
-    var p = progress * progress * (3 - 2 * progress);
-
-    return [
-        Math.round(prev.color[0] + (next.color[0] - prev.color[0]) * p),
-        Math.round(prev.color[1] + (next.color[1] - prev.color[1]) * p),
-        Math.round(prev.color[2] + (next.color[2] - prev.color[2]) * p),
-        Math.round(prev.color[3] + (next.color[3] - prev.color[3]) * p)
-    ];
-}
-
 function draw() {
     background(C.colors.bg);
 
     // --- Simulation ---
-    if (!zoneTransition && !sleepTransition) {
+    if (!zoneTransition && !sleepSystem.isSleeping()) {
         Engine.Clock.update(deltaTime);
         player.update(deltaTime);
     }
-    // Mise à jour de la transition sommeil (même si bloquée)
-    if (sleepTransition) _updateSleepTransition();
+    // Mise à jour de la transition sommeil — gérée par SleepSystem (engine)
+    if (sleepSystem && sleepSystem.isSleeping()) sleepSystem.update(deltaTime);
     Engine.Camera.follow(player.x, player.y);
 
     // Fin de trajet
@@ -463,18 +420,8 @@ function draw() {
     drawWorld();
     pop();
 
-    // --- Filtre jour/nuit (après le monde, avant le HUD) ---
-    var tint = _getDayTint(Engine.Clock.hour, Engine.Clock.minute);
-    // Lissage progressif
-    dayTintColor = [
-        dayTintColor[0] + (tint[0] - dayTintColor[0]) * 0.05,
-        dayTintColor[1] + (tint[1] - dayTintColor[1]) * 0.05,
-        dayTintColor[2] + (tint[2] - dayTintColor[2]) * 0.05,
-        dayTintColor[3] + (tint[3] - dayTintColor[3]) * 0.05
-    ];
-    noStroke();
-    fill(dayTintColor[0], dayTintColor[1], dayTintColor[2], dayTintColor[3]);
-    rect(0, 0, width, height);
+    // --- Filtre jour/nuit (après le monde, avant le HUD) — engine source unique ---
+    if (sleepSystem) sleepSystem.renderOverlay();
 
     // --- HUD ---
     drawHud();
@@ -482,8 +429,8 @@ function draw() {
     // --- Fondu de transition zone ---
     drawZoneFade();
 
-    // --- Fondu de sommeil (par-dessus tout) ---
-    _drawSleepFade();
+    // --- Fondu de sommeil (par-dessus tout) — engine ---
+    if (sleepSystem) sleepSystem.renderSleepFade();
 
     // --- Notification catastrophe ---
     drawDisasterNotice();
@@ -883,40 +830,8 @@ function drawNPCs() {
     }
 }
 
-/* Lit : rendu visuel dans la maison */
-function drawBed() {
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    if (!zone || zone.id !== 'maison-rdc') return;
-    var ts = Engine.Grid.tileSize;
-    var b = C.bed;
-
-    // Oreiller
-    fill(255, 250, 240);
-    rect(b.c * ts + ts * 0.1, b.r * ts + ts * 0.1, ts * 0.8, ts * 0.4, ts * 0.15);
-    // Couverture
-    fill(180, 60, 50);
-    rect(b.c * ts + ts * 0.1, b.r * ts + ts * 0.5, ts * 2.8, ts * 0.45, ts * 0.1);
-
-    // Indicateur cliquable
-    var t = millis();
-    var pulse = 0.4 + 0.3 * sin(t * 0.003);
-    fill(255, 255, 200, 100 * pulse);
-    textAlign(CENTER, CENTER);
-    textSize(ts * 0.3);
-    text('💤', b.c * ts + ts * 1.5, b.r * ts - ts * 0.2);
-    textAlign(CENTER, CENTER);
-
-    // Zone cliquable (coords monde)
-    bedTriggerZone = {
-        x: b.c * ts,
-        y: b.r * ts,
-        w: b.w * ts,
-        h: b.h * ts
-    };
-}
-
-function drawWorld() {
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
+/* ─── Rendu des PNJ dans le monde ─── */
+function drawNPCs() {
     var zoneId = zone ? zone.id : 'ferme';
 
     // Sol selon la zone
@@ -980,8 +895,8 @@ function drawWorld() {
     // PNJ
     drawNPCs();
 
-    // Lit (maison)
-    drawBed();
+    // Lit (maison) — rendu SleepSystem engine
+    if (sleepSystem) sleepSystem.render(zoneId);
 
     // Marqueur de destination
     if (moveMarker && millis() - moveMarker.t < 1000) {
@@ -2501,17 +2416,14 @@ function _handleShopClick(mx, my) {
 }
 
 /* ─── Sommeil avec transition (carte 526) ─── */
-let sleepTransition = null; // { phase: 'out'|'wakeup'|'in', t, duration: 600 }
-
+/* ─── Sommeil avec transition (géré par SleepSystem engine) ─── */
 function _doSleep() {
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'maison-rdc') return;
-    if (sleepBlocked || sleepTransition) return;
+    if (!sleepSystem || sleepSystem.isSleeping()) return;
 
-    sleepBlocked = true;
-
-    // Démarrer le fondu de sommeil
-    sleepTransition = { phase: 'out', t: millis(), duration: 500 };
+    // Déléguer à SleepSystem (engine)
+    sleepSystem.triggerSleep();
 }
 
 /* Appelé chaque frame depuis draw() pour gérer la transition sommeil */
@@ -2622,9 +2534,30 @@ function _submitScore() {
     }
 }
 
+/* ─── Nettoyage des timers périodiques avant transition de zone ─── */
+function _cleanupTimers() {
+    if (_cloudSyncTimerId !== null) {
+        clearInterval(_cloudSyncTimerId);
+        _cloudSyncTimerId = null;
+    }
+}
+
+/* ─── Recrée les timers périodiques après transition de zone ─── */
+function _restartTimers() {
+    if (_cloudSyncTimerId === null) {
+        _cloudSyncTimerId = setInterval(async function () {
+            if (window.Engine && Engine.Save) {
+                await Engine.Save.saveCloud();
+            }
+        }, 5 * 60 * 1000);
+    }
+}
+
 /* ─── Transition entre zones ─── */
 function switchToZone(zoneId, entryOverride) {
     if (!Engine.WorldZone || zoneTransition) return;
+    // Nettoyer les timers avant la transition
+    _cleanupTimers();
     zoneTransition = { phase: 'out', zoneId: zoneId, entryOverride: entryOverride, t: millis(), duration: 250 };
 }
 
@@ -2700,6 +2633,8 @@ function drawZoneFade() {
         if (progress >= 1) {
             zoneTransition = null;
             alpha = 0;
+            // Recréer les timers périodiques après la transition
+            _restartTimers();
         }
     }
 
