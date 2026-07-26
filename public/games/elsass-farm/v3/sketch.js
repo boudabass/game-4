@@ -376,7 +376,7 @@ function draw() {
     background(C.colors.bg);
 
     // --- Simulation ---
-    if (!zoneTransition && !sleepSystem.isSleeping()) {
+    if (!zoneTransition && (!sleepSystem || !sleepSystem.isSleeping())) {
         Engine.Clock.update(deltaTime);
         player.update(deltaTime);
     }
@@ -2149,9 +2149,8 @@ function _doToolAction(toolId, tile) {
     switch (action) {
         case 'till': // Pelle — labourer un sol vide
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'empty') {
-                if (playerEnergy < C.energy.tillCost) return;
+                if (!sleepSystem || !sleepSystem.consume(C.energy.tillCost)) return;
                 soilSystem.till(tile.c, tile.r);
-                playerEnergy -= C.energy.tillCost;
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
@@ -2160,7 +2159,7 @@ function _doToolAction(toolId, tile) {
 
         case 'plant': // Graines — planter sur sol labouré
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'tilled') {
-                if (playerEnergy < C.energy.plantCost) return;
+                if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
                 var season = Engine.Clock.getSeason();
                 var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
                 var toPlant = null;
@@ -2170,7 +2169,6 @@ function _doToolAction(toolId, tile) {
                 if (toPlant) {
                     soilSystem.plant(tile.c, tile.r, toPlant.id);
                     cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-                    playerEnergy -= C.energy.plantCost;
                     actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
                 }
             } else {
@@ -2180,9 +2178,8 @@ function _doToolAction(toolId, tile) {
 
         case 'water': // Arrosoir — arroser une culture plantée
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'planted' && !soilSystem.isWatered(tile.c, tile.r)) {
-                if (playerEnergy < C.energy.waterCost) return;
+                if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
                 soilSystem.water(tile.c, tile.r);
-                playerEnergy -= C.energy.waterCost;
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
@@ -2410,15 +2407,7 @@ function _handleShopClick(mx, my) {
     }
 }
 
-/* ─── Sommeil avec transition (géré par SleepSystem engine) ─── */
-function _doSleep() {
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    if (!zone || zone.id !== 'maison-rdc') return;
-    if (!sleepSystem || sleepSystem.isSleeping()) return;
-
-    // Déléguer à SleepSystem (engine)
-    sleepSystem.triggerSleep();
-}
+/* ─── Sommeil délégué à SleepSystem engine — cf. handleBedClick() dans mousePressed() ─── */
 
 /* ─── Score ─── */
 function _submitScore() {
