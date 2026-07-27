@@ -247,7 +247,10 @@ function setup() {
         sleepSystem.onWake(function() {
             _submitScore();
             if (window.Engine && Engine.Save) Engine.Save.save();
-            switchToZone('ferme', { c: 14, r: 9 });
+            // Se réveiller près du lit (zone +1 tuile en dessous, centré horizontalement)
+            var wakeC = Math.floor(C.bed.c + C.bed.w / 2);
+            var wakeR = C.bed.r + C.bed.h;
+            switchToZone(C.bed.zone, { c: wakeC, r: wakeR });
         });
     }
 
