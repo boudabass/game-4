@@ -283,8 +283,8 @@ Voir tableau des cultures ci-dessus (catégorie decor) — 4 icônes objet par c
 
 - `_rejetes/kenney_tiny-farm/Tilesheet.txt` : infos techniques Kenney (taille 16px, espacement 1px, grille 12×11) — pas de noms de tuiles fournis par Kenney, tout a été identifié visuellement tuile par tuile.
 - `_rejetes/kenney_tiny-farm/farm_toit_avant_toit_vide_tile0130.png` : tuile quasi vide (2px de bruit résiduel), sans usage.
-- `tri/_references/farm_apercu_tilemap.png` + `farm_apercu_tilemap_packed.png` : planches complètes d'origine (aperçu de montage), conservées en référence.
-- `tri/_references/planche_<categorie>.png` : planches de contact générées pour contrôle visuel rapide (une par catégorie touchée dans cette passe).
+- `_references/farm_apercu_tilemap.png` + `farm_apercu_tilemap_packed.png` : planches complètes d'origine (aperçu de montage), conservées en référence.
+- `_references/planche_<categorie>.png` : planches de contact générées pour contrôle visuel rapide (une par catégorie touchée dans cette passe).
 
 ## Douteux — à confirmer par John (kenney_tiny-farm)
 
@@ -859,3 +859,188 @@ Vrai alpha. **⚠️ 2 tailles natives** notées (32 vaisseaux / 16 tuiles).
 Douteux ⚠️ : couleurs des vaisseaux, rôles des champs/chemins (à assembler).
 PAS de commit (décision John). Dossiers vides du pack insupprimables côté
 Claude — à supprimer sous Windows.
+
+# Passe du 25/07/2026 — kenney_ui-pack-pixel-adventure (préfixe `uipix_`)
+
+HUD transversal (tous les jeux). Pack **dédié** : tout est rangé dans la
+catégorie `ui/`, jamais dispersé. **234 éléments distincts**, déclinés en
+2 tailles (**16 px** = Small, **32 px** = Large) et 2 contours (**fin** =
+défaut, **épais** = suffixe `_epais`) → **468 tuiles** publiées.
+Convention de nom : `uipix_<description>_<16|32>[_epais].png`. La taille est
+dans le nom (et le champ `px`) car un même élément existe en 16 et 32 px.
+Alpha réel présent partout, aucune conversion.
+
+Le 16 px couvre boutons, icônes, jauges, barres, boussole ; le 32 px se
+limite aux grands cadres, panneaux, anneaux et hexagones (pas d'icônes).
+
+## Catégorie : ui — familles
+
+| Famille | 16px | 32px | Notes |
+|---|---|---|---|
+| `bouton_rond` (bleu/bois/beige × plat/perle/croix) | 9 | 0 | boutons ronds type couture |
+| `bouton_rect` (rouge/bleu/beige × plat/fermer) | 6 | 0 | `_fermer` = croix X |
+| `bouton_carre` / `bouton_vertical` (rouge/bleu/vert × contour/plein) | 12 | 0 | |
+| `panneau_carre` (bois/gris/bleu, coins, rivets, quadrillé, bordé) | 16 | 15 | fond plein |
+| `panneau_rond` / `panneau_hexa` (beige/brun/gris, coins colorés) | 16 | 16 | fond plein |
+| `cadre_carre` (creux, coins colorés) / `cadre_rond` (médaillon) | 15 | 15 | centre transparent |
+| `cadre_cercle` (anneau, **ensemble 2×2**) | 24 | 24 | voir montage |
+| `cadre_selection` | 2 | 0 | surbrillance |
+| `jauge_verticale` (bois/gris/bordée rouge, segments + bouts) | 16 | 0 | barres de vie/mana verticales |
+| `ruban_rouge` / `barre_progress` (**ensemble 3 tuiles**) | 12 | 12 | gauche/centre/droite |
+| `barre_remplissage` (rayures bleu/rouge/noir) | 6 | 0 | texture de remplissage |
+| `boussole` (N/E/S/W) | 4 | 0 | lettres cardinales |
+| `icone` (cloche, goutte, gemme, exclamation, croix soin, plus, cercle) | 13 | 0 | HUD |
+| `fond_bleu` | 1 | 0 | aplat |
+
+### Ensembles multi-tuiles (plans de montage)
+
+- **`cadre_cercle_<bois|gris|blanc>`** et **`cadre_cercle_orne_<...>`** : anneau
+  rond assemblé en **2×2** →
+  ```
+  hg | hd
+  bg | bd
+  ```
+  (vérifié par assemblage Pillow : cercle net). `_orne` = version à rivets.
+- **`ruban_rouge`** et **`barre_progress`** : bandeau horizontal **3 tuiles**
+  `gauche | centre | droite` (centre étirable). `barre_progress` = cadre rouge
+  à remplissage bleu ; `ruban_rouge` = bandeau plein. Variantes `_v2`.
+
+### Douteux — à confirmer par John
+
+- `icone_cloche` / `icone_goutte` (+ `_contour`) : petites formes grises
+  (idx 8, 9, 31, 32) — interprétation cloche / marqueur, à valider en jeu.
+- `icone_cercle_gris` (idx 53) : petit anneau, usage à préciser (puce ?).
+
+### Rejetés — kenney_ui-pack-pixel-adventure
+
+18 cases vides (9 Small + 9 Large × 2 contours = 36 tuiles transparentes),
+4 spritesheets `_packed` et 2 licences : non publiés. Les originaux restent
+dans l'atelier gitignoré (`_atelier-assets/`), re-téléchargeables au besoin.
+
+# Passe du 25/07/2026 — kenney_pico-8-platformer (préfixe `p8plat_`)
+
+Thème **mine / cave** (destiné à la mine d'elsass-farm v3). Version
+**Transparent/** utilisée (alpha natif, aucune conversion magenta). Tuiles
+**8 px** (grille 15×10). 150 tuiles → 1 vide rejetée, **149 classées** dans
+leurs catégories respectives.
+
+| Catégorie | n | Contenu |
+|---|---|---|
+| sol | 35 | roche cave (unie/tachetée, bords orange/rose), blocs pleins orange/rose/gris |
+| decor | 43 | pics & pentes, **tuyaux orange & rose** (ensembles), piliers, stalactite/stalagmites, nuages, crâne, arche, champignon |
+| perso | 21 | ennemis rouge/bleu/sombre, araignées, chauves-souris, blobs, créature orange |
+| ui | 29 | chiffres 0-9 (grand + petit), croix X, pourcent, cœurs (plein/demi/vide) |
+| objet | 10 | clés, cadenas, gemmes, coupelle, levier, ressort |
+| batiment | 8 | portails/arches (bleu/gris, ouvert/fermé, gauche+droit) |
+| eau | 3 | bloc, éclaboussure, gouttes |
+
+Passabilité posée : sol/decor/batiment = `non` (solide), eau = `oui` ;
+objet/perso/ui sans champ. **À revoir selon la perspective retenue pour la mine.**
+
+### Ensembles multi-tuiles
+
+- **`p8plat_tuyau_orange`** / **`p8plat_tuyau_rose`** : tunnel/conduit assemblé
+  par coins `coin_hg/hd/bg/bd` + segments `haut`/`bas` (variantes `_v2/_v3`).
+- **`p8plat_portail`** (bleu/gris, `_ouvert`) : arche en 2 tuiles `gauche`+`droit`.
+
+### Douteux — à confirmer en jeu par John
+
+- `objet_levier_rouge` (15) / `objet_ressort_rouge` (30) : mécanisme, piège
+  ou goutte de lave ? à trancher selon le gameplay mine.
+- `objet_coupelle_orange` (80), `perso_creature_rose` (87) : formes 8px ambiguës.
+- Les **rôles de bords** des tuiles `p8plat_roche_*` (bord_orange_bas/haut,
+  coins) sont approximatifs à 8 px — à vérifier en assemblant la map.
+
+### Rejeté
+
+- 1 case vide (idx 0). Version `Default/` (fond magenta), dossiers `Tiled/`
+  (.tmx/.tsx), `Tilemap/` (planches) et licences : non publiés, restent dans
+  l'atelier gitignoré.
+
+# Passe du 25/07/2026 — kenney_pico-8-city (préfixe `p8city_`)
+
+Tileset **ville top-down** (pack de réserve, aucun jeu planifié). Tuiles
+**8 px** (grille 24×15), 360 tuiles, **toutes classées** (aucun rejet).
+Nommage détaillé : couleur + type + rôle.
+
+| Catégorie | n | Contenu |
+|---|---|---|
+| batiment | 182 | corniches, pignons (pentes/lucarnes, gris/brun/rouge/rose/bleu/violet), murs (coins/haut/bas/porte/fenêtre), façades (violet/rose/vitrine, portes/fenêtres/bandeaux) |
+| sol | 73 | herbe (+fleurs), sable, pavé, **routes** (droit/coin/rond-point/passage piéton/flèches/lignes) |
+| eau | 43 | eau + transitions d'étang (bords herbe/sable, bords pavé) |
+| vehicule | 32 | voitures (vue dessus 2 tuiles, rouge/vert/rose), camions/camionnettes (face/dos), bus jaune (4 tuiles), taxi |
+| decor | 15 | arbres (vert/orange), buisson, auvents (orange/rouge/bleu), verrières |
+| perso | 12 | piétons (rouge/rose/orange/bleu, 3 frames chacun) |
+| objet | 3 | croix pharmacie, panneau, borne incendie |
+
+Passabilité : sol = `oui`, eau/batiment/decor = `non` ; vehicule/perso/objet sans champ.
+
+### Ensembles multi-tuiles
+
+- **voitures vue dessus** : `p8city_voiture_<couleur>_dessus_gauche` + `_droite`.
+- **`p8city_bus_jaune`** : bus latéral en 4 tuiles (`_1`.._4`).
+- **`p8city_verriere`** : auvent vitré `gauche/centre/droite`.
+
+### Douteux — à confirmer si un jeu ville se concrétise
+
+- Transitions d'eau `p8city_etang_*` : rôles de bord/coin approximatifs à 8 px.
+- `p8city_verriere` (212-215), détails faibles `mur_gris_clair_detail` (236-237).
+- Les rôles 9-slice des murs/façades sont posés au mieux mais à revérifier en assemblant un pâté de maisons.
+
+# Passe du 25/07/2026 — kenney_desert-shooter-pack (préfixe `desert_`)
+
+Pack shooter/aventure **désert** top-down (réserve). Déjà structuré en
+sous-dossiers. 2 tailles natives : **24 px** (sprites : ennemis, joueurs,
+armes) et **16 px** (terrain + HUD). 504 tuiles → 1 vide rejetée (Interface),
+**503 classées**.
+
+| Catégorie | n | Contenu |
+|---|---|---|
+| ui | 197 | jauge ronde (3×3), panneaux 9-slice ×5 couleurs, barres, **2 polices** (chiffres+A-Z, métal & blanc), icônes, cadre blanc |
+| sol | 116 | dalles violet/teal/gris (simples + salle 9-slice), sable (bords colorés, clair, trous) |
+| objet | 75 | armes (orange/vert), projectiles/fumées, coffres, clés, barils, caisses, meubles, panneaux, pioche |
+| batiment | 54 | murs gris/orange (coins/fenêtres), portes & arches, grottes, clôtures |
+| perso | 32 | ennemis (4 couleurs ×4 frames), joueurs (2 persos ×8 frames) |
+| decor | 29 | cactus, rochers, dunes, os, plantes, tonneaux, portail magique |
+
+Passabilité : sol = `oui`, batiment/decor = `non` ; objet/perso/ui sans champ.
+
+### Structures / ensembles
+
+- **jauge_ronde** : cadran 3×3 (`hg`..`bd`). **panneau_<couleur>** : fenêtre
+  9-slice. **cadre_blanc** : contour de boîte de texte (centre transparent).
+- **polices** `desert_police_metal_*` et `desert_police_blanc_*` : `chiffre_0..9`,
+  `lettre_a..z`, `pourcent/plus/moins`.
+- **portes/arches**, **grottes**, **clôtures**, **barrières** en pièces gauche/centre/droite.
+
+### Douteux — à confirmer
+
+- Rôles 9-slice des dalles de salle et murs : approximatifs.
+- `arme_*` / `fumee_*` / `projectile` : noms génériques (sprites abstraits 24px).
+- `tonneau_violet` (57,75), `portail_magique` (124,196) : interprétation.
+
+### Rejeté
+
+- 1 case vide (Interface idx 88). Sous-dossiers `Tilemap/` (planches) et
+  `Tilesheet.txt` : non publiés (atelier gitignoré).
+
+# Passe du 25/07/2026 — Sons (préfixe `snd_`, catégorie `son/`)
+
+40 effets sonores Kenney, **convertis .ogg → .mp3** (⚠️ Safari ne lit pas
+l'ogg ; l'arcade doit tourner sur Safari — voir DOMAINE_COOKIES_SSO). Rangés
+dans `son/`, nommés `snd_<type>_<variante>.mp3`.
+
+| Famille | n | Usage |
+|---|---|---|
+| snd_coin | 4 | ramassage pièce / bonus |
+| snd_shoot | 8 | tir |
+| snd_jump | 6 | saut |
+| snd_hurt | 5 | dégât subi |
+| snd_move | 4 | déplacement |
+| snd_lose | 4 | défaite / game over |
+| snd_explosion | 3 | explosion |
+| snd_error | 3 | erreur / action refusée |
+| snd_fall | 2 | chute |
+| snd_select | 1 | sélection menu |
+
+Originaux .ogg conservés dans l'atelier gitignoré. Encodage mp3 VBR q4 (libmp3lame).
