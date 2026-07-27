@@ -64,10 +64,11 @@ window.FarmConfig = {
         buttonText: "#ffffff"
     },
 
-    // Assets Tiny Farm (chargés dans preload())
-    // Base path relative à sketch.js → ../../system/assets/
+    // Assets triés (chargés dans preload())
+    // Base relative au jeu → public/games/system/assets/ (dossiers triés : sol/, decor/, perso/, batiment/, objet/…)
+    // Source de vérité des noms de fichiers : public/games/system/assets/catalogue.json
     assets: {
-        base: "../../system/assets/Assets_pack/tri/",
+        base: "../../system/assets/",
 
         // Sol (ground tiles)
         sol: [
@@ -119,7 +120,7 @@ window.FarmConfig = {
             "batiment/farm_grange_fenetre.png"
         ],
 
-        // Objets farm
+        // Objets farm + town (outils, pièces, sacs de graines, icônes récolte)
         objet: [
             "objet/farm_hache.png",
             "objet/farm_pelle.png",
@@ -127,7 +128,54 @@ window.FarmConfig = {
             "objet/farm_seau_eau.png",
             "objet/farm_seau_lait.png",
             "objet/farm_pot_lait.png",
-            "objet/farm_pain.png"
+            "objet/farm_pain.png",
+            "objet/town_pioche.png",
+            "objet/town_piece_or.png",
+            "objet/farm_carotte_sac.png",
+            "objet/farm_carotte_icone.png",
+            "objet/farm_aubergine_sac.png",
+            "objet/farm_aubergine_icone.png",
+            "objet/farm_mais_sac.png",
+            "objet/farm_mais_icone.png",
+            "objet/farm_tomate_sac.png",
+            "objet/farm_tomate_icone.png",
+            "objet/farm_chou_sac.png",
+            "objet/farm_chou_icone.png",
+            "objet/farm_ble_sac.png",
+            "objet/farm_ble_icone.png"
+        ],
+
+        // UI assets (chiffres, cadres, icônes HUD, dialogue PNJ, boutique)
+        ui: [
+            "ui/shmup_hud_cadre.png",
+            "ui/shmup_hud_croix.png",
+            "ui/battle_hud_carburant.png",
+            "ui/battle_hud_coeur.png",
+            "ui/battle_cadre_selection.png",
+            "ui/battle_hachures.png",
+            "ui/battle_hud_curseur_main.png",
+            "ui/battle_hud_verrou.png",
+            "ui/rogrpg_bouton_vert.png",
+            "ui/rogrpg_bouton_vert_marque.png",
+            "ui/rogrpg_bouton_orange.png",
+            "ui/rogrpg_bouton_orange_marque.png",
+            "ui/rogrpg_fleche_vert_gauche_petite.png",
+            "ui/rogrpg_fleche_vert_droite_petite.png",
+            "ui/rogrpg_fleche_orange_gauche_petite.png",
+            "ui/rogrpg_fleche_orange_droite_petite.png",
+            "ui/farm_aide_inconnu.png",
+            "ui/fish_hud_chiffre_0.png",
+            "ui/fish_hud_chiffre_1.png",
+            "ui/fish_hud_chiffre_2.png",
+            "ui/fish_hud_chiffre_3.png",
+            "ui/fish_hud_chiffre_4.png",
+            "ui/fish_hud_chiffre_5.png",
+            "ui/fish_hud_chiffre_6.png",
+            "ui/fish_hud_chiffre_7.png",
+            "ui/fish_hud_chiffre_8.png",
+            "ui/fish_hud_chiffre_9.png",
+            "ui/fish_hud_deuxpoints.png",
+            "ui/fish_hud_dollar.png"
         ]
     }
 };

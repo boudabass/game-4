@@ -20,6 +20,12 @@ let moveMarker = null;    // { x, y, t } dernière destination cliquée
 let actionFlash = null;   // { c, r, t, type } tuile "actionnée"
 let zoomBtns = {};        // zones cliquables des boutons + / −
 
+// UI-2: Feedbacks visuels (survol, interdit, curseur d'action)
+let hoveredTile = null;       // {c, r} tuile survolée (souris) ou null
+let hoverType = 'none';       // 'cultivable' | 'blocked' | 'action' | 'none'
+let touchHighlight = null;    // {c, r, t} surbrillance tactile (tap avant action)
+let isTouchDevice = false;    // détecté via touchStarted
+
 // Systèmes de culture Phase 02
 let soilSystem = null;    // Engine.SoilSystem
 let cropGrowth = null;   // Engine.CropGrowth
@@ -36,21 +42,18 @@ let challengeSystem = null; // Engine.ChallengeSystem (article 528)
 let pnjsData = null;       // données pnjs.json
 let catastrophesData = null; // données catastrophes.json
 let challengesData2 = null;  // données challenges.json (article 432/528)
-let playerEnergy = 100;    // jauge d'énergie
+let sleepSystem = null;    // Engine.SleepSystem — sommeil + énergie + teinte jour/nuit
 let playerGoldEarned = 0;  // or total gagné (cumul vie entière, pour le score)
 let lastDisaster = null;   // {msg, t} dernière catastrophe (pour notification)
 let npcDialogue = null;    // {npcId, lines: [], type: 'talk'|'gift'|'shop', t}
 let shopMode = null;       // {npcId, npcData, sellMode: bool} — mode vente/achat
-let bedTriggerZone = null; // zone cliquable du lit (coords monde)
-let sleepBlocked = false;  // empêche de dormir plusieurs fois le même jour
-let dayTintAlpha = 0;      // alpha courant du filtre jour/nuit
-let dayTintColor = [255,255,255,0];
 let _rainyToday = false;   // météo pluvieuse du jour (calculée une fois par jour)
 let _rainComputedDay = -1; // jour pour lequel _rainyToday a été calculé
 
 // Transition de zone (fondue)
 let zoneTransition = null;
 let portalChoice = null;
+let _cloudSyncTimerId = null;   // ID du setInterval cloud (nettoyé en transition)
 
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
 function u(n) {
@@ -77,6 +80,7 @@ function preload() {
     loadCat("perso");
     loadCat("batiment");
     loadCat("objet");
+    loadCat("ui");
 
     C._zonesData = loadJSON("data/zones/zones.json");
 
@@ -101,7 +105,9 @@ function preload() {
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
+    noSmooth();
     textAlign(CENTER, CENTER);
+    if (document.fonts && document.fonts.load) { document.fonts.load("16px 'Pixelify Sans'"); }
 
     // --- Zones & Portails ---
     if (Engine.WorldZone && C._zonesData) {
@@ -158,17 +164,9 @@ function setup() {
             if (cropGrowth) cropGrowth.onNewDay(Engine.Clock.day);
             // Réinitialiser l'arrosage quotidien (les tuiles plantées perdent leur statut watered)
             if (soilSystem) _resetDailyWatering();
-            // Vérifier les catastrophes (ancien système)
-            if (disasterSystem) {
-                var season = Engine.Clock.getSeason();
-                var disaster = disasterSystem.check(season, Engine.Clock.day);
-                if (disaster) {
-                    var result = disasterSystem.apply(disaster, soilSystem, cropGrowth);
-                    disaster._result = result;
-                    lastDisaster = { msg: disaster.msg, t: millis(), detail: result };
-                }
-            }
-            // Vérifier les défis article 528 (ChallengeSystem)
+            // Vérifier les défis météo article 528 (ChallengeSystem — seul système, remplace DisasterSystem)
+            // Note: DisasterSystem est déprécié (B2 fix — plus d'appel dans onNewDay).
+            // Les données catastrophes.json sont conservées pour compatibilité des sauvegardes existantes.
             if (challengeSystem) {
                 var season = Engine.Clock.getSeason();
                 // Nettoyer les effets visuels expirés
@@ -191,8 +189,7 @@ function setup() {
                     }
                 }
             }
-            // Réinitialiser le flag de sommeil
-            sleepBlocked = false;
+            // Le flag de sommeil est géré par SleepSystem
             // Sauvegarde nuage à chaque nouveau jour
             if (window.Engine && Engine.Save) Engine.Save.save();
         }
@@ -238,9 +235,23 @@ function setup() {
     challengeSystem = new Engine.ChallengeSystem();
     if (challengesData2) challengeSystem.configure({ challenges: challengesData2 });
 
-    // --- Énergie de départ ---
-    playerEnergy = C.energy.max;
+    // --- Système sommeil + cycle jour/nuit (engine = source unique de vérité) ---
+    if (window.Engine && Engine.SleepSystem) {
+        sleepSystem = new Engine.SleepSystem();
+        sleepSystem.configure({
+            bed: C.bed,
+            energy: C.energy,
+            dayTint: C.dayTint
+        });
+        // Hook au réveil complet : soumettre le score, sauvegarder, retour ferme
+        sleepSystem.onWake(function() {
+            _submitScore();
+            if (window.Engine && Engine.Save) Engine.Save.save();
+            switchToZone('ferme', { c: 14, r: 9 });
+        });
+    }
 
+    // Le SleepSystem.configure() initialise l'énergie à C.energy.max
     boot();
 }
 
@@ -254,6 +265,14 @@ async function boot() {
     if (window.Engine && Engine.Save) {
         Engine.Save.configure({
             key: "elsass-farm-v3",
+            version: 2,
+            migrations: {
+                2: function (d) {
+                    d.rainyToday = false;
+                    d.rainComputedDay = -1;
+                    return d;
+                }
+            },
             gather: function () {
                 var t = player.tile() || { c: C.player.c, r: C.player.r };
                 var data = {
@@ -261,7 +280,6 @@ async function boot() {
                     hour: Engine.Clock.hour,
                     minute: Engine.Clock.minute,
                     c: t.c, r: t.r,
-                    energy: playerEnergy,
                     goldEarned: playerGoldEarned
                 };
                 if (Engine.WorldZone && Engine.WorldZone.getCurrent()) {
@@ -273,6 +291,10 @@ async function boot() {
                 if (npcSystem) data.npcs = npcSystem.gather();
                 if (disasterSystem) data.disasters = disasterSystem.gather();
                 if (challengeSystem) data.challenges = challengeSystem.gather();
+                if (sleepSystem) data.sleep = sleepSystem.gather();
+                // B5 fix — persistance météo
+                data.rainyToday = _rainyToday;
+                data.rainComputedDay = _rainComputedDay;
                 return data;
             },
             apply: function (data) {
@@ -286,14 +308,19 @@ async function boot() {
                     player.placeAt(data.c, data.r);
                     Engine.Camera.snapTo(player.x, player.y);
                 }
-                if (typeof data.energy === "number") playerEnergy = data.energy;
                 if (typeof data.goldEarned === "number") playerGoldEarned = data.goldEarned;
+                // Restaurer la météo persistée (B5 fix — version 2)
+                if (typeof data.rainyToday === "boolean") {
+                    _rainyToday = data.rainyToday;
+                    _rainComputedDay = Engine.Clock.day;
+                }
                 if (soilSystem && data.soil) soilSystem.apply(data.soil);
                 if (cropGrowth && data.crops) cropGrowth.apply(data.crops);
                 if (harvestSystem && data.harvest) harvestSystem.apply(data.harvest);
                 if (npcSystem && data.npcs) npcSystem.apply(data.npcs);
                 if (disasterSystem && data.disasters) disasterSystem.apply(data.disasters);
                 if (challengeSystem && data.challenges) challengeSystem.apply(data.challenges);
+                if (sleepSystem && data.sleep) sleepSystem.apply(data.sleep);
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
@@ -307,7 +334,7 @@ async function boot() {
     if (window.Engine && Engine.Loader) Engine.Loader.finish();
 
     // --- Synchro cloud toutes les 5 minutes ---
-    setInterval(async function () {
+    _cloudSyncTimerId = setInterval(async function () {
         if (window.Engine && Engine.Save) {
             await Engine.Save.saveCloud();
         }
@@ -348,77 +375,16 @@ function _isRainyDay(season) {
     return _rainyToday;
 }
 
-/* ─── Teinte jour/nuit avec interpolation lisse (carte 526) ─── */
-function _getDayTint(hour, minute) {
-    var dt = C.dayTint;
-    // Heure décimale pour interpolation précise
-    var t = hour + (minute || 0) / 60;
-
-    // Phases ordonnées par heure
-    var phases = [
-        { hour: dt.dawn.hour,  color: dt.dawn.color  },
-        { hour: dt.day.hour,   color: dt.day.color   },
-        { hour: dt.dusk.hour,  color: dt.dusk.color  },
-        { hour: dt.night.hour, color: dt.night.color }
-    ];
-
-    // Trouver l'intervalle [prev, next]
-    var prev = phases[3]; // night (dernière)
-    var next = phases[0]; // dawn
-    var prevHour = prev.hour;
-    var nextHour = next.hour;
-
-    // Cas spécial : avant la première phase (entre night et dawn)
-    if (t < phases[0].hour) {
-        prev = phases[3];       // night (21h)
-        next = phases[0];       // dawn (5h)
-        prevHour = prev.hour;
-        nextHour = next.hour + 24; // lendemain
-    } else {
-        for (var i = 0; i < phases.length; i++) {
-            if (t < phases[i].hour) {
-                prev = i === 0 ? phases[phases.length - 1] : phases[i - 1];
-                next = phases[i];
-                prevHour = prev.hour;
-                nextHour = next.hour;
-                break;
-            }
-            if (i === phases.length - 1) {
-                // Après night (21h) → wrap vers dawn lendemain
-                prev = phases[i];
-                next = { hour: phases[0].hour + 24, color: phases[0].color };
-                prevHour = prev.hour;
-                nextHour = next.hour;
-            }
-        }
-    }
-
-    var range = nextHour - prevHour;
-    if (range <= 0) range = 24;
-    var progress = (t - prevHour) / range;
-    progress = Math.max(0, Math.min(1, progress));
-
-    // Smoothstep pour transition douce
-    var p = progress * progress * (3 - 2 * progress);
-
-    return [
-        Math.round(prev.color[0] + (next.color[0] - prev.color[0]) * p),
-        Math.round(prev.color[1] + (next.color[1] - prev.color[1]) * p),
-        Math.round(prev.color[2] + (next.color[2] - prev.color[2]) * p),
-        Math.round(prev.color[3] + (next.color[3] - prev.color[3]) * p)
-    ];
-}
-
 function draw() {
     background(C.colors.bg);
 
     // --- Simulation ---
-    if (!zoneTransition && !sleepTransition) {
+    if (!zoneTransition && (!sleepSystem || !sleepSystem.isSleeping())) {
         Engine.Clock.update(deltaTime);
         player.update(deltaTime);
     }
-    // Mise à jour de la transition sommeil (même si bloquée)
-    if (sleepTransition) _updateSleepTransition();
+    // Mise à jour de la transition sommeil — gérée par SleepSystem (engine)
+    if (sleepSystem && sleepSystem.isSleeping()) sleepSystem.update(deltaTime);
     Engine.Camera.follow(player.x, player.y);
 
     // Fin de trajet
@@ -454,18 +420,8 @@ function draw() {
     drawWorld();
     pop();
 
-    // --- Filtre jour/nuit (après le monde, avant le HUD) ---
-    var tint = _getDayTint(Engine.Clock.hour, Engine.Clock.minute);
-    // Lissage progressif
-    dayTintColor = [
-        dayTintColor[0] + (tint[0] - dayTintColor[0]) * 0.05,
-        dayTintColor[1] + (tint[1] - dayTintColor[1]) * 0.05,
-        dayTintColor[2] + (tint[2] - dayTintColor[2]) * 0.05,
-        dayTintColor[3] + (tint[3] - dayTintColor[3]) * 0.05
-    ];
-    noStroke();
-    fill(dayTintColor[0], dayTintColor[1], dayTintColor[2], dayTintColor[3]);
-    rect(0, 0, width, height);
+    // --- Filtre jour/nuit (après le monde, avant le HUD) — engine source unique ---
+    if (sleepSystem) sleepSystem.renderOverlay();
 
     // --- HUD ---
     drawHud();
@@ -473,8 +429,8 @@ function draw() {
     // --- Fondu de transition zone ---
     drawZoneFade();
 
-    // --- Fondu de sommeil (par-dessus tout) ---
-    _drawSleepFade();
+    // --- Fondu de sommeil (par-dessus tout) — engine ---
+    if (sleepSystem) sleepSystem.renderSleepFade();
 
     // --- Notification catastrophe ---
     drawDisasterNotice();
@@ -497,6 +453,28 @@ function drawTileImg(img, c, r, ts) {
     if (!img) return;
     ts = ts || Engine.Grid.tileSize;
     image(img, c * ts, r * ts, ts, ts);
+}
+
+/* ─── Helpers de rendu UI — assets pixel art ─── */
+
+/* Calcule un multiple entier >= baseSize qui tient dans available */
+function _fitMult(available, baseSize) {
+    return Math.max(1, Math.floor(available / baseSize));
+}
+
+/* Dessine le sélecteur d'outil avec bordure asset (shmup_hud_cadre) */
+function _drawToolSelector(x, y, w, h) {
+    var frame = img("ui", "shmup_hud_cadre");
+    if (frame) {
+        image(frame, x - 2, y - 2, w + 4, h + 4);
+    } else {
+        // Fallback dessiné
+        noFill();
+        stroke(255, 215, 0, 255);
+        strokeWeight(u(0.5));
+        rect(x, y, w, h, u(1.5));
+        noStroke();
+    }
 }
 
 function drawGround() {
@@ -852,38 +830,7 @@ function drawNPCs() {
     }
 }
 
-/* Lit : rendu visuel dans la maison */
-function drawBed() {
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    if (!zone || zone.id !== 'maison-rdc') return;
-    var ts = Engine.Grid.tileSize;
-    var b = C.bed;
-
-    // Oreiller
-    fill(255, 250, 240);
-    rect(b.c * ts + ts * 0.1, b.r * ts + ts * 0.1, ts * 0.8, ts * 0.4, ts * 0.15);
-    // Couverture
-    fill(180, 60, 50);
-    rect(b.c * ts + ts * 0.1, b.r * ts + ts * 0.5, ts * 2.8, ts * 0.45, ts * 0.1);
-
-    // Indicateur cliquable
-    var t = millis();
-    var pulse = 0.4 + 0.3 * sin(t * 0.003);
-    fill(255, 255, 200, 100 * pulse);
-    textAlign(CENTER, CENTER);
-    textSize(ts * 0.3);
-    text('💤', b.c * ts + ts * 1.5, b.r * ts - ts * 0.2);
-    textAlign(CENTER, CENTER);
-
-    // Zone cliquable (coords monde)
-    bedTriggerZone = {
-        x: b.c * ts,
-        y: b.r * ts,
-        w: b.w * ts,
-        h: b.h * ts
-    };
-}
-
+/* ─── Rendu du monde ─── */
 function drawWorld() {
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     var zoneId = zone ? zone.id : 'ferme';
@@ -942,11 +889,15 @@ function drawWorld() {
     // Portails
     drawPortals();
 
+    // UI-2: Feedbacks visuels (survol, interdit, curseur d'action)
+    // Dessiné après le décor/cultures mais avant le player et les overlays HUD
+    _drawHoverFeedback();
+
     // PNJ
     drawNPCs();
 
-    // Lit (maison)
-    drawBed();
+    // Lit (maison) — rendu SleepSystem engine
+    if (sleepSystem) sleepSystem.render(zoneId);
 
     // Marqueur de destination
     if (moveMarker && millis() - moveMarker.t < 1000) {
@@ -995,61 +946,192 @@ function drawWorld() {
 }
 
 function drawHud() {
-    // Nom de la zone (haut droite, à côté de l'or)
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    var zoneLabel = zone ? (zone.emoji || '') + ' ' + (zone.label || zone.id) : 'Ferme';
-    textSize(u(2.5));
+    // ── Compteur d'or + zone (haut droite, design John 18/07) ──
     var gold = harvestSystem ? harvestSystem.getGold() : 0;
-    var goldLabel = '🪙 ' + gold + '  |  ' + zoneLabel;
-    var gw = textWidth(goldLabel) + u(4);
-    fill(C.colors.hudPanel);
-    rect(width - gw - u(2), u(2), gw, u(6), u(1.5));
-    fill(255, 215, 0);
-    text(goldLabel, width - u(2) - gw/2, u(2) + u(3));
+    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
+    var zoneLabel = zone ? (zone.label || zone.id) : 'Ferme'; // zéro emoji
+    var goldStr = Math.floor(gold).toString();
 
-    // Bandeau horloge (haut centre)
-    var season = Engine.Clock.getSeason();
-    var seasonEmoji = { printemps: '🌸', ete: '☀️', automne: '🍂', hiver: '❄️' };
-    var label = "Jour " + Engine.Clock.day + " " + (seasonEmoji[season] || '') + " — " + Engine.Clock.timeString();
-    textSize(u(3.2));
-    var w = textWidth(label) + u(6);
+    // Pièce : dimension fixe (plus de _fitMult — une icône seule se réduit proprement)
+    var coinSize = u(4);
+    var coin = img("objet", "town_piece_or");
+    var hasCoin = !!coin;
+
+    // Panneau : ancré à droite, hauteur fixe
+    var pad = u(1);
+    var gap = u(1);
+    var panelY = u(2);
+    var panelH = u(6);
+    var maxPanelW = 0.30 * width;
+
+    // Tailles de police de départ
+    textFont('Pixelify Sans');
+    var zoneSize = u(2.5);
+    var goldSize = u(4);
+
+    // Mesures initiales
+    textSize(zoneSize);
+    var zoneW = textWidth(zoneLabel);
+    textSize(goldSize);
+    var montantW = textWidth(goldStr);
+    var panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
+
+    // Mobile : réduire si > 30 % de la largeur (zone d'abord, montant ensuite)
+    if (panelW > maxPanelW) {
+        while (zoneSize > 6 && panelW > maxPanelW) {
+            zoneSize -= 0.5;
+            textSize(zoneSize);
+            zoneW = textWidth(zoneLabel);
+            panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
+        }
+        while (goldSize > 6 && panelW > maxPanelW) {
+            goldSize -= 0.5;
+            textSize(goldSize);
+            montantW = textWidth(goldStr);
+            panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
+        }
+    }
+
+    // Dernière mesure avec les tailles finales
+    textSize(zoneSize);
+    zoneW = textWidth(zoneLabel);
+    textSize(goldSize);
+    montantW = textWidth(goldStr);
+    panelW = pad + (hasCoin ? coinSize + gap : 0) + montantW + gap + zoneW + pad;
+    var panelX = width - u(2) - panelW;
+
+    // ORDRE DE DESSIN : 1. fond, 2. pièce, 3. montant, 4. zone — de gauche à droite
+
+    // 1. Fond panneau
     fill(C.colors.hudPanel);
-    rect(width / 2 - w / 2, u(2), w, u(6), u(1.5));
+    noStroke();
+    rect(panelX, panelY, panelW, panelH, u(1.5));
+
+    // 2. Pièce or (gauche)
+    var cx = panelX + pad;
+    if (coin) {
+        var coinY = panelY + (panelH - coinSize) / 2;
+        image(coin, cx, coinY, coinSize, coinSize);
+        cx += coinSize + gap;
+    }
+
+    // 3. Montant or (Pixelify Sans, taille goldSize)
     fill(C.colors.hudText);
-    text(label, width / 2, u(2) + u(3));
+    textAlign(LEFT, CENTER);
+    textFont('Pixelify Sans');
+    textSize(goldSize);
+    text(goldStr, cx, panelY + panelH / 2);
+    cx += montantW + gap;
 
-    // Énergie (haut gauche)
-    var energyPct = Math.max(0, playerEnergy / C.energy.max);
+    // 4. Nom de zone (Pixelify Sans, taille zoneSize)
+    textSize(zoneSize);
+    text(zoneLabel, cx, panelY + panelH / 2);
+
+    textFont('sans-serif');
+
+    // ── Panneau Jour + Heure (haut centre, design John 18/07) ──
+    // RÈGLE 30% : largeur ≤ 0.30 × width. Texte Pixelify Sans, plus de sprites.
+    var season = Engine.Clock.getSeason();
+    var timeStr = Engine.Clock.timeString();
+    var dayStr = Engine.Clock.day.toString();
+
+    var maxPanelW = 0.30 * width;
+    var pad = u(1.5);
+    var gap = u(2);
+    var jDayGap = u(0.5);
+    var panelY = u(2);
+    var panelH = u(6);
+
+    // Trouver la taille de police max qui tient dans 30% de la largeur
+    textFont('Pixelify Sans');
+    var trySize = u(5);
+    var jW = 0, dW = 0, tW = 0, pw = 0;
+    var leftBlockW = 0, innerW = 0;
+    while (trySize >= 6) {
+        textSize(trySize);
+        jW = textWidth('J');
+        dW = textWidth(dayStr);
+        tW = textWidth(timeStr);
+        leftBlockW = jW + jDayGap + dW;
+        innerW = leftBlockW + gap + tW;
+        pw = innerW + pad * 2;
+        if (pw <= maxPanelW) break;
+        trySize -= 0.5;
+    }
+    // trySize now fits (or is 6 minimum), last iteration's measurements are valid
+
+    // Fond global
+    fill(C.colors.hudPanel);
+    noStroke();
+    rect(width / 2 - pw / 2, panelY, pw, panelH, u(1.5));
+
+    // Sous-encadré GAUCHE (Jour : J + numéro du jour)
+    fill(20, 40, 70, 180);
+    rect(width / 2 - pw / 2 + pad - u(0.3), panelY + u(0.4), leftBlockW + u(0.6), panelH - u(0.8), u(0.8));
+
+    // Contenu gauche : lettre J + numéro en texte Pixelify Sans
+    fill(C.colors.hudText);
+    textAlign(LEFT, CENTER);
+    textSize(trySize);
+    var cx = width / 2 - pw / 2 + pad;
+    text('J', cx, panelY + panelH / 2);
+    cx += jW + jDayGap;
+    text(dayStr, cx, panelY + panelH / 2);
+
+    // Sous-encadré DROITE (Heure)
+    fill(15, 30, 55, 180);
+    rect(width / 2 - pw / 2 + pad + leftBlockW + gap - u(0.3), panelY + u(0.4), tW + u(0.6), panelH - u(0.8), u(0.8));
+
+    // Contenu droite : heure en texte Pixelify Sans
+    fill(C.colors.hudText);
+    textAlign(CENTER, CENTER);
+    textSize(trySize);
+    text(timeStr, width / 2 - pw / 2 + pad + leftBlockW + gap + tW / 2, panelY + panelH / 2);
+    textFont('sans-serif');
+    textAlign(CENTER, CENTER);
+
+    // ── Énergie (haut gauche) — engine SleepSystem gère la jauge ---
+    var energyVal = sleepSystem ? sleepSystem.getEnergy() : 100;
+    var energyPct = Math.max(0, energyVal / C.energy.max);
     var energyColor = energyPct > 0.5 ? [100, 220, 80] : (energyPct > 0.25 ? [255, 200, 40] : [255, 80, 80]);
     var barW = u(18);
     var barH = u(2.5);
     var barX = u(2);
     var barY = u(2);
+
     fill(C.colors.hudPanel);
-    rect(barX - u(0.5), barY - u(0.5), barW + u(1), barH + u(1), u(1));
+    rect(barX - u(0.5), barY - u(0.5), barW + u(1), barH + u(1.5) + u(2) + u(1), u(1));
     // Fond barre
     fill(40, 40, 40, 200);
     rect(barX, barY, barW, barH, u(0.5));
-    // Barre énergie
+    // Barre remplie
     fill(energyColor[0], energyColor[1], energyColor[2], 220);
     rect(barX, barY, barW * energyPct, barH, u(0.5));
-    // Texte
+    // Icône carburant
+    var fuelSize = u(3);
+    var fm = _fitMult(fuelSize, 16);
+    fuelSize = 16 * fm;
+    var fuel = img("ui", "battle_hud_carburant");
+    if (fuel) {
+        image(fuel, barX + u(0.5), barY + barH + u(0.5), fuelSize, fuelSize);
+    }
+    // Texte énergie à côté de l'icône
     fill(255);
     textSize(u(2));
     textAlign(LEFT, CENTER);
-    text("⚡ " + playerEnergy, barX + u(1), barY + barH/2);
+    text(energyVal, barX + fuelSize + u(1.5), barY + barH + fuelSize / 2 + u(0.5));
     textAlign(CENTER, CENTER);
 
-    // Météo du jour
-    var weatherLabel = _isRainyDay(season) ? '🌧️ Pluie' : '☀️ Beau';
+    // ── Météo du jour ──
+    var weatherLabel = _isRainyDay(season) ? '\uD83C\uDF27\uFE0F Pluie' : '\u2600\uFE0F Beau';
     textSize(u(2.5));
     fill(C.colors.hudPanel);
     var ww = textWidth(weatherLabel) + u(3);
-    rect(barX, barY + barH + u(1), ww, u(4.5), u(1));
+    rect(barX, barY + barH + u(1.5) + fuelSize + u(1), ww, u(4.5), u(1));
     fill(C.colors.hudText);
-    text(weatherLabel, barX + ww/2, barY + barH + u(3.2));
+    text(weatherLabel, barX + ww / 2, barY + barH + u(1.5) + fuelSize + u(3.2));
 
-    // Boutons zoom + / − (bas droite)
+    // ── Boutons zoom +/− (bas droite) ──
     var size = u(9);
     var x = width - size - u(3);
     var yPlus = height - size * 2 - u(5);
@@ -1062,12 +1144,12 @@ function drawHud() {
     fill(C.colors.buttonText);
     textSize(u(5));
     text("+", x + size / 2, yPlus + size / 2);
-    text("−", x + size / 2, yMinus + size / 2);
+    text("\u2212", x + size / 2, yMinus + size / 2);
 
-    // Barre d'outils
+    // ── Barre d'outils ──
     drawToolbar();
 
-    // Popup de portail
+    // ── Popup de portail ──
     drawPortalChoice();
 }
 
@@ -1080,6 +1162,9 @@ function drawToolbar() {
     var startX = width / 2 - totalW / 2;
     var y = height - slotSize - u(3);
 
+    // Taille de l'icône outil : multiple entier de 16 (taille native du pixel art)
+    var iconSize = 16 * _fitMult(slotSize * 0.65, 16);
+
     toolbarSlots = [];
 
     for (var i = 0; i < outilsData.length; i++) {
@@ -1087,6 +1172,7 @@ function drawToolbar() {
         var x = startX + i * (slotSize + gap);
         var isSelected = selectedTool === tool.id;
 
+        // Fond du slot
         if (isSelected) {
             fill(255, 215, 0, 220);
         } else {
@@ -1097,23 +1183,127 @@ function drawToolbar() {
         rect(x, y, slotSize, slotSize, u(1.5));
         noStroke();
 
-        textSize(slotSize * 0.55);
-        fill(isSelected ? 0 : C.colors.hudText);
-        textAlign(CENTER, CENTER);
-        text(tool.emoji, x + slotSize / 2, y + slotSize / 2);
+        // Icône asset
+        var toolImg = _getToolAsset(tool.id);
+        if (toolImg) {
+            var ix = x + (slotSize - iconSize) / 2;
+            var iy = y + (slotSize - iconSize) / 2;
+            image(toolImg, ix, iy, iconSize, iconSize);
+        } else {
+            // Fallback emoji
+            textSize(slotSize * 0.55);
+            fill(isSelected ? 0 : C.colors.hudText);
+            textAlign(CENTER, CENTER);
+            text(tool.emoji, x + slotSize / 2, y + slotSize / 2);
+        }
 
+        // Cadre de sélection
         if (isSelected) {
-            noFill();
-            stroke(255, 215, 0, 255);
-            strokeWeight(u(0.5));
-            rect(x, y, slotSize, slotSize, u(1.5));
-            noStroke();
+            _drawToolSelector(x - u(0.3), y - u(0.3), slotSize + u(0.6), slotSize + u(0.6));
         }
 
         toolbarSlots.push({ x: x, y: y, w: slotSize, h: slotSize, tool: tool });
     }
 
     textAlign(CENTER, CENTER);
+}
+
+/* Retourne l'image asset pour un outil, ou null */
+function _getToolAsset(toolId) {
+    switch (toolId) {
+        case 'pelle': return img("objet", "farm_pelle");
+        case 'arrosoir': return img("objet", "farm_seau_eau");
+        case 'graines': return _getSeasonSeedSac();
+        case 'hache': return img("objet", "farm_hache");
+        case 'pioche': return img("objet", "town_pioche");
+        default: return null;
+    }
+}
+
+/* Retourne le sac de graines de la culture de saison courante */
+function _getSeasonSeedSac() {
+    if (!culturesData || !culturesData.length) return null;
+    var season = Engine.Clock.getSeason();
+    // Trouver la première culture de la saison courante
+    for (var i = 0; i < culturesData.length; i++) {
+        if (culturesData[i].season === season) {
+            var cid = culturesData[i].id;
+            // Convertir nom culture en nom de fichier sac
+            var sacKey = _cropIdToSacKey(cid);
+            if (sacKey) return img("objet", sacKey);
+            break;
+        }
+    }
+    // Fallback : premier sac disponible
+    var sacCandidates = [
+        "farm_carotte_sac", "farm_ble_sac", "farm_tomate_sac",
+        "farm_mais_sac", "farm_chou_sac", "farm_aubergine_sac"
+    ];
+    for (var i = 0; i < sacCandidates.length; i++) {
+        var s = img("objet", sacCandidates[i]);
+        if (s) return s;
+    }
+    return null;
+}
+
+/* Retourne l'asset icône pour une culture (farm_<culture>_icone) */
+function _cropIdToIconKey(cropId) {
+    var map = {
+        "carotte": "farm_carotte_icone",
+        "ble": "farm_ble_icone",
+        "tomate": "farm_tomate_icone",
+        "mais": "farm_mais_icone",
+        "choux-choucroute": "farm_chou_icone",
+        "aubergine": "farm_aubergine_icone",
+        "asperge": "farm_carotte_icone",
+        "pomme-de-terre": "farm_carotte_icone",
+        "houblon": "farm_ble_icone",
+        "orge": "farm_ble_icone",
+        "tournesol": "farm_mais_icone",
+        "framboise": "farm_tomate_icone",
+        "potiron": "farm_chou_icone",
+        "raisin": "farm_aubergine_icone",
+        "oignon": "farm_carotte_icone",
+        "navet": "farm_chou_icone",
+        "salade": "farm_chou_icone",
+        "poireau": "farm_carotte_icone",
+        "fraise": "farm_tomate_icone",
+        "mirabelle": "farm_mais_icone",
+        "courgette": "farm_tomate_icone",
+        "muguet": "farm_carotte_icone"
+    };
+    return map[cropId] || null;
+}
+
+/* Mappe un cropId vers le nom de fichier du sac */
+function _cropIdToSacKey(cropId) {
+    // Les cultures disponibles : carotte, ble, tomate, mais, chou, aubergine
+    // Leurs sacs : farm_carotte_sac, farm_ble_sac, farm_tomate_sac, farm_mais_sac, farm_chou_sac, farm_aubergine_sac
+    var map = {
+        "carotte": "farm_carotte_sac",
+        "ble": "farm_ble_sac",
+        "tomate": "farm_tomate_sac",
+        "mais": "farm_mais_sac",
+        "choux-choucroute": "farm_chou_sac",
+        "aubergine": "farm_aubergine_sac",
+        "asperge": "farm_carotte_sac",       // fallback carotte
+        "pomme-de-terre": "farm_carotte_sac", // fallback carotte
+        "houblon": "farm_ble_sac",            // fallback blé
+        "orge": "farm_ble_sac",               // fallback blé
+        "tournesol": "farm_mais_sac",         // fallback maïs
+        "framboise": "farm_tomate_sac",       // fallback tomate
+        "potiron": "farm_chou_sac",           // fallback chou
+        "raisin": "farm_aubergine_sac",       // fallback aubergine
+        "oignon": "farm_carotte_sac",         // fallback carotte
+        "navet": "farm_chou_sac",             // fallback chou
+        "salade": "farm_chou_sac",            // fallback chou
+        "poireau": "farm_carotte_sac",        // fallback carotte
+        "fraise": "farm_tomate_sac",          // fallback tomate
+        "mirabelle": "farm_mais_sac",         // fallback maïs
+        "courgette": "farm_tomate_sac",       // fallback tomate
+        "muguet": "farm_carotte_sac"          // fallback carotte
+    };
+    return map[cropId] || null;
 }
 
 /* ─── Notification de catastrophe / défi ─── */
@@ -1160,298 +1350,546 @@ function drawDisasterNotice() {
     textAlign(CENTER, CENTER);
 }
 
+/* ─── UI-2: Feedbacks visuels (survol, interdit, curseur d'action) ───
+ *   Dessine les overlays hover dans le monde (appelé par drawWorld).
+ *   Assets 16×16 du catalogue, agrandissement multiple entier.
+ */
+function _drawHoverFeedback() {
+    var ts = Engine.Grid.tileSize;
+
+    // --- Surbrillance tactile (touch) ---
+    if (touchHighlight && millis() - touchHighlight.t < 400) {
+        _drawFeedbackOverlay(touchHighlight.c, touchHighlight.r, ts, 'cultivable');
+        if (millis() - touchHighlight.t > 380) touchHighlight = null;
+        return; // Ne pas mélanger survol et tactile
+    }
+    if (!hoveredTile || hoverType === 'none') return;
+
+    var c = hoveredTile.c;
+    var r = hoveredTile.r;
+
+    switch (hoverType) {
+        case 'cultivable':
+            _drawFeedbackOverlay(c, r, ts, 'cultivable');
+            break;
+        case 'action_cultivable':
+            _drawFeedbackOverlay(c, r, ts, 'cultivable');
+            _drawFeedbackOverlay(c, r, ts, 'action');
+            break;
+        case 'blocked':
+            _drawFeedbackOverlay(c, r, ts, 'blocked');
+            break;
+        case 'action':
+            // Outil sélectionné : curseur main sur la tuile
+            _drawFeedbackOverlay(c, r, ts, 'action');
+            break;
+    }
+}
+
+/* Dessine un overlay sur une tuile selon le type de feedback */
+function _drawFeedbackOverlay(c, r, ts, type) {
+    if (type === 'cultivable') {
+        var cadre = img("ui", "battle_cadre_selection");
+        if (cadre) {
+            var m = _fitMult(ts, 16);
+            var sz = 16 * m;
+            var ox = (ts - sz) / 2;
+            var oy = (ts - sz) / 2;
+            image(cadre, c * ts + ox, r * ts + oy, sz, sz);
+        }
+    } else if (type === 'blocked') {
+        var hach = img("ui", "battle_hachures");
+        if (hach) {
+            var m = _fitMult(ts, 16);
+            var sz = 16 * m;
+            image(hach, c * ts, r * ts, sz, sz);
+        }
+    } else if (type === 'action') {
+        var hand = img("ui", "battle_hud_curseur_main");
+        if (hand) {
+            var m = _fitMult(Math.floor(ts * 0.5), 16);
+            var sz = 16 * m;
+            var ox = ts - sz - (ts * 0.05);
+            var oy = ts * 0.05;
+            image(hand, c * ts + ox, r * ts + oy, sz, sz);
+        }
+    }
+}
+
 /* ─── Dialogue PNJ ─── */
 function drawNPCDialogue() {
     if (!npcDialogue) return;
-    var elapsed = millis() - npcDialogue.t;
-    if (elapsed > 8000 && npcDialogue.type === 'talk') { npcDialogue = null; return; }
 
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'village') { npcDialogue = null; return; }
 
-    // Fond de dialogue
-    var dw = width * 0.7;
-    var dh = u(22);
-    var dx = width / 2 - dw / 2;
-    var dy = height - dh - u(12);
+    var elapsed = millis() - npcDialogue.t;
     var alpha = elapsed < 300 ? (elapsed / 300) * 230 : 230;
-
-    noStroke();
-    fill(20, 20, 40, alpha);
-    rect(dx, dy, dw, dh, u(2));
-    stroke(255, 255, 255, alpha * 0.5);
-    strokeWeight(1);
-    rect(dx, dy, dw, dh, u(2));
-    noStroke();
-
-    // Nom du PNJ
     var npc = npcSystem.getNPC(npcDialogue.npcId);
-    var name = npc ? npc.label : "???";
-    textSize(u(3.5));
-    fill(255, 215, 0, alpha);
-    textAlign(LEFT, CENTER);
-    text(npc ? npc.emoji + " " + name : name, dx + u(3), dy + u(5));
-    textAlign(CENTER, CENTER);
 
-    // Texte
+    // Layout : blocs empilés (nom → texte → jauge → boutons)
+    var pad = u(4);
+    var gap = u(3);
+    var nameH = u(6);
+    var textH = u(7);
+    var gaugeH = npc ? u(6) : 0;
+    var btnH = npc ? u(5) : 0;
+
+    var totalH = pad + nameH + gap + textH + gap + gaugeH + gap + btnH + pad;
+    var dw = width * 0.7;
+    var dx = width / 2 - dw / 2;
+    var dy = height - totalH - u(15);
+
+    // ── Panneau : fond crème #F5E7C8 + bordure bois #8B5E3C + coins arrondis ──
+    noStroke();
+    fill(245, 231, 200, alpha * 0.95);  // #F5E7C8
+    rect(dx, dy, dw, totalH, u(1.5));
+    noFill();
+    stroke(139, 94, 60, alpha);  // #8B5E3C
+    strokeWeight(u(0.4));
+    rect(dx, dy, dw, totalH, u(1.5));
+    noStroke();
+
+    // ── Bouton Fermer : shmup_hud_croix (pas d'auto-close) ──
+    var croix = img("ui", "shmup_hud_croix");
+    if (croix) {
+        var cMult = _fitMult(u(5), 16);
+        var cSz = 16 * cMult;
+        var cx2 = dx + dw - cSz - u(2);
+        var cy2 = dy + u(2);
+        image(croix, cx2, cy2, cSz, cSz);
+        npcDialogue._btnClose = { x: cx2, y: cy2, w: cSz, h: cSz };
+    }
+
+    var y = dy + pad;
+
+    // ── Bloc 1 : Nom ──
     textSize(u(3));
-    fill(255, 255, 255, alpha);
-    text(npcDialogue.text, dx + dw/2, dy + dh/2 - u(2));
+    fill(61, 43, 31, alpha);  // texte foncé sur fond crème
+    textAlign(LEFT, CENTER);
+    text(npc ? npc.emoji + ' ' + npc.label : '???', dx + pad, y + nameH/2);
+    y += nameH + gap;
 
-    // Jauge de relation (p5.js, 0-100, avec paliers relationTiers)
+    // ── Bloc 2 : Texte ──
+    textSize(u(2.7));
+    fill(61, 43, 31, alpha * 0.9);
+    textAlign(CENTER, CENTER);
+    text(npcDialogue.text, dx + dw/2, y + textH/2);
+    y += textH + gap;
+
     if (npc) {
-        _drawRelationGauge(npc, npcDialogue.npcId, dx, dy, dw, dh, alpha);
+        // ── Bloc 3 : Jauge relation (rangée de coeurs battle_hud_coeur) ──
+        _drawRelationHearts(npc, npcDialogue.npcId, dx + pad, y, dw - pad*2, alpha);
+        y += gaugeH + gap;
 
-        // Instructions — boutons cliquables (100% clic/tap, Pilier 1)
+        // ── Bloc 4 : Boutons réponses (rogrpg_bouton_<couleur> + _marque) ──
+        var bW = u(18), bH = u(5), bGap = u(2);
+        var totalBW = bW * 2 + bGap;
+        var bx1 = dx + dw/2 - totalBW/2;
+        var bx2 = bx1 + bW + bGap;
+
+        // Vendre = vert
+        var sellPressed = npcDialogue._pressedBtn === 'sell' && millis() - npcDialogue._pressedTime < 300;
+        var sellImg = img("ui", sellPressed ? "rogrpg_bouton_vert_marque" : "rogrpg_bouton_vert");
+        if (sellImg) image(sellImg, bx1, y, bW, bH);
+
+        // Acheter = orange
+        var buyPressed = npcDialogue._pressedBtn === 'buy' && millis() - npcDialogue._pressedTime < 300;
+        var buyImg = img("ui", buyPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
+        if (buyImg) image(buyImg, bx2, y, bW, bH);
+
+        // Labels sur les boutons (blanc, centré)
+        fill(255, alpha);
         textSize(u(2.5));
-        fill(255, 255, 255, alpha * 0.6);
         textAlign(CENTER, CENTER);
-        var btnY = dy + dh - u(5);
-        // Bouton Vendre
-        var btnW = u(18), btnH = u(4), gap = u(2);
-        var totalBW = btnW * 2 + gap;
-        var btnX1 = dx + dw/2 - totalBW/2;
-        var btnX2 = btnX1 + btnW + gap;
+        text('Vendre', bx1 + bW/2, y + bH/2);
+        text('Acheter', bx2 + bW/2, y + bH/2);
 
-        // Fond boutons
-        fill(100, 180, 100, alpha * 0.8);
-        rect(btnX1, btnY, btnW, btnH, u(1));
-        fill(220, 180, 60, alpha * 0.8);
-        rect(btnX2, btnY, btnW, btnH, u(1));
-
-        fill(255);
-        textSize(u(2.5));
-        text("🛒 Vendre", btnX1 + btnW/2, btnY + btnH/2);
-        text("🌱 Acheter", btnX2 + btnW/2, btnY + btnH/2);
-
-        // Stocker les zones cliquables pour mousePressed
-        npcDialogue._btnSell = { x: btnX1, y: btnY, w: btnW, h: btnH };
-        npcDialogue._btnBuy  = { x: btnX2, y: btnY, w: btnW, h: btnH };
+        npcDialogue._btnSell = { x: bx1, y: y, w: bW, h: bH };
+        npcDialogue._btnBuy  = { x: bx2, y: y, w: bW, h: bH };
     }
 }
 
-/* ─── Jauge de relation PNJ (p5.js, 0-100, engine/v2) ───
- * Intégrée avec NPCSystem.getRelationLevel(), NPCSystem.giveGift().
- * Affiche : barre de progression avec gradient, paliers relationTiers, label 0-100.
- * Persistance via NPCSystem.gather()/apply() → Engine.Save.
+/* ─── Jauge de relation PNJ : rangée de coeurs (battle_hud_coeur) ───
+ * Remplace l'ancienne barre gradient par 5 coeurs style Stardew Valley.
+ * Coeurs pleins = niveaux gagnés, partiel = progression, vides = à débloquer.
  */
-function _drawRelationGauge(npc, npcId, dx, dy, dw, dh, alpha) {
+function _drawRelationHearts(npc, npcId, gx, gy, gw, alpha) {
     var level = npcSystem.getRelationLevel(npcId);
-    var pct = Math.min(100, level * 5);          // 0-20 → 0-100
+    var pct = Math.min(100, level * 5);
 
-    var barW = dw - u(12);
-    var barH = u(4);
-    var bx = dx + u(6);
-    // Placer la jauge entre le texte de dialogue et les boutons
-    var by = dy + dh - u(14);
-
-    // Fond de la jauge
-    noStroke();
-    fill(40, 40, 60, alpha * 0.8);
-    rect(bx - u(1), by - u(5.5), barW + u(2), barH + u(12), u(1.5));
+    var totalHearts = 5;
+    var heartsFilled = Math.floor(pct / 20);  // 0-5
+    var heartPartial = (pct % 20) / 20;       // 0-0.999...
 
     // Label "Relation"
     textSize(u(2.2));
-    fill(255, 255, 255, alpha * 0.8);
+    fill(61, 43, 31, alpha * 0.85);
     textAlign(LEFT, CENTER);
-    text("❤️ Relation", bx, by - u(1));
+    text("Relation", gx, gy + u(1.5));
 
-    // Pourcentage
-    textSize(u(2.5));
-    fill(255, 215, 0, alpha * 0.95);
-    textAlign(RIGHT, CENTER);
-    text(pct + "/100", bx + barW, by - u(1));
-    textAlign(CENTER, CENTER);
+    var coeur = img("ui", "battle_hud_coeur");
+    if (!coeur) return;
 
-    // Barre de fond
-    noStroke();
-    fill(20, 20, 40, alpha * 0.7);
-    rect(bx, by, barW, barH, u(0.6));
+    var hMult = _fitMult(u(3.5), 16);
+    var hSz = 16 * hMult;
+    var hGap = u(1.5);
+    var heartAreaWidth = totalHearts * (hSz + hGap);
+    var startX = gx + gw - heartAreaWidth;
+    if (startX < gx + u(10)) startX = gx + u(10);
 
-    // Barre remplie avec gradient (froid → chaud selon relation)
-    if (pct > 0) {
-        var fillW = barW * (pct / 100);
-        // Dégradé horizontal : bleu(0%) → vert(40%) → jaune(70%) → rose(100%)
-        var steps = Math.max(2, Math.floor(fillW / u(1)));
-        var stepW = fillW / steps;
-        for (var s = 0; s < steps; s++) {
-            var t2 = s / steps;
-            var r, g, b;
-            if (t2 < 0.4) {
-                // Bleu → Vert
-                var tt = t2 / 0.4;
-                r = Math.round(100 + tt * 50);
-                g = Math.round(150 + tt * 80);
-                b = Math.round(220 - tt * 140);
-            } else if (t2 < 0.7) {
-                // Vert → Jaune
-                var tt2 = (t2 - 0.4) / 0.3;
-                r = Math.round(150 + tt2 * 105);
-                g = Math.round(230 - tt2 * 30);
-                b = Math.round(80 - tt2 * 50);
-            } else {
-                // Jaune → Rose
-                var tt3 = (t2 - 0.7) / 0.3;
-                r = Math.round(255 - tt3 * 35);
-                g = Math.round(200 - tt3 * 120);
-                b = Math.round(30 + tt3 * 115);
-            }
-            fill(r, g, b, alpha * 0.85);
-            rect(bx + s * stepW, by, stepW + 0.5, barH);
+    for (var hi = 0; hi < totalHearts; hi++) {
+        var hx = startX + hi * (hSz + hGap);
+        var hy = gy + u(0.8);
+
+        // Reset tint au début de chaque coeur
+        noTint();
+
+        if (hi < heartsFilled) {
+            // Coeur plein — 100%
+            tint(255, alpha);
+        } else if (hi === heartsFilled && heartPartial > 0) {
+            // Coeur partiel — atténué selon progression
+            var partAlpha = 0.3 + heartPartial * 0.7;
+            tint(255, alpha * partAlpha);
+        } else {
+            // Coeur vide — très atténué
+            tint(255, alpha * 0.18);
         }
+        image(coeur, hx, hy, hSz, hSz);
     }
-
-    // Bordure de la barre
-    noFill();
-    stroke(255, 255, 255, alpha * 0.3);
-    strokeWeight(u(0.3));
-    rect(bx, by, barW, barH, u(0.6));
-    noStroke();
-
-    // Paliers relationTiers (marqueurs et labels)
-    var tiers = npc.relationTiers;
-    if (tiers && tiers.length) {
-        for (var ti = 0; ti < tiers.length; ti++) {
-            var tier = tiers[ti];
-            var tierPct = Math.min(100, tier.level * 5); // level → %
-            var mx = bx + barW * (tierPct / 100);
-
-            // Trait vertical
-            stroke(255, 255, 255, alpha * 0.5);
-            strokeWeight(u(0.2));
-            line(mx, by - u(1), mx, by + barH + u(1));
-
-            // Petit losange marqueur
-            noStroke();
-            fill(255, 215, 0, alpha * 0.9);
-            var ds = u(0.8);
-            quad(mx, by + barH + u(1.2),
-                 mx + ds, by + barH + u(2.2),
-                 mx, by + barH + u(3.2),
-                 mx - ds, by + barH + u(2.2));
-
-            // Label d'effet (compact)
-            var effectLabel = '';
-            if (tier.effect) {
-                if (tier.effect.type === 'discount') {
-                    effectLabel = '-' + Math.round(tier.effect.value * 100) + '%';
-                } else if (tier.effect.type === 'recipe') {
-                    effectLabel = '📜 ' + (tier.effect.id || '?');
-                }
-            }
-            if (effectLabel) {
-                textSize(u(1.6));
-                fill(255, 255, 255, alpha * 0.65);
-                textAlign(CENTER, TOP);
-                text(effectLabel, mx, by + barH + u(4));
-                textAlign(CENTER, CENTER);
-            }
-        }
-    }
-
-    // Niveau actuel : marqueur sur la barre
-    if (pct > 0) {
-        var curX = bx + barW * (pct / 100);
-        noStroke();
-        fill(255, 255, 255, alpha * 0.9);
-        circle(curX, by + barH/2, u(1.5));
-        fill(255, 215, 0, alpha);
-        circle(curX, by + barH/2, u(2.5));
-    }
+    noTint();
 }
 
-/* ─── Interface boutique ─── */
+/* ─── Interface boutique habillée (UI-4) ─── */
 function drawShopInterface() {
     if (!shopMode) return;
     var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
     if (!zone || zone.id !== 'village') { shopMode = null; return; }
 
-    var dw = width * 0.75;
-    var dh = height * 0.5;
+    var alpha = 230;
+    var pad = u(3);
+    var gap = u(2.5);
+
+    // Layout global
+    var dw = width * 0.78;
     var dx = width / 2 - dw / 2;
-    var dy = height / 2 - dh / 2;
+    var dy = height * 0.08;
 
-    // Fond
-    noStroke();
-    fill(20, 20, 50, 235);
-    rect(dx, dy, dw, dh, u(2));
-    stroke(255, 215, 0, 180);
-    strokeWeight(2);
-    rect(dx, dy, dw, dh, u(2));
-    noStroke();
+    // Titre + or + mode = hauteur fixe
+    var headerH = u(5);  // titre
+    var goldH = u(5);    // or
+    var modeH = u(6);    // mode tabs
+    var totalItems = 0;
 
-    var title = shopMode.sellMode ? "🛒 VENDRE au Maraîcher" : "🌱 ACHETER des graines";
-    textSize(u(4));
-    fill(255, 215, 0);
-    text(title, dx + dw/2, dy + u(5));
-
-    // Or disponible
-    var gold = harvestSystem ? harvestSystem.getGold() : 0;
-    textSize(u(2.8));
-    fill(255, 255, 255);
-    text("🪙 " + Math.floor(gold) + " or", dx + dw/2, dy + u(9));
-
+    // Compter les items pour la hauteur variable
     var npcData = shopMode.npcData;
-    var startY = dy + u(13);
-    var itemH = u(5);
-    var items = [];
-
+    var itemList = [];
     if (shopMode.sellMode) {
-        // Vente : lister l'inventaire du joueur
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
         var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
         for (var cropId in inv) {
             if (!inv.hasOwnProperty(cropId)) continue;
-            var cropData = cropGrowth.getCropData(cropId) || culturesData.find(function(cc) { return cc.id === cropId; });
+            var cropData = cropGrowth.getCropData(cropId) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId; }));
             if (!cropData) continue;
             var price = Math.floor((cropData.sell || 0) * multiplier);
-            items.push({ id: cropId, label: cropData.emoji + " " + cropData.label, qty: inv[cropId], price: price, sell: true });
+            itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
         }
     } else {
-        // Achat : lister les graines disponibles chez ce PNJ
         var seedPrices = npcData.seedPrices || {};
         for (var seedId in seedPrices) {
             if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth.getCropData(seedId);
+            var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
             if (!cropData2) continue;
-            items.push({ id: seedId, label: cropData2.emoji + " " + cropData2.label, qty: '∞', price: seedPrices[seedId], sell: false });
+            itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
 
-    // Scroll si trop d'items
-    var maxVisible = 6;
-    for (var i = 0; i < Math.min(items.length, maxVisible); i++) {
-        var item = items[i];
-        var iy = startY + i * itemH;
+    var itemH = u(6);
+    var itemGap = u(1.5);
+    var maxVisible = 5;
+    var visibleItems = Math.min(itemList.length, maxVisible);
+    var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+    var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
 
-        // Fond ligne
-        fill(i % 2 === 0 ? 'rgba(60,60,100,0.5)' : 'rgba(30,30,60,0.5)');
-        rect(dx + u(2), iy, dw - u(4), itemH, u(1));
-
-        textSize(u(2.5));
-        fill(255);
-        textAlign(LEFT, CENTER);
-        text(item.label, dx + u(4), iy + itemH/2);
-        textAlign(RIGHT, CENTER);
-        if (item.sell) {
-            text("x" + item.qty + "  →  🪙" + item.price + "/u  [VENDRE]", dx + dw - u(3), iy + itemH/2);
-        } else {
-            text("🪙" + item.price + "  [ACHETER]", dx + dw - u(3), iy + itemH/2);
-        }
+    // Ajuster la hauteur max pour ne pas sortir de l'écran
+    var maxH = height - u(4);
+    if (totalH > maxH) {
+        // Réduire le nombre d'items visibles
+        var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
+        var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
+        visibleItems = Math.min(itemList.length, newVisible);
+        listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+        totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
     }
 
-    if (items.length === 0) {
-        textSize(u(3));
-        fill(255, 255, 255, 150);
-        textAlign(CENTER, CENTER);
-        text(shopMode.sellMode ? "Rien à vendre pour le moment." : "Pas de graines disponibles.", dx + dw/2, startY + itemH * 2);
+    var dy = (height - totalH) / 2;
+
+    // ── PANNAU CRÈME #F5E7C8 + BORDURE BOIS #8B5E3C (comme UI-3) ──
+    noStroke();
+    fill(245, 231, 200, alpha * 0.95);
+    rect(dx, dy, dw, totalH, u(1.5));
+    noFill();
+    stroke(139, 94, 60, alpha);
+    strokeWeight(u(0.4));
+    rect(dx, dy, dw, totalH, u(1.5));
+    noStroke();
+
+    var y = dy + pad;
+
+    // ── RANGÉE HAUTE : Aide (gauche) + Titre + Fermer (droite) ──
+    // Aide
+    var aide = img("ui", "farm_aide_inconnu");
+    if (aide) {
+        var aMult = _fitMult(u(4), 16);
+        var aSz = 16 * aMult;
+        image(aide, dx + u(1), y + (headerH - aSz) / 2, aSz, aSz);
     }
 
+    // Titre
+    textFont('Pixelify Sans');
+    textSize(u(3.5));
+    fill(61, 43, 31, alpha);
     textAlign(CENTER, CENTER);
-    // Fermeture
-    textSize(u(2.2));
-    fill(255, 255, 255, 120);
-    text("Échap ou clic hors boutique pour fermer", dx + dw/2, dy + dh - u(3));
+    text("Boutique", dx + dw / 2, y + headerH / 2);
+
+    // Bouton Fermer
+    var croix = img("ui", "shmup_hud_croix");
+    if (croix) {
+        var cMult = _fitMult(u(4.5), 16);
+        var cSz = 16 * cMult;
+        var cx2 = dx + dw - cSz - u(1.5);
+        var cy2 = y + (headerH - cSz) / 2;
+        image(croix, cx2, cy2, cSz, cSz);
+        shopMode._btnClose = { x: cx2, y: cy2, w: cSz, h: cSz };
+    }
+    y += headerH + gap;
+
+    // ── OR ──
+    var gold = harvestSystem ? harvestSystem.getGold() : 0;
+    var goldStr = Math.floor(gold).toString();
+    var dollar = img("ui", "fish_hud_dollar");
+    var dMult = _fitMult(u(3.5), 16);
+    var dSz = 16 * dMult;
+    var dollarX = dx + dw / 2 - u(6);
+    var dollarY = y + (goldH - dSz) / 2;
+    if (dollar) {
+        image(dollar, dollarX, dollarY, dSz, dSz);
+    }
+    textSize(u(3.2));
+    fill(61, 43, 31, alpha * 0.9);
+    textAlign(LEFT, CENTER);
+    text(goldStr, dollarX + dSz + u(1), y + goldH / 2);
+    y += goldH + gap;
+
+    // ── TABS MODE ──
+    var tabW = u(20);
+    var tabGap = u(2);
+    var tabTotalW = tabW * 2 + tabGap;
+    var tabX1 = dx + dw / 2 - tabTotalW / 2;
+    var tabX2 = tabX1 + tabW + tabGap;
+
+    // Tab "VENDRE" (orange)
+    var sellPressed = shopMode.sellMode;
+    var sellTabImg = img("ui", sellPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
+    if (sellTabImg) image(sellTabImg, tabX1, y, tabW, modeH);
+    fill(255, alpha);
+    textSize(u(2.5));
+    textAlign(CENTER, CENTER);
+    textFont('Pixelify Sans');
+    text("VENDRE", tabX1 + tabW / 2, y + modeH / 2);
+
+    // Tab "ACHETER" (vert)
+    var buyPressed = !shopMode.sellMode;
+    var buyTabImg = img("ui", buyPressed ? "rogrpg_bouton_vert_marque" : "rogrpg_bouton_vert");
+    if (buyTabImg) image(buyTabImg, tabX2, y, tabW, modeH);
+    fill(255, alpha);
+    text("ACHETER", tabX2 + tabW / 2, y + modeH / 2);
+
+    shopMode._btnSellTab = { x: tabX1, y: y, w: tabW, h: modeH };
+    shopMode._btnBuyTab  = { x: tabX2, y: y, w: tabW, h: modeH };
+    y += modeH + gap;
+
+    // ── ITEMS ──
+    var itemX = dx + u(2);
+    var itemW = dw - u(4);
+    shopMode._itemAreas = [];
+
+    for (var ii = 0; ii < visibleItems; ii++) {
+        var item = itemList[ii];
+        var iy = y + ii * (itemH + itemGap);
+
+        // Fond de ligne
+        fill(61, 43, 31, 30);
+        rect(itemX, iy, itemW, itemH, u(1));
+
+        // Espacement interne
+        var innerPad = u(1.5);
+        var cx = itemX + innerPad;
+
+        // ── Icône article ──
+        var iconImg = null;
+        if (item.sell) {
+            // Mode vente : icône de récolte
+            var iconKey = _cropIdToIconKey(item.id);
+            if (iconKey) iconImg = img("objet", iconKey);
+        } else {
+            // Mode achat : sac de graines
+            var sacKey = _cropIdToSacKey(item.id);
+            if (sacKey) iconImg = img("objet", sacKey);
+        }
+        if (iconImg) {
+            var iMult = _fitMult(itemH * 0.65, 16);
+            var iSz = 16 * iMult;
+            image(iconImg, cx, iy + (itemH - iSz) / 2, iSz, iSz);
+            cx += iSz + innerPad;
+        }
+
+        // ── Nom ──
+        textSize(u(2.4));
+        fill(61, 43, 31, alpha * 0.9);
+        textAlign(LEFT, CENTER);
+        textFont('Pixelify Sans');
+        text(item.data.label, cx, iy + itemH / 2);
+        cx += textWidth(item.data.label) + u(2);
+
+        // ── Prix ($ + texte Pixelify) ──
+        var priceStr = item.price.toString();
+        // dollar icon
+        if (dollar) {
+            var pMult = _fitMult(itemH * 0.35, 16);
+            var pSz = 16 * pMult;
+            image(dollar, cx, iy + (itemH - pSz) / 2, pSz, pSz);
+            cx += pSz + u(0.5);
+        }
+        textSize(u(2.4));
+        fill(61, 43, 31, alpha);
+        text(priceStr, cx, iy + itemH / 2);
+        cx += textWidth(priceStr) + u(2);
+
+        // ── Quantité / Action ──
+        var rightEdge = itemX + itemW - innerPad;
+
+        if (item.sell) {
+            // Mode VENTE : compteur quantité à vendre + flèches
+            // Initialiser le compteur
+            if (typeof shopMode._quantities === 'undefined') {
+                shopMode._quantities = {};
+            }
+            if (typeof shopMode._quantities[ii] === 'undefined') {
+                shopMode._quantities[ii] = 0;
+            }
+            // Quantité à vendre (via _quantities)
+            var sellQty = shopMode._quantities[ii] || 0;
+            var sellQtyStr = sellQty.toString();
+            // Total disponible en inventaire
+            var totalQty = item.qty;
+
+            // Flèche moins (orange)
+            var flecheG = img("ui", "rogrpg_fleche_orange_gauche_petite");
+            var fMult = _fitMult(itemH * 0.5, 16);
+            var fSz = 16 * fMult;
+            if (flecheG) {
+                image(flecheG, rightEdge - fSz * 3.5, iy + (itemH - fSz) / 2, fSz, fSz);
+                shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: rightEdge - fSz * 3.5, y: iy + (itemH - fSz) / 2, w: fSz, h: fSz });
+            }
+
+            // Quantité (texte Pixelify)
+            textSize(u(2.4));
+            fill(61, 43, 31, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text(sellQtyStr, rightEdge - fSz * 2, iy + itemH / 2);
+
+            // Petite indication du total disponible
+            textSize(u(1.4));
+            fill(61, 43, 31, 120);
+            text("(" + totalQty + ")", rightEdge - fSz * 2, iy + itemH / 2 + u(1.8));
+
+            // Flèche plus (vert)
+            var flecheD = img("ui", "rogrpg_fleche_vert_droite_petite");
+            if (flecheD) {
+                image(flecheD, rightEdge - fSz * 0.5, iy + (itemH - fSz) / 2, fSz, fSz);
+                shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: rightEdge - fSz * 0.5, y: iy + (itemH - fSz) / 2, w: fSz, h: fSz });
+            }
+
+            // Bouton VENDRE (orange) à côté des flèches
+            var btnW2 = u(14);
+            var btnH2 = itemH * 0.75;
+            var btnX = rightEdge - fSz * 4 - btnW2 - u(1);
+            var sellBtnImg = img("ui", "rogrpg_bouton_orange");
+            if (sellBtnImg) image(sellBtnImg, btnX, iy + (itemH - btnH2) / 2, btnW2, btnH2);
+            textSize(u(1.8));
+            fill(255, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text("VENDRE", btnX + btnW2 / 2, iy + itemH / 2);
+
+            shopMode._itemAreas.push({ type: 'sell_btn', idx: ii, x: btnX, y: iy + (itemH - btnH2) / 2, w: btnW2, h: btnH2 });
+        } else {
+            // Mode ACHAT : flèches +/- quantités + bouton ACHETER
+            // Initialiser le compteur si pas fait
+            if (typeof shopMode._quantities === 'undefined') {
+                shopMode._quantities = {};
+            }
+            if (typeof shopMode._quantities[ii] === 'undefined') {
+                shopMode._quantities[ii] = 0;
+            }
+            var buyQty = shopMode._quantities[ii] || 0;
+            var buyQtyStr = buyQty.toString();
+
+            // Flèche moins (orange)
+            var flecheG2 = img("ui", "rogrpg_fleche_orange_gauche_petite");
+            var fMult2 = _fitMult(itemH * 0.5, 16);
+            var fSz2 = 16 * fMult2;
+            if (flecheG2) {
+                image(flecheG2, rightEdge - fSz2 * 3.5, iy + (itemH - fSz2) / 2, fSz2, fSz2);
+                shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: rightEdge - fSz2 * 3.5, y: iy + (itemH - fSz2) / 2, w: fSz2, h: fSz2 });
+            }
+
+            // Quantité (texte Pixelify)
+            textSize(u(2.4));
+            fill(61, 43, 31, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text(buyQtyStr, rightEdge - fSz2 * 2, iy + itemH / 2);
+
+            // Flèche plus (vert)
+            var flecheD2 = img("ui", "rogrpg_fleche_vert_droite_petite");
+            if (flecheD2) {
+                image(flecheD2, rightEdge - fSz2 * 0.5, iy + (itemH - fSz2) / 2, fSz2, fSz2);
+                shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: rightEdge - fSz2 * 0.5, y: iy + (itemH - fSz2) / 2, w: fSz2, h: fSz2 });
+            }
+
+            // Bouton ACHETER (vert)
+            var btnW3 = u(16);
+            var btnH3 = itemH * 0.75;
+            var btnX2 = rightEdge - fSz2 * 4 - btnW3 - u(1);
+            var buyBtnImg = img("ui", "rogrpg_bouton_vert");
+            if (buyBtnImg) image(buyBtnImg, btnX2, iy + (itemH - btnH3) / 2, btnW3, btnH3);
+            textSize(u(1.8));
+            fill(255, alpha);
+            textAlign(CENTER, CENTER);
+            textFont('Pixelify Sans');
+            text("ACHETER", btnX2 + btnW3 / 2, iy + itemH / 2);
+
+            shopMode._itemAreas.push({ type: 'buy_btn', idx: ii, x: btnX2, y: iy + (itemH - btnH3) / 2, w: btnW3, h: btnH3 });
+        }
+
+        textAlign(LEFT, CENTER);
+    }
+
+    // ── Message si liste vide ──
+    if (itemList.length === 0) {
+        textSize(u(2.5));
+        fill(61, 43, 31, 150);
+        textAlign(CENTER, CENTER);
+        textFont('Pixelify Sans');
+        text(shopMode.sellMode ? "Rien à vendre." : "Rien à acheter.", dx + dw / 2, y + itemH);
+    }
+
+    textFont('sans-serif');
+    textAlign(CENTER, CENTER);
 }
 
 /* ─── Input ─── */
@@ -1460,8 +1898,52 @@ function inRect(mx, my, b) {
     return b && mx > b.x && mx < b.x + b.w && my > b.y && my < b.y + b.h;
 }
 
+/* ─── UI-2: Survol souris (non tactile) ─── */
+function mouseMoved() {
+    if (zoneTransition || (sleepSystem && sleepSystem.isSleeping()) || shopMode || portalChoice || npcDialogue) {
+        hoveredTile = null;
+        hoverType = 'none';
+        return;
+    }
+    var w = Engine.Camera.screenToWorld(mouseX, mouseY);
+    var tile = Engine.Grid.toTile(w.x, w.y);
+    if (!tile || tile.c < 0 || tile.r < 0) {
+        hoveredTile = null;
+        hoverType = 'none';
+        return;
+    }
+    hoveredTile = tile;
+
+    // Déterminer le type de feedback
+    var cultivable = soilSystem && soilSystem.isCultivable(tile.c, tile.r);
+    var walkable = Engine.Grid.isWalkable(tile.c, tile.r);
+    var hasTool = selectedTool !== null;
+    var playerTile = player.tile();
+    var inActionZone = playerTile && Engine.ActionZone.contains(playerTile, tile);
+
+    // Priorité : bloqué > cultivable+cadre > main
+    if (!walkable) {
+        // Case interdite/bloquée → hachures
+        hoverType = 'blocked';
+    } else if (cultivable) {
+        // Case cultivable → cadre de sélection (et main si outil)
+        hoverType = hasTool && inActionZone ? 'action_cultivable' : 'cultivable';
+    } else if (hasTool && inActionZone) {
+        // Outil sélectionné + dans la zone d'action → curseur main
+        hoverType = 'action';
+    } else {
+        hoverType = 'none';
+    }
+}
+
+/* ─── UI-2: Détection tactile ─── */
+function touchStarted() {
+    mousePressed();
+    return false;
+}
+
 function mousePressed() {
-    if (zoneTransition || sleepTransition) return;
+    if (zoneTransition || (sleepSystem && sleepSystem.isSleeping())) return;
 
     // Popup portail
     if (portalChoice) {
@@ -1477,18 +1959,9 @@ function mousePressed() {
         return;
     }
 
-    // Fermer la boutique si clic hors zone
+    // Boutique — gérée entièrement dans _handleShopClick
     if (shopMode) {
-        var dw2 = width * 0.75;
-        var dh2 = height * 0.5;
-        var dx2 = width / 2 - dw2 / 2;
-        var dy2 = height / 2 - dh2 / 2;
-        if (!inRect(mouseX, mouseY, { x: dx2, y: dy2, w: dw2, h: dh2 })) {
-            shopMode = null;
-            return;
-        }
-        // Gestion des clics dans la boutique
-        _handleShopClick(mouseX, mouseY, dx2, dy2, dw2);
+        _handleShopClick(mouseX, mouseY);
         return;
     }
 
@@ -1496,12 +1969,20 @@ function mousePressed() {
     if (inRect(mouseX, mouseY, zoomBtns.plus)) { Engine.Camera.zoomIn(); return; }
     if (inRect(mouseX, mouseY, zoomBtns.minus)) { Engine.Camera.zoomOut(); return; }
 
-    // Boutons dialogue PNJ (Vendre / Acheter)
+    // Boutons dialogue PNJ
+    if (npcDialogue && npcDialogue._btnClose && inRect(mouseX, mouseY, npcDialogue._btnClose)) {
+        npcDialogue = null;
+        return;
+    }
     if (npcDialogue && npcDialogue._btnSell && inRect(mouseX, mouseY, npcDialogue._btnSell)) {
+        npcDialogue._pressedBtn = 'sell';
+        npcDialogue._pressedTime = millis();
         _openShop(true);
         return;
     }
     if (npcDialogue && npcDialogue._btnBuy && inRect(mouseX, mouseY, npcDialogue._btnBuy)) {
+        npcDialogue._pressedBtn = 'buy';
+        npcDialogue._pressedTime = millis();
         _openShop(false);
         return;
     }
@@ -1520,9 +2001,9 @@ function mousePressed() {
     var tile = Engine.Grid.toTile(w.x, w.y);
     if (!tile) return;
 
-    // Vérifier le lit (sommeil)
-    if (bedTriggerZone && inRect(w.x, w.y, bedTriggerZone)) {
-        _doSleep();
+    // Vérifier le lit (sommeil) — délégué à SleepSystem (engine)
+    var curZoneId = Engine.WorldZone && Engine.WorldZone.getCurrent() ? Engine.WorldZone.getCurrent().id : '';
+    if (sleepSystem && sleepSystem.isBedInZone(curZoneId) && sleepSystem.handleBedClick(curZoneId, tile.c, tile.r)) {
         return;
     }
 
@@ -1613,12 +2094,11 @@ function keyPressed() {
 function _doFarmAction(tile) {
     var state = soilSystem.getState(tile.c, tile.r);
     if (state === 'empty') {
-        if (playerEnergy < C.energy.tillCost) return;
+        if (!sleepSystem || !sleepSystem.consume(C.energy.tillCost)) return;
         soilSystem.till(tile.c, tile.r);
-        playerEnergy -= C.energy.tillCost;
         actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
     } else if (state === 'tilled') {
-        if (playerEnergy < C.energy.plantCost) return;
+        if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
         var season = Engine.Clock.getSeason();
         var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
         var toPlant = null;
@@ -1628,17 +2108,15 @@ function _doFarmAction(tile) {
         if (toPlant) {
             soilSystem.plant(tile.c, tile.r, toPlant.id);
             cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-            playerEnergy -= C.energy.plantCost;
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
         }
     } else if (state === 'planted') {
         if (!soilSystem.isWatered(tile.c, tile.r)) {
-            if (playerEnergy < C.energy.waterCost) return;
+            if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
             soilSystem.water(tile.c, tile.r);
-            playerEnergy -= C.energy.waterCost;
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
         } else if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
-            if (playerEnergy < C.energy.harvestCost) return;
+            if (!sleepSystem || !sleepSystem.consume(C.energy.harvestCost)) return;
             var cropId = cropGrowth.getCropId(tile.c, tile.r);
             var cropData = cropId ? cropGrowth.getCropData(cropId) : null;
             if (cropData && harvestSystem) {
@@ -1649,7 +2127,6 @@ function _doFarmAction(tile) {
             }
             soilSystem.till(tile.c, tile.r);
             cropGrowth.resetTile(tile.c, tile.r);
-            playerEnergy -= C.energy.harvestCost;
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'harvest' };
         }
     }
@@ -1675,9 +2152,8 @@ function _doToolAction(toolId, tile) {
     switch (action) {
         case 'till': // Pelle — labourer un sol vide
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'empty') {
-                if (playerEnergy < C.energy.tillCost) return;
+                if (!sleepSystem || !sleepSystem.consume(C.energy.tillCost)) return;
                 soilSystem.till(tile.c, tile.r);
-                playerEnergy -= C.energy.tillCost;
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
@@ -1686,7 +2162,7 @@ function _doToolAction(toolId, tile) {
 
         case 'plant': // Graines — planter sur sol labouré
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'tilled') {
-                if (playerEnergy < C.energy.plantCost) return;
+                if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
                 var season = Engine.Clock.getSeason();
                 var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
                 var toPlant = null;
@@ -1696,7 +2172,6 @@ function _doToolAction(toolId, tile) {
                 if (toPlant) {
                     soilSystem.plant(tile.c, tile.r, toPlant.id);
                     cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-                    playerEnergy -= C.energy.plantCost;
                     actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
                 }
             } else {
@@ -1706,9 +2181,8 @@ function _doToolAction(toolId, tile) {
 
         case 'water': // Arrosoir — arroser une culture plantée
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'planted' && !soilSystem.isWatered(tile.c, tile.r)) {
-                if (playerEnergy < C.energy.waterCost) return;
+                if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
                 soilSystem.water(tile.c, tile.r);
-                playerEnergy -= C.energy.waterCost;
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
@@ -1760,148 +2234,183 @@ function _openShop(sellMode) {
     shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode };
 }
 
-function _handleShopClick(mx, my, dx, dy, dw) {
-    var startY = dy + u(13);
-    var itemH = u(5);
-    var maxVisible = 6;
+function _handleShopClick(mx, my) {
+    if (!shopMode) return;
 
-    var seller = shopMode.npcId;
-    var multiplier = npcSystem ? npcSystem.getSellMultiplier(seller) : 1.0;
+    var pad = u(3);
+    var gap = u(2.5);
+    var dw = width * 0.78;
+    var dx = width / 2 - dw / 2;
+    var headerH = u(5);
+    var goldH = u(5);
+    var modeH = u(6);
+
+    // Calculer la hauteur totale (même logique que drawShopInterface)
     var npcData = shopMode.npcData;
-
-    var items = [];
+    var itemList = [];
     if (shopMode.sellMode) {
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
+        var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
         for (var cropId in inv) {
             if (!inv.hasOwnProperty(cropId)) continue;
-            var cropData = cropGrowth ? cropGrowth.getCropData(cropId) : null;
-            if (!cropData) {
-                // fallback: chercher dans culturesData
-                var arr = culturesData || [];
-                for (var i = 0; i < arr.length; i++) {
-                    if (arr[i].id === cropId) { cropData = arr[i]; break; }
-                }
-            }
+            var cropData = cropGrowth.getCropData(cropId) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId; }));
             if (!cropData) continue;
-            items.push({ id: cropId, data: cropData, qty: inv[cropId], price: Math.floor((cropData.sell || 0) * multiplier), sell: true });
+            var price = Math.floor((cropData.sell || 0) * multiplier);
+            itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
         }
     } else {
         var seedPrices = npcData.seedPrices || {};
         for (var seedId in seedPrices) {
             if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth ? cropGrowth.getCropData(seedId) : null;
+            var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
             if (!cropData2) continue;
-            items.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
+            itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
 
-    for (var i = 0; i < Math.min(items.length, maxVisible); i++) {
-        var item = items[i];
-        var iy = startY + i * itemH;
-        if (my > iy && my < iy + itemH && mx > dx && mx < dx + dw) {
-            if (item.sell) {
-                // Vendre 1 unité
-                var earned = harvestSystem.sell(item.id, 1, item.price);
+    var itemH = u(6);
+    var itemGap = u(1.5);
+    var maxVisible = 5;
+    var visibleItems = Math.min(itemList.length, maxVisible);
+    var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+    var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
+
+    var maxH = height - u(4);
+    if (totalH > maxH) {
+        var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
+        var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
+        visibleItems = Math.min(itemList.length, newVisible);
+        listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
+        totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
+    }
+
+    var dy = (height - totalH) / 2;
+
+    // Vérifier clic hors panneau → fermer
+    if (!inRect(mx, my, { x: dx, y: dy, w: dw, h: totalH })) {
+        shopMode = null;
+        return;
+    }
+
+    // 1. Bouton fermer
+    if (shopMode._btnClose && inRect(mx, my, shopMode._btnClose)) {
+        shopMode = null;
+        return;
+    }
+
+    // 2. Tabs mode — switch entre VENDRE et ACHETER
+    if (shopMode._btnSellTab && inRect(mx, my, shopMode._btnSellTab)) {
+        shopMode.sellMode = true;
+        delete shopMode._quantities;
+        return;
+    }
+    if (shopMode._btnBuyTab && inRect(mx, my, shopMode._btnBuyTab)) {
+        shopMode.sellMode = false;
+        shopMode._quantities = {};
+        return;
+    }
+
+    // 3. Zones items (flèches + boutons)
+    var areas = shopMode._itemAreas;
+    if (!areas) return;
+
+    // Reconstruire itemList pour trouver les données
+    var itemList2 = [];
+    var seller = shopMode.npcId;
+    var multiplier2 = npcSystem ? npcSystem.getSellMultiplier(seller) : 1.0;
+    var npcData2 = shopMode.npcData;
+    if (shopMode.sellMode) {
+        var inv2 = harvestSystem ? harvestSystem.getInventory() : {};
+        for (var cropId2 in inv2) {
+            if (!inv2.hasOwnProperty(cropId2)) continue;
+            var cropData3 = cropGrowth.getCropData(cropId2) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId2; }));
+            if (!cropData3) continue;
+            var price2 = Math.floor((cropData3.sell || 0) * multiplier2);
+            itemList2.push({ id: cropId2, data: cropData3, qty: inv2[cropId2], price: price2, sell: true });
+        }
+    } else {
+        var seedPrices2 = npcData2.seedPrices || {};
+        for (var seedId2 in seedPrices2) {
+            if (!seedPrices2.hasOwnProperty(seedId2)) continue;
+            var cropData4 = cropGrowth.getCropData(seedId2) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId2; }));
+            if (!cropData4) continue;
+            itemList2.push({ id: seedId2, data: cropData4, qty: 999, price: seedPrices2[seedId2], sell: false });
+        }
+    }
+
+    for (var ai = 0; ai < areas.length; ai++) {
+        var area = areas[ai];
+        if (!inRect(mx, my, area)) continue;
+        var item = itemList2[area.idx];
+        if (!item) continue;
+
+        if (area.type === 'qty_minus' && !item.sell) {
+            // Mode achat : réduire la quantité
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur = shopMode._quantities[area.idx] || 0;
+            if (cur > 0) shopMode._quantities[area.idx] = cur - 1;
+            return;
+        }
+        if (area.type === 'qty_plus' && !item.sell) {
+            // Mode achat : augmenter la quantité
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur2 = shopMode._quantities[area.idx] || 0;
+            if (cur2 < 99) shopMode._quantities[area.idx] = cur2 + 1;
+            return;
+        }
+        if (area.type === 'qty_minus' && item.sell) {
+            // Mode vente : ajuster la quantité à vendre
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur3 = shopMode._quantities[area.idx] || 0;
+            if (cur3 > 0) shopMode._quantities[area.idx] = cur3 - 1;
+            return;
+        }
+        if (area.type === 'qty_plus' && item.sell) {
+            // Mode vente : augmenter la quantité à vendre
+            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+            var cur4 = shopMode._quantities[area.idx] || 0;
+            if (cur4 < item.qty) shopMode._quantities[area.idx] = cur4 + 1;
+            return;
+        }
+        if (area.type === 'sell_btn') {
+            // Exécuter la vente
+            var sellQty = 1;
+            if (shopMode._quantities && shopMode._quantities[area.idx]) {
+                sellQty = shopMode._quantities[area.idx];
+            }
+            if (sellQty > item.qty) sellQty = item.qty;
+            if (sellQty > 0) {
+                var earned = harvestSystem.sell(item.id, sellQty, item.price);
                 if (earned > 0) {
                     playerGoldEarned += earned;
+                    delete shopMode._quantities; // reset qty
                 }
             } else {
-                // Acheter 1 graine
-                if (harvestSystem && harvestSystem.spendGold(item.price)) {
-                    harvestSystem.addToInventory(item.id + '_seed', 1);
-                    // Les graines sont un item spécial : on pourrait les stocker,
-                    // mais pour simplifier, on les plante directement depuis l'achat ?
-                    // Non, on les ajoute juste à l'inventaire.
+                // Vente rapide de 1
+                var earned2 = harvestSystem.sell(item.id, 1, item.price);
+                if (earned2 > 0) {
+                    playerGoldEarned += earned2;
                 }
+            }
+            return;
+        }
+        if (area.type === 'buy_btn') {
+            // Exécuter l'achat
+            var buyQty = 1;
+            if (shopMode._quantities && shopMode._quantities[area.idx]) {
+                buyQty = shopMode._quantities[area.idx];
+            }
+            var totalCost = buyQty * item.price;
+            if (harvestSystem && harvestSystem.spendGold(totalCost)) {
+                harvestSystem.addToInventory(item.id + '_seed', buyQty);
+                shopMode._quantities[area.idx] = 0; // reset
             }
             return;
         }
     }
 }
 
-/* ─── Sommeil avec transition (carte 526) ─── */
-let sleepTransition = null; // { phase: 'out'|'wakeup'|'in', t, duration: 600 }
-
-function _doSleep() {
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    if (!zone || zone.id !== 'maison-rdc') return;
-    if (sleepBlocked || sleepTransition) return;
-
-    sleepBlocked = true;
-
-    // Démarrer le fondu de sommeil
-    sleepTransition = { phase: 'out', t: millis(), duration: 500 };
-}
-
-/* Appelé chaque frame depuis draw() pour gérer la transition sommeil */
-function _updateSleepTransition() {
-    if (!sleepTransition) return;
-
-    var elapsed = millis() - sleepTransition.t;
-    var progress = min(elapsed / sleepTransition.duration, 1);
-
-    if (sleepTransition.phase === 'out') {
-        if (progress >= 1) {
-            // Avancer au lendemain matin (7h)
-            var restoreAmount = Engine.Clock.hour < 24 ? C.energy.restoreSleep : C.energy.restoreFaint;
-            playerEnergy = Math.min(C.energy.max, playerEnergy + restoreAmount);
-
-            // Calculer le score
-            _submitScore();
-
-            // Forcer le passage au jour suivant
-            Engine.Clock.hour = 6;
-            Engine.Clock.minute = 59;
-
-            // Sauvegarder
-            if (window.Engine && Engine.Save) Engine.Save.save();
-
-            sleepTransition.phase = 'wakeup';
-            sleepTransition.t = millis();
-        }
-    } else if (sleepTransition.phase === 'wakeup') {
-        if (progress >= 1) {
-            sleepTransition.phase = 'in';
-            sleepTransition.t = millis();
-        }
-    } else if (sleepTransition.phase === 'in') {
-        if (progress >= 1) {
-            sleepTransition = null;
-            // Retour à la ferme
-            switchToZone('ferme', { c: 14, r: 9 });
-        }
-    }
-}
-
-/* Rendu du fondu de sommeil. Appelé depuis draw() après le monde. */
-function _drawSleepFade() {
-    if (!sleepTransition) return;
-
-    var elapsed = millis() - sleepTransition.t;
-    var progress = min(elapsed / sleepTransition.duration, 1);
-    var alpha = 0;
-
-    if (sleepTransition.phase === 'out') {
-        alpha = progress * 255;
-    } else if (sleepTransition.phase === 'wakeup') {
-        alpha = 255;
-    } else if (sleepTransition.phase === 'in') {
-        alpha = (1 - progress) * 255;
-    }
-
-    noStroke();
-    fill(0, 0, 0, alpha);
-    rect(0, 0, width, height);
-
-    // Texte Zzz pendant le sommeil
-    if (sleepTransition.phase === 'out' || sleepTransition.phase === 'wakeup') {
-        textAlign(CENTER, CENTER);
-        textSize(u(6));
-        fill(255, 255, 255, Math.min(255, alpha + 60));
-        text('Zzz...', width / 2, height / 2);
-        textAlign(CENTER, CENTER);
-    }
-}
+/* ─── Sommeil délégué à SleepSystem engine — cf. handleBedClick() dans mousePressed() ─── */
 
 /* ─── Score ─── */
 function _submitScore() {
@@ -1941,9 +2450,30 @@ function _submitScore() {
     }
 }
 
+/* ─── Nettoyage des timers périodiques avant transition de zone ─── */
+function _cleanupTimers() {
+    if (_cloudSyncTimerId !== null) {
+        clearInterval(_cloudSyncTimerId);
+        _cloudSyncTimerId = null;
+    }
+}
+
+/* ─── Recrée les timers périodiques après transition de zone ─── */
+function _restartTimers() {
+    if (_cloudSyncTimerId === null) {
+        _cloudSyncTimerId = setInterval(async function () {
+            if (window.Engine && Engine.Save) {
+                await Engine.Save.saveCloud();
+            }
+        }, 5 * 60 * 1000);
+    }
+}
+
 /* ─── Transition entre zones ─── */
 function switchToZone(zoneId, entryOverride) {
     if (!Engine.WorldZone || zoneTransition) return;
+    // Nettoyer les timers avant la transition
+    _cleanupTimers();
     zoneTransition = { phase: 'out', zoneId: zoneId, entryOverride: entryOverride, t: millis(), duration: 250 };
 }
 
@@ -2007,8 +2537,7 @@ function drawZoneFade() {
                         Engine.Camera.snapTo(player.x, player.y);
                     }
                 }
-                // Réinitialiser bedTriggerZone après transition
-                bedTriggerZone = null;
+                // Le lit est géré par SleepSystem — pas de nettoyage nécessaire
             });
             zoneTransition.phase = 'in';
             zoneTransition.t = millis();
@@ -2019,6 +2548,8 @@ function drawZoneFade() {
         if (progress >= 1) {
             zoneTransition = null;
             alpha = 0;
+            // Recréer les timers périodiques après la transition
+            _restartTimers();
         }
     }
 
