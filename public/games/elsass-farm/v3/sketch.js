@@ -2111,11 +2111,8 @@ function _doFarmAction(tile) {
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
         }
     } else if (state === 'planted') {
-        if (!soilSystem.isWatered(tile.c, tile.r)) {
-            if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
-            soilSystem.water(tile.c, tile.r);
-            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
-        } else if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
+        if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
+            // B3: priorité récolte — si mûre, on récolte même si non arrosée
             if (!sleepSystem || !sleepSystem.consume(C.energy.harvestCost)) return;
             var cropId = cropGrowth.getCropId(tile.c, tile.r);
             var cropData = cropId ? cropGrowth.getCropData(cropId) : null;
@@ -2128,6 +2125,11 @@ function _doFarmAction(tile) {
             soilSystem.till(tile.c, tile.r);
             cropGrowth.resetTile(tile.c, tile.r);
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'harvest' };
+        } else if (!soilSystem.isWatered(tile.c, tile.r)) {
+            // Pas mûre et pas arrosée → arroser
+            if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
+            soilSystem.water(tile.c, tile.r);
+            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
         }
     }
     if (window.Engine && Engine.Save) Engine.Save.saveLocal();
