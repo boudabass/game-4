@@ -56,8 +56,15 @@ let portalChoice = null;
 let _cloudSyncTimerId = null;   // ID du setInterval cloud (nettoyé en transition)
 
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
+// Mobile scaling : en dessous de 768px, on multiplie progressivement
+// pour que les cibles tactiles atteignent ~44px même sur petit écran.
 function u(n) {
-    return (min(width, height) * n) / 100;
+    var base = min(width, height);
+    if (base < 768) {
+        var t = 1 - base / 768;          // 0 à 768px, 1 à 0px
+        base *= (1 + t * 1.0);            // 1× à 768px, ~2× à 0px
+    }
+    return (base * n) / 100;
 }
 
 function preload() {
@@ -1120,14 +1127,14 @@ function drawHud() {
     }
     // Texte énergie à côté de l'icône
     fill(255);
-    textSize(u(2));
+    textSize(u(3));
     textAlign(LEFT, CENTER);
     text(energyVal, barX + fuelSize + u(1.5), barY + barH + fuelSize / 2 + u(0.5));
     textAlign(CENTER, CENTER);
 
     // ── Météo du jour ──
     var weatherLabel = _isRainyDay(season) ? '\uD83C\uDF27\uFE0F Pluie' : '\u2600\uFE0F Beau';
-    textSize(u(2.5));
+    textSize(u(3));
     fill(C.colors.hudPanel);
     var ww = textWidth(weatherLabel) + u(3);
     rect(barX, barY + barH + u(1.5) + fuelSize + u(1), ww, u(4.5), u(1));
@@ -1433,10 +1440,10 @@ function drawNPCDialogue() {
     // Layout : blocs empilés (nom → texte → jauge → boutons)
     var pad = u(4);
     var gap = u(3);
-    var nameH = u(6);
-    var textH = u(7);
+    var nameH = u(8);
+    var textH = u(9);
     var gaugeH = npc ? u(6) : 0;
-    var btnH = npc ? u(5) : 0;
+    var btnH = npc ? u(9) : 0;
 
     var totalH = pad + nameH + gap + textH + gap + gaugeH + gap + btnH + pad;
     var dw = width * 0.7;
@@ -1456,7 +1463,7 @@ function drawNPCDialogue() {
     // ── Bouton Fermer : shmup_hud_croix (pas d'auto-close) ──
     var croix = img("ui", "shmup_hud_croix");
     if (croix) {
-        var cMult = _fitMult(u(5), 16);
+        var cMult = _fitMult(u(9), 16);
         var cSz = 16 * cMult;
         var cx2 = dx + dw - cSz - u(2);
         var cy2 = dy + u(2);
@@ -1474,7 +1481,7 @@ function drawNPCDialogue() {
     y += nameH + gap;
 
     // ── Bloc 2 : Texte ──
-    textSize(u(2.7));
+    textSize(u(3.5));
     fill(61, 43, 31, alpha * 0.9);
     textAlign(CENTER, CENTER);
     text(npcDialogue.text, dx + dw/2, y + textH/2);
@@ -1486,7 +1493,7 @@ function drawNPCDialogue() {
         y += gaugeH + gap;
 
         // ── Bloc 4 : Boutons réponses (rogrpg_bouton_<couleur> + _marque) ──
-        var bW = u(18), bH = u(5), bGap = u(2);
+        var bW = u(18), bH = u(9), bGap = u(2);
         var totalBW = bW * 2 + bGap;
         var bx1 = dx + dw/2 - totalBW/2;
         var bx2 = bx1 + bW + bGap;
@@ -1503,7 +1510,7 @@ function drawNPCDialogue() {
 
         // Labels sur les boutons (blanc, centré)
         fill(255, alpha);
-        textSize(u(2.5));
+        textSize(u(3.5));
         textAlign(CENTER, CENTER);
         text('Vendre', bx1 + bW/2, y + bH/2);
         text('Acheter', bx2 + bW/2, y + bH/2);
@@ -1580,9 +1587,9 @@ function drawShopInterface() {
     var dy = height * 0.08;
 
     // Titre + or + mode = hauteur fixe
-    var headerH = u(5);  // titre
-    var goldH = u(5);    // or
-    var modeH = u(6);    // mode tabs
+    var headerH = u(8);  // titre
+    var goldH = u(8);    // or
+    var modeH = u(8);    // mode tabs
     var totalItems = 0;
 
     // Compter les items pour la hauteur variable
@@ -1608,7 +1615,7 @@ function drawShopInterface() {
         }
     }
 
-    var itemH = u(6);
+    var itemH = u(8);
     var itemGap = u(1.5);
     var maxVisible = 5;
     var visibleItems = Math.min(itemList.length, maxVisible);
@@ -1618,7 +1625,6 @@ function drawShopInterface() {
     // Ajuster la hauteur max pour ne pas sortir de l'écran
     var maxH = height - u(4);
     if (totalH > maxH) {
-        // Réduire le nombre d'items visibles
         var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
         var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
         visibleItems = Math.min(itemList.length, newVisible);
@@ -1659,7 +1665,7 @@ function drawShopInterface() {
     // Bouton Fermer
     var croix = img("ui", "shmup_hud_croix");
     if (croix) {
-        var cMult = _fitMult(u(4.5), 16);
+        var cMult = _fitMult(u(9), 16);
         var cSz = 16 * cMult;
         var cx2 = dx + dw - cSz - u(1.5);
         var cy2 = y + (headerH - cSz) / 2;
@@ -1697,7 +1703,7 @@ function drawShopInterface() {
     var sellTabImg = img("ui", sellPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
     if (sellTabImg) image(sellTabImg, tabX1, y, tabW, modeH);
     fill(255, alpha);
-    textSize(u(2.5));
+    textSize(u(3.5));
     textAlign(CENTER, CENTER);
     textFont('Pixelify Sans');
     text("VENDRE", tabX1 + tabW / 2, y + modeH / 2);
@@ -1749,7 +1755,7 @@ function drawShopInterface() {
         }
 
         // ── Nom ──
-        textSize(u(2.4));
+        textSize(u(3));
         fill(61, 43, 31, alpha * 0.9);
         textAlign(LEFT, CENTER);
         textFont('Pixelify Sans');
@@ -1765,7 +1771,7 @@ function drawShopInterface() {
             image(dollar, cx, iy + (itemH - pSz) / 2, pSz, pSz);
             cx += pSz + u(0.5);
         }
-        textSize(u(2.4));
+        textSize(u(3));
         fill(61, 43, 31, alpha);
         text(priceStr, cx, iy + itemH / 2);
         cx += textWidth(priceStr) + u(2);
@@ -1789,7 +1795,7 @@ function drawShopInterface() {
             var totalQty = item.qty;
 
             // Boutons +/- dessinés (B4 fix — remplace les petites flèches 16px)
-            var qtyBtnSz = Math.max(u(3.5), 28);
+            var qtyBtnSz = Math.max(u(6), 38);
             var qtyGap = u(1);
             var qtyGroupW = qtyBtnSz * 3 + qtyGap * 2; // [-][qty][+]
 
@@ -1806,7 +1812,7 @@ function drawShopInterface() {
             shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: minusX, y: minusY, w: qtyBtnSz, h: qtyBtnSz });
 
             // Quantité (texte Pixelify)
-            textSize(u(2.4));
+            textSize(u(3));
             fill(61, 43, 31, alpha);
             textAlign(CENTER, CENTER);
             textFont('Pixelify Sans');
@@ -1829,11 +1835,11 @@ function drawShopInterface() {
 
             // Bouton VENDRE (orange) — recalé à gauche des nouveaux boutons
             var btnW2 = u(14);
-            var btnH2 = itemH * 0.75;
+            var btnH2 = Math.max(itemH * 0.75, 38);
             var btnX = minusX - btnW2 - u(1.5);
             var sellBtnImg = img("ui", "rogrpg_bouton_orange");
             if (sellBtnImg) image(sellBtnImg, btnX, iy + (itemH - btnH2) / 2, btnW2, btnH2);
-            textSize(u(1.8));
+            textSize(u(2.8));
             fill(255, alpha);
             textAlign(CENTER, CENTER);
             textFont('Pixelify Sans');
@@ -1853,7 +1859,7 @@ function drawShopInterface() {
             var buyQtyStr = buyQty.toString();
 
             // Boutons +/- dessinés (B4 fix — remplace les petites flèches 16px)
-            var qtyBtnSz2 = Math.max(u(3.5), 28);
+            var qtyBtnSz2 = Math.max(u(6), 38);
             var qtyGap2 = u(1);
             var qtyGroupW2 = qtyBtnSz2 * 3 + qtyGap2 * 2;
 
@@ -1870,7 +1876,7 @@ function drawShopInterface() {
             shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: minusX2, y: minusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
 
             // Quantité (texte Pixelify)
-            textSize(u(2.4));
+            textSize(u(3));
             fill(61, 43, 31, alpha);
             textAlign(CENTER, CENTER);
             textFont('Pixelify Sans');
@@ -1888,11 +1894,11 @@ function drawShopInterface() {
 
             // Bouton ACHETER (vert) — recalé à gauche des nouveaux boutons
             var btnW3 = u(16);
-            var btnH3 = itemH * 0.75;
+            var btnH3 = Math.max(itemH * 0.75, 38);
             var btnX2 = minusX2 - btnW3 - u(1.5);
             var buyBtnImg = img("ui", "rogrpg_bouton_vert");
             if (buyBtnImg) image(buyBtnImg, btnX2, iy + (itemH - btnH3) / 2, btnW3, btnH3);
-            textSize(u(1.8));
+            textSize(u(2.8));
             fill(255, alpha);
             textAlign(CENTER, CENTER);
             textFont('Pixelify Sans');
@@ -2123,17 +2129,24 @@ function _doFarmAction(tile) {
         soilSystem.till(tile.c, tile.r);
         actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
     } else if (state === 'tilled') {
-        if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
+        // B3b: vérifier si le joueur a une graine en inventaire avant de planter
         var season = Engine.Clock.getSeason();
         var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
         var toPlant = null;
         for (var ci = 0; ci < crops.length; ci++) {
             if (crops[ci].season === season) { toPlant = crops[ci]; break; }
         }
-        if (toPlant) {
-            soilSystem.plant(tile.c, tile.r, toPlant.id);
-            cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-            actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
+        if (toPlant && harvestSystem) {
+            var seedId = toPlant.id + '_seed';
+            if (harvestSystem.getItemCount(seedId) > 0) {
+                // B3b: le joueur a une graine → planter et consommer la graine
+                if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
+                harvestSystem.removeFromInventory(seedId, 1);
+                soilSystem.plant(tile.c, tile.r, toPlant.id);
+                cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
+                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
+            }
+            // B3b: pas de graine → le clic sur sol labouré est sans effet
         }
     } else if (state === 'planted') {
         if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
@@ -2268,9 +2281,9 @@ function _handleShopClick(mx, my) {
     var gap = u(2.5);
     var dw = width * 0.78;
     var dx = width / 2 - dw / 2;
-    var headerH = u(5);
-    var goldH = u(5);
-    var modeH = u(6);
+    var headerH = u(8);
+    var goldH = u(8);
+    var modeH = u(8);
 
     // Calculer la hauteur totale (même logique que drawShopInterface)
     var npcData = shopMode.npcData;
@@ -2294,14 +2307,14 @@ function _handleShopClick(mx, my) {
             itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
-
-    var itemH = u(6);
+    var itemH = u(8);
     var itemGap = u(1.5);
     var maxVisible = 5;
     var visibleItems = Math.min(itemList.length, maxVisible);
     var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
     var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
 
+    // Ajuster la hauteur max pour ne pas sortir de l'écran
     var maxH = height - u(4);
     if (totalH > maxH) {
         var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
