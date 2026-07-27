@@ -1788,38 +1788,49 @@ function drawShopInterface() {
             // Total disponible en inventaire
             var totalQty = item.qty;
 
-            // Flèche moins (orange)
-            var flecheG = img("ui", "rogrpg_fleche_orange_gauche_petite");
-            var fMult = _fitMult(itemH * 0.5, 16);
-            var fSz = 16 * fMult;
-            if (flecheG) {
-                image(flecheG, rightEdge - fSz * 3.5, iy + (itemH - fSz) / 2, fSz, fSz);
-                shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: rightEdge - fSz * 3.5, y: iy + (itemH - fSz) / 2, w: fSz, h: fSz });
-            }
+            // Boutons +/- dessinés (B4 fix — remplace les petites flèches 16px)
+            var qtyBtnSz = Math.max(u(3.5), 28);
+            var qtyGap = u(1);
+            var qtyGroupW = qtyBtnSz * 3 + qtyGap * 2; // [-][qty][+]
+
+            // Bouton moins [-]
+            var minusX = rightEdge - qtyGroupW;
+            var minusY = iy + (itemH - qtyBtnSz) / 2;
+            fill(61, 43, 31, alpha);
+            rect(minusX, minusY, qtyBtnSz, qtyBtnSz, u(1));
+            fill(255, alpha);
+            textSize(qtyBtnSz * 0.6);
+            textFont('Pixelify Sans');
+            textAlign(CENTER, CENTER);
+            text("-", minusX + qtyBtnSz / 2, minusY + qtyBtnSz / 2);
+            shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: minusX, y: minusY, w: qtyBtnSz, h: qtyBtnSz });
 
             // Quantité (texte Pixelify)
             textSize(u(2.4));
             fill(61, 43, 31, alpha);
             textAlign(CENTER, CENTER);
             textFont('Pixelify Sans');
-            text(sellQtyStr, rightEdge - fSz * 2, iy + itemH / 2);
+            text(sellQtyStr, minusX + qtyBtnSz + qtyGap + (qtyBtnSz / 2), iy + itemH / 2 - u(0.4));
 
             // Petite indication du total disponible
             textSize(u(1.4));
             fill(61, 43, 31, 120);
-            text("(" + totalQty + ")", rightEdge - fSz * 2, iy + itemH / 2 + u(1.8));
+            text("(" + totalQty + ")", minusX + qtyBtnSz + qtyGap + (qtyBtnSz / 2), iy + itemH / 2 + u(1.8));
 
-            // Flèche plus (vert)
-            var flecheD = img("ui", "rogrpg_fleche_vert_droite_petite");
-            if (flecheD) {
-                image(flecheD, rightEdge - fSz * 0.5, iy + (itemH - fSz) / 2, fSz, fSz);
-                shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: rightEdge - fSz * 0.5, y: iy + (itemH - fSz) / 2, w: fSz, h: fSz });
-            }
+            // Bouton plus [+]
+            var plusX = minusX + qtyBtnSz * 2 + qtyGap * 2;
+            var plusY = iy + (itemH - qtyBtnSz) / 2;
+            fill(61, 43, 31, alpha);
+            rect(plusX, plusY, qtyBtnSz, qtyBtnSz, u(1));
+            fill(255, alpha);
+            textSize(qtyBtnSz * 0.6);
+            text("+", plusX + qtyBtnSz / 2, plusY + qtyBtnSz / 2);
+            shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: plusX, y: plusY, w: qtyBtnSz, h: qtyBtnSz });
 
-            // Bouton VENDRE (orange) à côté des flèches
+            // Bouton VENDRE (orange) — recalé à gauche des nouveaux boutons
             var btnW2 = u(14);
             var btnH2 = itemH * 0.75;
-            var btnX = rightEdge - fSz * 4 - btnW2 - u(1);
+            var btnX = minusX - btnW2 - u(1.5);
             var sellBtnImg = img("ui", "rogrpg_bouton_orange");
             if (sellBtnImg) image(sellBtnImg, btnX, iy + (itemH - btnH2) / 2, btnW2, btnH2);
             textSize(u(1.8));
@@ -1841,33 +1852,44 @@ function drawShopInterface() {
             var buyQty = shopMode._quantities[ii] || 0;
             var buyQtyStr = buyQty.toString();
 
-            // Flèche moins (orange)
-            var flecheG2 = img("ui", "rogrpg_fleche_orange_gauche_petite");
-            var fMult2 = _fitMult(itemH * 0.5, 16);
-            var fSz2 = 16 * fMult2;
-            if (flecheG2) {
-                image(flecheG2, rightEdge - fSz2 * 3.5, iy + (itemH - fSz2) / 2, fSz2, fSz2);
-                shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: rightEdge - fSz2 * 3.5, y: iy + (itemH - fSz2) / 2, w: fSz2, h: fSz2 });
-            }
+            // Boutons +/- dessinés (B4 fix — remplace les petites flèches 16px)
+            var qtyBtnSz2 = Math.max(u(3.5), 28);
+            var qtyGap2 = u(1);
+            var qtyGroupW2 = qtyBtnSz2 * 3 + qtyGap2 * 2;
+
+            // Bouton moins [-]
+            var minusX2 = rightEdge - qtyGroupW2;
+            var minusY2 = iy + (itemH - qtyBtnSz2) / 2;
+            fill(61, 43, 31, alpha);
+            rect(minusX2, minusY2, qtyBtnSz2, qtyBtnSz2, u(1));
+            fill(255, alpha);
+            textSize(qtyBtnSz2 * 0.6);
+            textFont('Pixelify Sans');
+            textAlign(CENTER, CENTER);
+            text("-", minusX2 + qtyBtnSz2 / 2, minusY2 + qtyBtnSz2 / 2);
+            shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: minusX2, y: minusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
 
             // Quantité (texte Pixelify)
             textSize(u(2.4));
             fill(61, 43, 31, alpha);
             textAlign(CENTER, CENTER);
             textFont('Pixelify Sans');
-            text(buyQtyStr, rightEdge - fSz2 * 2, iy + itemH / 2);
+            text(buyQtyStr, minusX2 + qtyBtnSz2 + qtyGap2 + (qtyBtnSz2 / 2), iy + itemH / 2);
 
-            // Flèche plus (vert)
-            var flecheD2 = img("ui", "rogrpg_fleche_vert_droite_petite");
-            if (flecheD2) {
-                image(flecheD2, rightEdge - fSz2 * 0.5, iy + (itemH - fSz2) / 2, fSz2, fSz2);
-                shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: rightEdge - fSz2 * 0.5, y: iy + (itemH - fSz2) / 2, w: fSz2, h: fSz2 });
-            }
+            // Bouton plus [+]
+            var plusX2 = minusX2 + qtyBtnSz2 * 2 + qtyGap2 * 2;
+            var plusY2 = iy + (itemH - qtyBtnSz2) / 2;
+            fill(61, 43, 31, alpha);
+            rect(plusX2, plusY2, qtyBtnSz2, qtyBtnSz2, u(1));
+            fill(255, alpha);
+            textSize(qtyBtnSz2 * 0.6);
+            text("+", plusX2 + qtyBtnSz2 / 2, plusY2 + qtyBtnSz2 / 2);
+            shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: plusX2, y: plusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
 
-            // Bouton ACHETER (vert)
+            // Bouton ACHETER (vert) — recalé à gauche des nouveaux boutons
             var btnW3 = u(16);
             var btnH3 = itemH * 0.75;
-            var btnX2 = rightEdge - fSz2 * 4 - btnW3 - u(1);
+            var btnX2 = minusX2 - btnW3 - u(1.5);
             var buyBtnImg = img("ui", "rogrpg_bouton_vert");
             if (buyBtnImg) image(buyBtnImg, btnX2, iy + (itemH - btnH3) / 2, btnW3, btnH3);
             textSize(u(1.8));
