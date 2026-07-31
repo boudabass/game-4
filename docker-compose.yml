@@ -10,7 +10,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      # Variables d'environnement pour Odoo (à remplir dans le panel Coolify)
-      # - ODOO_URL=https://votre-instance.odoo.com
+      # Variables d'environnement (à remplir dans le panel Coolify)
+      # - ODOO_URL=https://votre-instance.odoo.com   # login portail uniquement
       # - ODOO_DB=votre_base
+      # - DATABASE_URL=postgres://user:pass@hote:5432/base
+      # - SESSION_SECRET=chaine_secrete_longue
+      # - ADMIN_UID=uid_odoo_admin
+      # - COOKIE_DOMAIN=.monsite.com
     restart: unless-stopped

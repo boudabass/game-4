@@ -67,3 +67,6 @@ documentation/DOMAINE_COOKIES_SSO.md
 # Matériel de tri des assets — ne doit jamais revenir dans le repo
 _atelier-assets/
 **/Assets_pack/
+
+# Lockfile npm interdit (chaine officielle = pnpm)
+package-lock.json
