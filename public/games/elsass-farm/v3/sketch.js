@@ -168,6 +168,11 @@ function setup() {
     Engine.Clock.configure({
         startHour: 7,
         onNewDay: function () {
+            // Minuit sans dormir → évanouissement (réveil à 6h avec energy.restoreFaint).
+            // Si on dort, ce callback vient de SleepSystem._advanceTime : pas d'évanouissement.
+            if (sleepSystem && !sleepSystem.isSleeping()) {
+                sleepSystem.triggerFaint();
+            }
             if (cropGrowth) cropGrowth.onNewDay(Engine.Clock.day);
             // Réinitialiser l'arrosage quotidien (les tuiles plantées perdent leur statut watered)
             if (soilSystem) _resetDailyWatering();
@@ -358,21 +363,14 @@ async function boot() {
     });
 }
 
-/* ─── Réinitialisation quotidienne de l'arrosage ─── */
+/* ─── Réinitialisation quotidienne de l'arrosage (via l'API SoilSystem) ─── */
 function _resetDailyWatering() {
     var season = Engine.Clock.getSeason();
-    var isRainy = _isRainyDay(season);
-    var keys = Object.keys(soilSystem._tiles);
-    for (var i = 0; i < keys.length; i++) {
-        var tile = soilSystem._tiles[keys[i]];
-        if (tile && tile.state === 'planted') {
-            // Pluie = arrosage auto, sinon reset
-            tile.watered = isRainy;
-        }
-    }
+    soilSystem.resetDailyWatering(_isRainyDay(season));
 }
 
-/* Simule un jour de pluie aléatoire (~30% de chance), déterministe par jour */
+/* Tire au sort la pluie du jour (20-40% selon la saison), une seule fois par jour
+   (mémoïsé dans _rainyToday, persisté en sauvegarde — B5). */
 function _isRainyDay(season) {
     var day = Engine.Clock.day;
     if (_rainComputedDay !== day) {

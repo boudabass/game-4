@@ -100,6 +100,18 @@ class SleepSystem {
         return this._isSleeping;
     }
 
+    /*
+     * Évanouissement (minuit passé sans dormir). Même fondu que le sommeil,
+     * mais le jour a DÉJÀ été incrémenté par le rollover naturel de l'horloge :
+     * on règle seulement l'heure au matin, et l'énergie est plafonnée à
+     * energy.restoreFaint au lieu d'être restaurée à fond.
+     */
+    triggerFaint() {
+        if (this._isSleeping) return;
+        this._faint = true;
+        this.triggerSleep();
+    }
+
     /* Mise à jour chaque frame : gère la machine d'état du sommeil. */
     update(dt) {
         if (!this._isSleeping) return;
@@ -123,28 +135,36 @@ class SleepSystem {
         } else if (this._sleepPhase === 'fadeIn') {
             this._sleepAlpha = Math.max(0, 255 - (this._sleepTimer / this._sleepDuration) * 255);
             if (this._sleepTimer >= this._sleepDuration) {
-                // Réveil complet
+                // Réveil complet — le hook onWake est persistant (rappelé chaque nuit)
                 this._isSleeping = false;
                 this._sleepPhase = null;
                 this._sleepAlpha = 0;
                 if (this._sleepCallback) this._sleepCallback();
-                this._sleepCallback = null;
             }
         }
     }
 
     /* Avance le temps au lendemain matin (6h) et restaure l'énergie. */
     _advanceTime() {
-        // Avancer d'un jour, régler l'heure à 6h (aube)
-        if (window.Engine && Engine.Clock) {
-            Engine.Clock.setTime(Engine.Clock.day + 1, 6, 0);
-            // Déclencher onNewDay manuellement pour les systèmes de culture
-            if (Engine.Clock._onNewDay) Engine.Clock._onNewDay(Engine.Clock.day);
+        if (this._faint) {
+            // Évanouissement : le rollover de minuit a déjà changé de jour et
+            // déclenché onNewDay — on règle seulement l'heure à 6h.
+            this._faint = false;
+            if (window.Engine && Engine.Clock) {
+                Engine.Clock.setTime(Engine.Clock.day, 6, 0);
+            }
+            var faintAmt = this._energyCfg ? (this._energyCfg.restoreFaint || 50) : 50;
+            this._energy = Math.min(this._maxEnergy, faintAmt);
+        } else {
+            // Sommeil normal : avancer d'un jour, régler l'heure à 6h (aube)
+            if (window.Engine && Engine.Clock) {
+                Engine.Clock.setTime(Engine.Clock.day + 1, 6, 0);
+                // Déclencher onNewDay manuellement pour les systèmes de culture
+                if (Engine.Clock._onNewDay) Engine.Clock._onNewDay(Engine.Clock.day);
+            }
+            var restoreAmt = this._energyCfg ? (this._energyCfg.restoreSleep || 100) : 100;
+            this.restore(restoreAmt);
         }
-
-        // Restaurer l'énergie
-        var restoreAmt = this._energyCfg ? (this._energyCfg.restoreSleep || 100) : 100;
-        this.restore(restoreAmt);
 
         // Sauvegarder
         if (window.Engine && Engine.Save) Engine.Save.save();
@@ -297,7 +317,8 @@ class SleepSystem {
         // Texte "Zzz..." au centre pendant la transition
         if (this._sleepPhase === 'fadeOut' || this._sleepPhase === 'advance') {
             textAlign(CENTER, CENTER);
-            textSize(u(6));
+            // 6% du petit côté — sans dépendre du u() défini par les jeux (module partagé)
+            textSize(Math.min(width, height) * 0.06);
             fill(255, 255, 255, Math.min(255, this._sleepAlpha + 40));
             text('Zzz...', width / 2, height / 2);
         }

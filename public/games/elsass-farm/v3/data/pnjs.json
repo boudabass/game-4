@@ -55,10 +55,14 @@
     "dialogueFriend": "Vous êtes comme de la famille ! Je vous garde toujours mes meilleures fournées. Vous voulez du kougelhopf ?",
     "dialogueGiftLiked": "Du blé d'aussi bonne qualité ! Je vais pouvoir faire un pain extraordinaire. Merci infiniment !",
     "dialogueGiftNeutral": "Merci, c'est gentil. Je trouverai bien une utilisation.",
-    "likedGifts": ["ble", "orge", "farine", "lait", "oeuf"],
+    "likedGifts": ["ble", "orge"],
     "buyGifts": ["farine", "pain", "bretzel", "kougelhopf"],
     "sellCrops": true,
-    "buySeeds": false,
+    "buySeeds": true,
+    "seedPrices": {
+      "ble": 16,
+      "orge": 22
+    },
     "place": "boulangerie",
     "sells": ["farine"],
     "buysCategories": ["cereale"],

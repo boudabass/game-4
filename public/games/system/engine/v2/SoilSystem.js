@@ -72,6 +72,16 @@ class SoilSystem {
         return false;
     }
 
+    /* Remise à zéro quotidienne : toutes les tuiles plantées repassent à
+       watered = rainy (true un jour de pluie = arrosage automatique). */
+    resetDailyWatering(rainy) {
+        for (var k in this._tiles) {
+            if (!this._tiles.hasOwnProperty(k)) continue;
+            var tile = this._tiles[k];
+            if (tile && tile.state === 'planted') tile.watered = !!rainy;
+        }
+    }
+
     // --- État ---
     getState(c, r) {
         var tile = this._tiles[this._key(c, r)];

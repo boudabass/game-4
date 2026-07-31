@@ -61,9 +61,6 @@
                 { "c": 12, "r": 10 }, { "c": 17, "r": 7 }
             ]
         },
-        "npcs": [
-            { "id": "boulangere", "c": 9, "r": 5 }
-        ],
         "portals": [
             {
                 "id": "village-to-ferme",
@@ -82,9 +79,6 @@
         "rows": 10,
         "tileSize": 64,
         "entryPoint": { "c": 5, "r": 9 },
-        "beds": [
-            { "c": 3, "r": 5 }
-        ],
         "obstacles": {
             "rects": [
                 { "c": 0, "r": 0, "w": 12, "h": 1 },
