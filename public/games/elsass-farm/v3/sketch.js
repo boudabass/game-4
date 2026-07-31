@@ -1572,29 +1572,10 @@ function _drawRelationHearts(npc, npcId, gx, gy, gw, alpha) {
 }
 
 /* ─── Interface boutique habillée (UI-4) ─── */
-function drawShopInterface() {
-    if (!shopMode) return;
-    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
-    if (!zone || zone.id !== 'village') { shopMode = null; return; }
-
-    var alpha = 230;
-    var pad = u(3);
-    var gap = u(2.5);
-
-    // Layout global
-    var dw = width * 0.78;
-    var dx = width / 2 - dw / 2;
-    var dy = height * 0.08;
-
-    // Titre + or + mode = hauteur fixe
-    var headerH = u(8);  // titre
-    var goldH = u(8);    // or
-    var modeH = u(8);    // mode tabs
-    var totalItems = 0;
-
-    // Compter les items pour la hauteur variable
-    var npcData = shopMode.npcData;
+/* ─── Boutique : liste d'articles — SOURCE UNIQUE pour le dessin ET les clics ─── */
+function _buildShopItemList() {
     var itemList = [];
+    if (!shopMode) return itemList;
     if (shopMode.sellMode) {
         var inv = harvestSystem ? harvestSystem.getInventory() : {};
         var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
@@ -1606,7 +1587,7 @@ function drawShopInterface() {
             itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
         }
     } else {
-        var seedPrices = npcData.seedPrices || {};
+        var seedPrices = shopMode.npcData.seedPrices || {};
         for (var seedId in seedPrices) {
             if (!seedPrices.hasOwnProperty(seedId)) continue;
             var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
@@ -1614,25 +1595,48 @@ function drawShopInterface() {
             itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
+    return itemList;
+}
 
-    var itemH = u(8);
-    var itemGap = u(1.5);
+/* ─── Boutique : géométrie du panneau — SOURCE UNIQUE pour le dessin ET les clics ─── */
+function _shopLayout(itemCount) {
+    var L = {
+        pad: u(3), gap: u(2.5),
+        dw: width * 0.78,
+        headerH: u(8), goldH: u(8), modeH: u(8),
+        itemH: u(8), itemGap: u(1.5)
+    };
+    L.dx = width / 2 - L.dw / 2;
     var maxVisible = 5;
-    var visibleItems = Math.min(itemList.length, maxVisible);
-    var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
-    var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
+    L.visibleItems = Math.min(itemCount, maxVisible);
+    L.listH = L.visibleItems * (L.itemH + L.itemGap) - (L.visibleItems > 0 ? L.itemGap : 0);
+    L.totalH = L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.listH + L.pad;
 
     // Ajuster la hauteur max pour ne pas sortir de l'écran
     var maxH = height - u(4);
-    if (totalH > maxH) {
-        var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
-        var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
-        visibleItems = Math.min(itemList.length, newVisible);
-        listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
-        totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
+    if (L.totalH > maxH) {
+        var availListH = maxH - (L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.pad);
+        var newVisible = Math.max(1, Math.floor(availListH / (L.itemH + L.itemGap)));
+        L.visibleItems = Math.min(itemCount, newVisible);
+        L.listH = L.visibleItems * (L.itemH + L.itemGap) - (L.visibleItems > 0 ? L.itemGap : 0);
+        L.totalH = L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.listH + L.pad;
     }
+    L.dy = (height - L.totalH) / 2;
+    return L;
+}
 
-    var dy = (height - totalH) / 2;
+function drawShopInterface() {
+    if (!shopMode) return;
+    var zone = Engine.WorldZone && Engine.WorldZone.getCurrent();
+    if (!zone || zone.id !== 'village') { shopMode = null; return; }
+
+    var alpha = 230;
+    var itemList = _buildShopItemList();
+    var L = _shopLayout(itemList.length);
+    var pad = L.pad, gap = L.gap, dw = L.dw, dx = L.dx, dy = L.dy;
+    var headerH = L.headerH, goldH = L.goldH, modeH = L.modeH;
+    var itemH = L.itemH, itemGap = L.itemGap;
+    var visibleItems = L.visibleItems, totalH = L.totalH;
 
     // ── PANNAU CRÈME #F5E7C8 + BORDURE BOIS #8B5E3C (comme UI-3) ──
     noStroke();
@@ -1780,16 +1784,8 @@ function drawShopInterface() {
         var rightEdge = itemX + itemW - innerPad;
 
         if (item.sell) {
-            // Mode VENTE : compteur quantité à vendre + flèches
-            // Initialiser le compteur
-            if (typeof shopMode._quantities === 'undefined') {
-                shopMode._quantities = {};
-            }
-            if (typeof shopMode._quantities[ii] === 'undefined') {
-                shopMode._quantities[ii] = 0;
-            }
-            // Quantité à vendre (via _quantities)
-            var sellQty = shopMode._quantities[ii] || 0;
+            // Mode VENTE : compteur quantité à vendre (initialisé dans _openShop)
+            var sellQty = (shopMode._quantities && shopMode._quantities[ii]) || 0;
             var sellQtyStr = sellQty.toString();
             // Total disponible en inventaire
             var totalQty = item.qty;
@@ -1847,15 +1843,8 @@ function drawShopInterface() {
 
             shopMode._itemAreas.push({ type: 'sell_btn', idx: ii, x: btnX, y: iy + (itemH - btnH2) / 2, w: btnW2, h: btnH2 });
         } else {
-            // Mode ACHAT : flèches +/- quantités + bouton ACHETER
-            // Initialiser le compteur si pas fait
-            if (typeof shopMode._quantities === 'undefined') {
-                shopMode._quantities = {};
-            }
-            if (typeof shopMode._quantities[ii] === 'undefined') {
-                shopMode._quantities[ii] = 0;
-            }
-            var buyQty = shopMode._quantities[ii] || 0;
+            // Mode ACHAT : compteur quantité à acheter (initialisé dans _openShop)
+            var buyQty = (shopMode._quantities && shopMode._quantities[ii]) || 0;
             var buyQtyStr = buyQty.toString();
 
             // Boutons +/- dessinés (B4 fix — remplace les petites flèches 16px)
@@ -2202,17 +2191,23 @@ function _doToolAction(toolId, tile) {
 
         case 'plant': // Graines — planter sur sol labouré
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'tilled') {
-                if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
+                // B3b (même règle que _doFarmAction) : il faut une graine en inventaire,
+                // et l'énergie n'est débitée que si la plantation a vraiment lieu
                 var season = Engine.Clock.getSeason();
                 var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
                 var toPlant = null;
                 for (var ci = 0; ci < crops.length; ci++) {
                     if (crops[ci].season === season) { toPlant = crops[ci]; break; }
                 }
-                if (toPlant) {
+                if (toPlant && harvestSystem && harvestSystem.getItemCount(toPlant.id + '_seed') > 0) {
+                    if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
+                    harvestSystem.removeFromInventory(toPlant.id + '_seed', 1);
                     soilSystem.plant(tile.c, tile.r, toPlant.id);
                     cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
                     actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
+                } else {
+                    // Pas de graine pour la saison → action interdite, rien n'est consommé
+                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
                 }
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
@@ -2271,63 +2266,18 @@ function _openShop(sellMode) {
     var npc = npcSystem.getNPC(npcDialogue.npcId);
     if (!npc) return;
     npcDialogue = null;
-    shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode };
+    shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode, _quantities: {} };
 }
 
 function _handleShopClick(mx, my) {
     if (!shopMode) return;
 
-    var pad = u(3);
-    var gap = u(2.5);
-    var dw = width * 0.78;
-    var dx = width / 2 - dw / 2;
-    var headerH = u(8);
-    var goldH = u(8);
-    var modeH = u(8);
-
-    // Calculer la hauteur totale (même logique que drawShopInterface)
-    var npcData = shopMode.npcData;
-    var itemList = [];
-    if (shopMode.sellMode) {
-        var inv = harvestSystem ? harvestSystem.getInventory() : {};
-        var multiplier = npcSystem ? npcSystem.getSellMultiplier(shopMode.npcId) : 1.0;
-        for (var cropId in inv) {
-            if (!inv.hasOwnProperty(cropId)) continue;
-            var cropData = cropGrowth.getCropData(cropId) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId; }));
-            if (!cropData) continue;
-            var price = Math.floor((cropData.sell || 0) * multiplier);
-            itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
-        }
-    } else {
-        var seedPrices = npcData.seedPrices || {};
-        for (var seedId in seedPrices) {
-            if (!seedPrices.hasOwnProperty(seedId)) continue;
-            var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
-            if (!cropData2) continue;
-            itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
-        }
-    }
-    var itemH = u(8);
-    var itemGap = u(1.5);
-    var maxVisible = 5;
-    var visibleItems = Math.min(itemList.length, maxVisible);
-    var listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
-    var totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
-
-    // Ajuster la hauteur max pour ne pas sortir de l'écran
-    var maxH = height - u(4);
-    if (totalH > maxH) {
-        var availListH = maxH - (pad + headerH + gap + goldH + gap + modeH + gap + pad);
-        var newVisible = Math.max(1, Math.floor(availListH / (itemH + itemGap)));
-        visibleItems = Math.min(itemList.length, newVisible);
-        listH = visibleItems * (itemH + itemGap) - (visibleItems > 0 ? itemGap : 0);
-        totalH = pad + headerH + gap + goldH + gap + modeH + gap + listH + pad;
-    }
-
-    var dy = (height - totalH) / 2;
+    // Même liste d'articles et même géométrie que drawShopInterface (source unique)
+    var itemList = _buildShopItemList();
+    var L = _shopLayout(itemList.length);
 
     // Vérifier clic hors panneau → fermer
-    if (!inRect(mx, my, { x: dx, y: dy, w: dw, h: totalH })) {
+    if (!inRect(mx, my, { x: L.dx, y: L.dy, w: L.dw, h: L.totalH })) {
         shopMode = null;
         return;
     }
@@ -2338,10 +2288,10 @@ function _handleShopClick(mx, my) {
         return;
     }
 
-    // 2. Tabs mode — switch entre VENDRE et ACHETER
+    // 2. Tabs mode — switch entre VENDRE et ACHETER (compteurs remis à zéro)
     if (shopMode._btnSellTab && inRect(mx, my, shopMode._btnSellTab)) {
         shopMode.sellMode = true;
-        delete shopMode._quantities;
+        shopMode._quantities = {};
         return;
     }
     if (shopMode._btnBuyTab && inRect(mx, my, shopMode._btnBuyTab)) {
@@ -2350,66 +2300,27 @@ function _handleShopClick(mx, my) {
         return;
     }
 
-    // 3. Zones items (flèches + boutons)
+    // 3. Zones items (boutons +/- et VENDRE/ACHETER)
     var areas = shopMode._itemAreas;
     if (!areas) return;
-
-    // Reconstruire itemList pour trouver les données
-    var itemList2 = [];
-    var seller = shopMode.npcId;
-    var multiplier2 = npcSystem ? npcSystem.getSellMultiplier(seller) : 1.0;
-    var npcData2 = shopMode.npcData;
-    if (shopMode.sellMode) {
-        var inv2 = harvestSystem ? harvestSystem.getInventory() : {};
-        for (var cropId2 in inv2) {
-            if (!inv2.hasOwnProperty(cropId2)) continue;
-            var cropData3 = cropGrowth.getCropData(cropId2) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId2; }));
-            if (!cropData3) continue;
-            var price2 = Math.floor((cropData3.sell || 0) * multiplier2);
-            itemList2.push({ id: cropId2, data: cropData3, qty: inv2[cropId2], price: price2, sell: true });
-        }
-    } else {
-        var seedPrices2 = npcData2.seedPrices || {};
-        for (var seedId2 in seedPrices2) {
-            if (!seedPrices2.hasOwnProperty(seedId2)) continue;
-            var cropData4 = cropGrowth.getCropData(seedId2) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId2; }));
-            if (!cropData4) continue;
-            itemList2.push({ id: seedId2, data: cropData4, qty: 999, price: seedPrices2[seedId2], sell: false });
-        }
-    }
+    if (!shopMode._quantities) shopMode._quantities = {};
 
     for (var ai = 0; ai < areas.length; ai++) {
         var area = areas[ai];
         if (!inRect(mx, my, area)) continue;
-        var item = itemList2[area.idx];
+        var item = itemList[area.idx];
         if (!item) continue;
 
-        if (area.type === 'qty_minus' && !item.sell) {
-            // Mode achat : réduire la quantité
-            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+        if (area.type === 'qty_minus') {
             var cur = shopMode._quantities[area.idx] || 0;
             if (cur > 0) shopMode._quantities[area.idx] = cur - 1;
             return;
         }
-        if (area.type === 'qty_plus' && !item.sell) {
-            // Mode achat : augmenter la quantité
-            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
+        if (area.type === 'qty_plus') {
+            // Plafond : stock en inventaire (vente) / 99 (achat)
+            var maxQty = item.sell ? item.qty : 99;
             var cur2 = shopMode._quantities[area.idx] || 0;
-            if (cur2 < 99) shopMode._quantities[area.idx] = cur2 + 1;
-            return;
-        }
-        if (area.type === 'qty_minus' && item.sell) {
-            // Mode vente : ajuster la quantité à vendre
-            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
-            var cur3 = shopMode._quantities[area.idx] || 0;
-            if (cur3 > 0) shopMode._quantities[area.idx] = cur3 - 1;
-            return;
-        }
-        if (area.type === 'qty_plus' && item.sell) {
-            // Mode vente : augmenter la quantité à vendre
-            if (typeof shopMode._quantities === 'undefined') shopMode._quantities = {};
-            var cur4 = shopMode._quantities[area.idx] || 0;
-            if (cur4 < item.qty) shopMode._quantities[area.idx] = cur4 + 1;
+            if (cur2 < maxQty) shopMode._quantities[area.idx] = cur2 + 1;
             return;
         }
         if (area.type === 'sell_btn') {
@@ -2423,7 +2334,7 @@ function _handleShopClick(mx, my) {
                 var earned = harvestSystem.sell(item.id, sellQty, item.price);
                 if (earned > 0) {
                     playerGoldEarned += earned;
-                    delete shopMode._quantities; // reset qty
+                    shopMode._quantities = {}; // reset compteurs
                 }
             } else {
                 // Vente rapide de 1
