@@ -4,6 +4,10 @@
 window.FarmConfig = {
     title: "Elsass Farm",
 
+    // Outils de développement : grille, zone d'action et chemin du personnage.
+    // Mettre à true pour retrouver les overlays pendant le développement.
+    debug: false,
+
     grid: { cols: 28, rows: 18, tileSize: 64 },
 
     // Personnage : tuile de départ + vitesse (tuiles/seconde).
@@ -149,7 +153,6 @@ window.FarmConfig = {
         ui: [
             "ui/shmup_hud_cadre.png",
             "ui/shmup_hud_croix.png",
-            "ui/battle_hud_carburant.png",
             "ui/battle_hud_coeur.png",
             "ui/battle_cadre_selection.png",
             "ui/battle_hachures.png",
@@ -159,6 +162,8 @@ window.FarmConfig = {
             "ui/rogrpg_bouton_vert_marque.png",
             "ui/rogrpg_bouton_orange.png",
             "ui/rogrpg_bouton_orange_marque.png",
+            "ui/rogrpg_bouton_turquoise.png",
+            "ui/rogrpg_bouton_turquoise_marque.png",
             "ui/rogrpg_fleche_vert_gauche_petite.png",
             "ui/rogrpg_fleche_vert_droite_petite.png",
             "ui/rogrpg_fleche_orange_gauche_petite.png",
@@ -174,8 +179,7 @@ window.FarmConfig = {
             "ui/fish_hud_chiffre_7.png",
             "ui/fish_hud_chiffre_8.png",
             "ui/fish_hud_chiffre_9.png",
-            "ui/fish_hud_deuxpoints.png",
-            "ui/fish_hud_dollar.png"
+            "ui/fish_hud_deuxpoints.png"
         ]
     }
 };

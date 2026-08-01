@@ -50,9 +50,24 @@ let shopMode = null;       // {npcId, npcData, sellMode: bool} — mode vente/ac
 let _rainyToday = false;   // météo pluvieuse du jour (calculée une fois par jour)
 let _rainComputedDay = -1; // jour pour lequel _rainyToday a été calculé
 
+// Onboarding : fil d'objectifs de la première boucle (persisté, 99 = terminé)
+// 0 labourer → 1 planter → 2 arroser → 3 faire pousser → 4 vendre → 99 fini
+let _guideStep = 0;
+const GUIDE_MESSAGES = [
+    "Tape sur ton champ (carrés pointillés) pour labourer 🟫",
+    "Tape sur la terre labourée pour planter 🌱",
+    "Tape sur ta pousse pour l'arroser 💧",
+    "Arrose 💧 chaque matin, dors 🛏 la nuit — récolte quand c'est mûr ✨",
+    "Bravo, première récolte ! 🎉 Vends-la au village (passe la porte 🚪)"
+];
+
 // Transition de zone (fondue)
 let zoneTransition = null;
 let portalChoice = null;
+let seedChoice = null;     // {tile, buttons} — sélecteur de graine à planter
+let giftChoice = null;     // {npcId, buttons} — sélecteur de cadeau à offrir
+let _toast = null;         // {msg, t} — message éphémère (échecs, réveil…)
+let _faintedTonight = false; // vrai entre l'évanouissement et le réveil (pour le message)
 let _cloudSyncTimerId = null;   // ID du setInterval cloud (nettoyé en transition)
 
 // u(n) = n % du plus petit côté de l'écran — pour TOUT le HUD.
@@ -171,6 +186,7 @@ function setup() {
             // Minuit sans dormir → évanouissement (réveil à 6h avec energy.restoreFaint).
             // Si on dort, ce callback vient de SleepSystem._advanceTime : pas d'évanouissement.
             if (sleepSystem && !sleepSystem.isSleeping()) {
+                _faintedTonight = true; // pour le message explicatif au réveil
                 sleepSystem.triggerFaint();
             }
             if (cropGrowth) cropGrowth.onNewDay(Engine.Clock.day);
@@ -257,6 +273,11 @@ function setup() {
         });
         // Hook au réveil complet : soumettre le score, sauvegarder, retour ferme
         sleepSystem.onWake(function() {
+            // L'évanouissement ne doit jamais ressembler à un bug : on l'explique.
+            if (_faintedTonight) {
+                _faintedTonight = false;
+                showToast("😴 Tu t'es endormi de fatigue ! Ce soir, va dormir dans ton lit 🛏");
+            }
             _submitScore();
             if (window.Engine && Engine.Save) Engine.Save.save();
             // Se réveiller près du lit (zone +1 tuile en dessous, centré horizontalement)
@@ -280,11 +301,16 @@ async function boot() {
     if (window.Engine && Engine.Save) {
         Engine.Save.configure({
             key: "elsass-farm-v3",
-            version: 2,
+            version: 3,
             migrations: {
                 2: function (d) {
                     d.rainyToday = false;
                     d.rainComputedDay = -1;
+                    return d;
+                },
+                3: function (d) {
+                    // Joueurs existants : le guide de démarrage ne s'affiche pas
+                    d.guideStep = 99;
                     return d;
                 }
             },
@@ -310,6 +336,7 @@ async function boot() {
                 // B5 fix — persistance météo
                 data.rainyToday = _rainyToday;
                 data.rainComputedDay = _rainComputedDay;
+                data.guideStep = _guideStep;
                 return data;
             },
             apply: function (data) {
@@ -336,10 +363,12 @@ async function boot() {
                 if (disasterSystem && data.disasters) disasterSystem.apply(data.disasters);
                 if (challengeSystem && data.challenges) challengeSystem.apply(data.challenges);
                 if (sleepSystem && data.sleep) sleepSystem.apply(data.sleep);
+                if (typeof data.guideStep === "number") _guideStep = data.guideStep;
             }
         });
         if (Engine.Loader) Engine.Loader.step("Chargement de la sauvegarde...");
-        await Engine.Save.load();
+        var hasSave = await Engine.Save.load();
+        if (!hasSave) _giveStarterKit();
     }
 
     if (Engine.WorldZone && !Engine.WorldZone.getCurrent()) {
@@ -361,6 +390,123 @@ async function boot() {
             Engine.Save.saveLocal();
         }
     });
+}
+
+/* ─── Toast : message éphémère qui explique un refus ou un événement ───
+   Un enfant ne doit jamais croire que « le jeu est cassé » : chaque échec parle. */
+function showToast(msg) {
+    _toast = { msg: msg, t: millis() };
+}
+
+function drawToast() {
+    if (!_toast) return;
+    var elapsed = millis() - _toast.t;
+    if (elapsed > 3200) { _toast = null; return; }
+    var a = elapsed < 250 ? (elapsed / 250) * 235
+          : (elapsed > 2600 ? (3200 - elapsed) / 600 * 235 : 235);
+
+    textFont('Pixelify Sans');
+    var ts = u(2.8);
+    var padX = u(3), padY = u(2);
+    textSize(ts);
+    var tw = textWidth(_toast.msg);
+    var maxTextW = width - u(6) - padX * 2;
+    if (tw > maxTextW) { ts = ts * maxTextW / tw; textSize(ts); tw = textWidth(_toast.msg); }
+    var bw = tw + padX * 2;
+    var bh = ts + padY * 2;
+    var bx = width / 2 - bw / 2;
+    var by = height * 0.18;
+
+    noStroke();
+    fill(245, 231, 200, a);
+    rect(bx, by, bw, bh, u(1.2));
+    noFill();
+    stroke(139, 94, 60, a);
+    strokeWeight(u(0.35));
+    rect(bx, by, bw, bh, u(1.2));
+    noStroke();
+    fill(61, 43, 31, a + 20);
+    textAlign(CENTER, CENTER);
+    text(_toast.msg, width / 2, by + bh / 2);
+    textFont('sans-serif');
+}
+
+/* Consomme l'énergie ; en cas de refus, le dit au joueur au lieu d'échouer en silence. */
+function _consumeEnergy(cost, tile) {
+    if (!sleepSystem) return true;
+    if (sleepSystem.consume(cost)) return true;
+    showToast("😴 Trop fatigué ! Va dormir dans ton lit 🛏");
+    if (tile) actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
+    return false;
+}
+
+/* ─── Kit de départ (nouvelle partie uniquement) ───
+   Sans lui, un nouveau joueur démarre avec 0 pièce et 0 graine : la boucle
+   planter → récolter → vendre est inaccessible (softlock). */
+function _giveStarterKit() {
+    if (!harvestSystem) return;
+    var season = Engine.Clock.getSeason();
+    var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
+    // La culture la plus rapide de la saison → première récolte au plus tôt
+    var best = null;
+    for (var i = 0; i < crops.length; i++) {
+        if (crops[i].season !== season) continue;
+        if (!best || (crops[i].growthDays || 99) < (best.growthDays || 99)) best = crops[i];
+    }
+    // Repli (ex. démarrage en hiver, sans culture) : la plus rapide toutes saisons
+    if (!best) {
+        for (var j = 0; j < crops.length; j++) {
+            if (!best || (crops[j].growthDays || 99) < (best.growthDays || 99)) best = crops[j];
+        }
+    }
+    if (best) harvestSystem.addToInventory(best.id + '_seed', 5);
+    harvestSystem.addGold(50);
+    if (window.Engine && Engine.Save) Engine.Save.saveLocal();
+}
+
+/* ─── Bandeau d'objectif (onboarding première boucle) ─── */
+function _guideAdvance(fromStep) {
+    if (_guideStep === fromStep) _guideStep++;
+}
+
+function drawGuideBanner() {
+    if (_guideStep >= GUIDE_MESSAGES.length) return;
+    // Masqué quand un panneau est ouvert (une seule chose à la fois)
+    if (shopMode || npcDialogue || portalChoice || seedChoice || zoneTransition) return;
+    if (sleepSystem && sleepSystem.isSleeping()) return;
+
+    var msg = GUIDE_MESSAGES[_guideStep];
+    textFont('Pixelify Sans');
+    var ts = u(2.6);
+    var padX = u(3), padY = u(1.8);
+    textSize(ts);
+    var tw = textWidth(msg);
+    // Écran étroit : réduire la taille plutôt que déborder
+    var maxTextW = width - u(4) - padX * 2;
+    if (tw > maxTextW) {
+        ts = ts * maxTextW / tw;
+        textSize(ts);
+        tw = textWidth(msg);
+    }
+    var bw = tw + padX * 2;
+    var bh = ts + padY * 2;
+    var bx = width / 2 - bw / 2;
+    // Juste au-dessus de la barre d'outils (slotSize u(11) + marge u(3))
+    var by = height - u(11) - u(3) - bh - u(2);
+
+    noStroke();
+    fill(245, 231, 200, 235);
+    rect(bx, by, bw, bh, u(1.2));
+    noFill();
+    stroke(139, 94, 60, 235);
+    strokeWeight(u(0.35));
+    rect(bx, by, bw, bh, u(1.2));
+    noStroke();
+
+    fill(61, 43, 31);
+    textAlign(CENTER, CENTER);
+    text(msg, width / 2, by + bh / 2);
+    textFont('sans-serif');
 }
 
 /* ─── Réinitialisation quotidienne de l'arrosage (via l'API SoilSystem) ─── */
@@ -434,6 +580,9 @@ function draw() {
     // --- HUD ---
     drawHud();
 
+    // --- Bandeau d'objectif (première boucle) ---
+    drawGuideBanner();
+
     // --- Fondu de transition zone ---
     drawZoneFade();
 
@@ -448,6 +597,9 @@ function draw() {
 
     // --- Interface boutique ---
     drawShopInterface();
+
+    // --- Toast (par-dessus tout : il explique aussi les refus en boutique) ---
+    drawToast();
 }
 
 /* ─── Helpers de rendu Tiny Farm ─── */
@@ -852,8 +1004,8 @@ function drawWorld() {
         drawGround();
     }
 
-    // Grille de debug
-    Engine.Grid.drawDebug({ line: C.colors.gridLine });
+    // Grille de debug (outil de développement — C.debug dans config.js)
+    if (C.debug) Engine.Grid.drawDebug({ line: C.colors.gridLine });
 
     // Décor selon la zone
     if (zoneId === 'village') {
@@ -936,9 +1088,11 @@ function drawWorld() {
         rect(actionFlash.c * s + 2, actionFlash.r * s + 2, s - 4, s - 4, 6);
     }
 
-    // Zone d'action + chemin
-    Engine.ActionZone.drawDebug(Engine.Grid, player.tile(), C.colors.zone);
-    player.drawDebugPath(C.colors.path);
+    // Zone d'action + chemin (outils de développement — C.debug dans config.js)
+    if (C.debug) {
+        Engine.ActionZone.drawDebug(Engine.Grid, player.tile(), C.colors.zone);
+        player.drawDebugPath(C.colors.path);
+    }
 
     // Personnage
     var farmer = img("perso", "farm_fermier_brun");
@@ -1115,11 +1269,11 @@ function drawHud() {
     // Barre remplie
     fill(energyColor[0], energyColor[1], energyColor[2], 220);
     rect(barX, barY, barW * energyPct, barH, u(0.5));
-    // Icône carburant
+    // Icône énergie : cœur pixel-art (le bidon de carburant n'a rien à faire dans une ferme)
     var fuelSize = u(3);
     var fm = _fitMult(fuelSize, 16);
     fuelSize = 16 * fm;
-    var fuel = img("ui", "battle_hud_carburant");
+    var fuel = img("ui", "battle_hud_coeur");
     if (fuel) {
         image(fuel, barX + u(0.5), barY + barH + u(0.5), fuelSize, fuelSize);
     }
@@ -1159,6 +1313,8 @@ function drawHud() {
 
     // ── Popup de portail ──
     drawPortalChoice();
+    drawSeedChoice();
+    drawGiftChoice();
 }
 
 function drawToolbar() {
@@ -1439,12 +1595,21 @@ function drawNPCDialogue() {
     var pad = u(4);
     var gap = u(3);
     var nameH = u(8);
-    var textH = u(9);
+    var dw = width * 0.7;
+
+    // Hauteur du texte : multi-lignes (les dialogues font ~100 caractères,
+    // une seule ligne débordait du panneau sur mobile)
+    var msgSize = u(3.5);
+    var msgBoxW = dw - pad * 2;
+    textFont('Pixelify Sans');
+    textSize(msgSize);
+    var msgLines = Math.max(1, Math.ceil(textWidth(npcDialogue.text || '') / msgBoxW));
+    var textH = Math.max(u(9), msgLines * msgSize * 1.4 + u(2));
+
     var gaugeH = npc ? u(6) : 0;
     var btnH = npc ? u(9) : 0;
 
     var totalH = pad + nameH + gap + textH + gap + gaugeH + gap + btnH + pad;
-    var dw = width * 0.7;
     var dx = width / 2 - dw / 2;
     var dy = height - totalH - u(15);
 
@@ -1478,11 +1643,11 @@ function drawNPCDialogue() {
     text(npc ? npc.emoji + ' ' + npc.label : '???', dx + pad, y + nameH/2);
     y += nameH + gap;
 
-    // ── Bloc 2 : Texte ──
+    // ── Bloc 2 : Texte (boîte multi-lignes : x,y = coin haut-gauche de la boîte) ──
     textSize(u(3.5));
     fill(61, 43, 31, alpha * 0.9);
     textAlign(CENTER, CENTER);
-    text(npcDialogue.text, dx + dw/2, y + textH/2);
+    text(npcDialogue.text, dx + pad, y, msgBoxW, textH);
     y += textH + gap;
 
     if (npc) {
@@ -1491,30 +1656,52 @@ function drawNPCDialogue() {
         y += gaugeH + gap;
 
         // ── Bloc 4 : Boutons réponses (rogrpg_bouton_<couleur> + _marque) ──
-        var bW = u(18), bH = u(9), bGap = u(2);
-        var totalBW = bW * 2 + bGap;
+        // Couleurs alignées sur les onglets boutique : Vendre=orange, Acheter=vert.
+        // « Offrir » (turquoise) n'apparaît que si le joueur a quelque chose à offrir.
+        var inv2 = harvestSystem ? harvestSystem.getInventory() : {};
+        var hasGift = false;
+        for (var gk in inv2) { if (inv2.hasOwnProperty(gk) && inv2[gk] > 0) { hasGift = true; break; } }
+
+        var nBtns = hasGift ? 3 : 2;
+        var bGap = u(2);
+        var bW = u(18), bH = u(9);
+        var maxRowW = dw - pad * 2;
+        if (bW * nBtns + bGap * (nBtns - 1) > maxRowW) {
+            bW = (maxRowW - bGap * (nBtns - 1)) / nBtns;
+        }
+        var totalBW = bW * nBtns + bGap * (nBtns - 1);
         var bx1 = dx + dw/2 - totalBW/2;
         var bx2 = bx1 + bW + bGap;
+        var bx3 = bx2 + bW + bGap;
 
-        // Vendre = vert
+        // Vendre = orange (comme l'onglet VENDRE de la boutique)
         var sellPressed = npcDialogue._pressedBtn === 'sell' && millis() - npcDialogue._pressedTime < 300;
-        var sellImg = img("ui", sellPressed ? "rogrpg_bouton_vert_marque" : "rogrpg_bouton_vert");
+        var sellImg = img("ui", sellPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
         if (sellImg) image(sellImg, bx1, y, bW, bH);
 
-        // Acheter = orange
+        // Acheter = vert (comme l'onglet ACHETER de la boutique)
         var buyPressed = npcDialogue._pressedBtn === 'buy' && millis() - npcDialogue._pressedTime < 300;
-        var buyImg = img("ui", buyPressed ? "rogrpg_bouton_orange_marque" : "rogrpg_bouton_orange");
+        var buyImg = img("ui", buyPressed ? "rogrpg_bouton_vert_marque" : "rogrpg_bouton_vert");
         if (buyImg) image(buyImg, bx2, y, bW, bH);
+
+        // Offrir = turquoise
+        if (hasGift) {
+            var giftPressed = npcDialogue._pressedBtn === 'gift' && millis() - npcDialogue._pressedTime < 300;
+            var giftImg = img("ui", giftPressed ? "rogrpg_bouton_turquoise_marque" : "rogrpg_bouton_turquoise");
+            if (giftImg) image(giftImg, bx3, y, bW, bH);
+        }
 
         // Labels sur les boutons (blanc, centré)
         fill(255, alpha);
-        textSize(u(3.5));
+        textSize(Math.min(u(3.5), bW * 0.22));
         textAlign(CENTER, CENTER);
         text('Vendre', bx1 + bW/2, y + bH/2);
         text('Acheter', bx2 + bW/2, y + bH/2);
+        if (hasGift) text('🎁 Offrir', bx3 + bW/2, y + bH/2);
 
         npcDialogue._btnSell = { x: bx1, y: y, w: bW, h: bH };
         npcDialogue._btnBuy  = { x: bx2, y: y, w: bW, h: bH };
+        npcDialogue._btnGift = hasGift ? { x: bx3, y: y, w: bW, h: bH } : null;
     }
 }
 
@@ -1585,11 +1772,15 @@ function _buildShopItemList() {
             itemList.push({ id: cropId, data: cropData, qty: inv[cropId], price: price, sell: true });
         }
     } else {
+        // Seules les graines de la saison courante sont proposées : une graine
+        // hors-saison ne peut pas être plantée (B3b), la vendre serait un piège.
+        var season = Engine.Clock.getSeason();
         var seedPrices = shopMode.npcData.seedPrices || {};
         for (var seedId in seedPrices) {
             if (!seedPrices.hasOwnProperty(seedId)) continue;
             var cropData2 = cropGrowth.getCropData(seedId) || (culturesData && culturesData.find(function(cc) { return cc.id === seedId; }));
             if (!cropData2) continue;
+            if (cropData2.season !== season) continue;
             itemList.push({ id: seedId, data: cropData2, qty: 999, price: seedPrices[seedId], sell: false });
         }
     }
@@ -1606,19 +1797,24 @@ function _shopLayout(itemCount) {
     };
     L.dx = width / 2 - L.dw / 2;
     var maxVisible = 5;
-    L.visibleItems = Math.min(itemCount, maxVisible);
-    L.listH = L.visibleItems * (L.itemH + L.itemGap) - (L.visibleItems > 0 ? L.itemGap : 0);
-    L.totalH = L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.listH + L.pad;
-
-    // Ajuster la hauteur max pour ne pas sortir de l'écran
+    var chromeH = L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.pad;
     var maxH = height - u(4);
-    if (L.totalH > maxH) {
-        var availListH = maxH - (L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.pad);
-        var newVisible = Math.max(1, Math.floor(availListH / (L.itemH + L.itemGap)));
-        L.visibleItems = Math.min(itemCount, newVisible);
-        L.listH = L.visibleItems * (L.itemH + L.itemGap) - (L.visibleItems > 0 ? L.itemGap : 0);
-        L.totalH = L.pad + L.headerH + L.gap + L.goldH + L.gap + L.modeH + L.gap + L.listH + L.pad;
+    var footerH = Math.max(u(7), 48); // barre de défilement tactile (≥48px)
+
+    // Nombre de lignes qui tiennent à l'écran, avec ou sans barre de défilement
+    function fitVisible(withFooter) {
+        var avail = maxH - chromeH - (withFooter ? footerH + L.gap : 0);
+        var fit = Math.max(1, Math.floor((avail + L.itemGap) / (L.itemH + L.itemGap)));
+        return Math.min(itemCount, Math.min(maxVisible, fit));
     }
+
+    L.visibleItems = fitVisible(false);
+    if (itemCount > L.visibleItems) L.visibleItems = fitVisible(true);
+    L.needScroll = itemCount > L.visibleItems;
+    L.footerH = L.needScroll ? footerH : 0;
+
+    L.listH = L.visibleItems > 0 ? L.visibleItems * (L.itemH + L.itemGap) - L.itemGap : L.itemH; // 1 ligne réservée pour le message "liste vide"
+    L.totalH = chromeH + L.listH + (L.needScroll ? L.gap + L.footerH : 0);
     L.dy = (height - L.totalH) / 2;
     return L;
 }
@@ -1636,7 +1832,7 @@ function drawShopInterface() {
     var itemH = L.itemH, itemGap = L.itemGap;
     var visibleItems = L.visibleItems, totalH = L.totalH;
 
-    // ── PANNAU CRÈME #F5E7C8 + BORDURE BOIS #8B5E3C (comme UI-3) ──
+    // ── PANNEAU CRÈME #F5E7C8 + BORDURE BOIS #8B5E3C (comme UI-3) ──
     noStroke();
     fill(245, 231, 200, alpha * 0.95);
     rect(dx, dy, dw, totalH, u(1.5));
@@ -1676,10 +1872,10 @@ function drawShopInterface() {
     }
     y += headerH + gap;
 
-    // ── OR ──
+    // ── OR (pièce d'or, comme le HUD — plus de dollar dans une ferme alsacienne) ──
     var gold = harvestSystem ? harvestSystem.getGold() : 0;
     var goldStr = Math.floor(gold).toString();
-    var dollar = img("ui", "fish_hud_dollar");
+    var dollar = img("objet", "town_piece_or");
     var dMult = _fitMult(u(3.5), 16);
     var dSz = 16 * dMult;
     var dollarX = dx + dw / 2 - u(6);
@@ -1726,8 +1922,15 @@ function drawShopInterface() {
     var itemW = dw - u(4);
     shopMode._itemAreas = [];
 
+    // Défilement : borner l'offset (la liste peut changer entre deux frames)
+    var maxScroll = Math.max(0, itemList.length - visibleItems);
+    if (!shopMode._scroll || shopMode._scroll < 0) shopMode._scroll = 0;
+    if (shopMode._scroll > maxScroll) shopMode._scroll = maxScroll;
+    var scroll = shopMode._scroll;
+
     for (var ii = 0; ii < visibleItems; ii++) {
-        var item = itemList[ii];
+        var absIdx = ii + scroll;
+        var item = itemList[absIdx];
         var iy = y + ii * (itemH + itemGap);
 
         // Fond de ligne
@@ -1783,7 +1986,7 @@ function drawShopInterface() {
 
         if (item.sell) {
             // Mode VENTE : compteur quantité à vendre (initialisé dans _openShop)
-            var sellQty = (shopMode._quantities && shopMode._quantities[ii]) || 0;
+            var sellQty = (shopMode._quantities && shopMode._quantities[absIdx]) || 0;
             var sellQtyStr = sellQty.toString();
             // Total disponible en inventaire
             var totalQty = item.qty;
@@ -1803,7 +2006,7 @@ function drawShopInterface() {
             textFont('Pixelify Sans');
             textAlign(CENTER, CENTER);
             text("-", minusX + qtyBtnSz / 2, minusY + qtyBtnSz / 2);
-            shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: minusX, y: minusY, w: qtyBtnSz, h: qtyBtnSz });
+            shopMode._itemAreas.push({ type: 'qty_minus', idx: absIdx, x: minusX, y: minusY, w: qtyBtnSz, h: qtyBtnSz });
 
             // Quantité (texte Pixelify)
             textSize(u(3));
@@ -1825,7 +2028,7 @@ function drawShopInterface() {
             fill(255, alpha);
             textSize(qtyBtnSz * 0.6);
             text("+", plusX + qtyBtnSz / 2, plusY + qtyBtnSz / 2);
-            shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: plusX, y: plusY, w: qtyBtnSz, h: qtyBtnSz });
+            shopMode._itemAreas.push({ type: 'qty_plus', idx: absIdx, x: plusX, y: plusY, w: qtyBtnSz, h: qtyBtnSz });
 
             // Bouton VENDRE (orange) — recalé à gauche des nouveaux boutons
             var btnW2 = u(14);
@@ -1839,10 +2042,10 @@ function drawShopInterface() {
             textFont('Pixelify Sans');
             text("VENDRE", btnX + btnW2 / 2, iy + itemH / 2);
 
-            shopMode._itemAreas.push({ type: 'sell_btn', idx: ii, x: btnX, y: iy + (itemH - btnH2) / 2, w: btnW2, h: btnH2 });
+            shopMode._itemAreas.push({ type: 'sell_btn', idx: absIdx, x: btnX, y: iy + (itemH - btnH2) / 2, w: btnW2, h: btnH2 });
         } else {
             // Mode ACHAT : compteur quantité à acheter (initialisé dans _openShop)
-            var buyQty = (shopMode._quantities && shopMode._quantities[ii]) || 0;
+            var buyQty = (shopMode._quantities && shopMode._quantities[absIdx]) || 0;
             var buyQtyStr = buyQty.toString();
 
             // Boutons +/- dessinés (B4 fix — remplace les petites flèches 16px)
@@ -1860,7 +2063,7 @@ function drawShopInterface() {
             textFont('Pixelify Sans');
             textAlign(CENTER, CENTER);
             text("-", minusX2 + qtyBtnSz2 / 2, minusY2 + qtyBtnSz2 / 2);
-            shopMode._itemAreas.push({ type: 'qty_minus', idx: ii, x: minusX2, y: minusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
+            shopMode._itemAreas.push({ type: 'qty_minus', idx: absIdx, x: minusX2, y: minusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
 
             // Quantité (texte Pixelify)
             textSize(u(3));
@@ -1877,7 +2080,7 @@ function drawShopInterface() {
             fill(255, alpha);
             textSize(qtyBtnSz2 * 0.6);
             text("+", plusX2 + qtyBtnSz2 / 2, plusY2 + qtyBtnSz2 / 2);
-            shopMode._itemAreas.push({ type: 'qty_plus', idx: ii, x: plusX2, y: plusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
+            shopMode._itemAreas.push({ type: 'qty_plus', idx: absIdx, x: plusX2, y: plusY2, w: qtyBtnSz2, h: qtyBtnSz2 });
 
             // Bouton ACHETER (vert) — recalé à gauche des nouveaux boutons
             var btnW3 = u(16);
@@ -1891,7 +2094,7 @@ function drawShopInterface() {
             textFont('Pixelify Sans');
             text("ACHETER", btnX2 + btnW3 / 2, iy + itemH / 2);
 
-            shopMode._itemAreas.push({ type: 'buy_btn', idx: ii, x: btnX2, y: iy + (itemH - btnH3) / 2, w: btnW3, h: btnH3 });
+            shopMode._itemAreas.push({ type: 'buy_btn', idx: absIdx, x: btnX2, y: iy + (itemH - btnH3) / 2, w: btnW3, h: btnH3 });
         }
 
         textAlign(LEFT, CENTER);
@@ -1899,11 +2102,52 @@ function drawShopInterface() {
 
     // ── Message si liste vide ──
     if (itemList.length === 0) {
+        var emptyMsg;
+        if (shopMode.sellMode) {
+            emptyMsg = "Rien à vendre — récolte d'abord tes cultures !";
+        } else {
+            emptyMsg = Engine.Clock.getSeason() === 'hiver'
+                ? "Pas de semis en hiver — reviens au printemps !"
+                : "Rien à acheter.";
+        }
         textSize(u(2.5));
         fill(61, 43, 31, 150);
         textAlign(CENTER, CENTER);
         textFont('Pixelify Sans');
-        text(shopMode.sellMode ? "Rien à vendre." : "Rien à acheter.", dx + dw / 2, y + itemH);
+        text(emptyMsg, dx + dw / 2, y + itemH / 2);
+    }
+
+    // ── Barre de défilement (si plus d'articles que de lignes visibles) ──
+    if (L.needScroll) {
+        var fy = y + L.listH + gap;
+        var fBtn = L.footerH;
+        var canUp = scroll > 0;
+        var canDown = scroll < maxScroll;
+        var upX = dx + dw / 2 - fBtn - u(8);
+        var downX = dx + dw / 2 + u(8);
+
+        // Bouton ▲
+        fill(61, 43, 31, canUp ? alpha : 60);
+        rect(upX, fy, fBtn, fBtn, u(1));
+        fill(255, canUp ? alpha : 120);
+        textSize(fBtn * 0.5);
+        textFont('Pixelify Sans');
+        textAlign(CENTER, CENTER);
+        text("▲", upX + fBtn / 2, fy + fBtn / 2);
+        shopMode._itemAreas.push({ type: 'scroll_up', idx: -1, x: upX, y: fy, w: fBtn, h: fBtn });
+
+        // Position dans la liste ("1-5 / 10")
+        textSize(u(2.2));
+        fill(61, 43, 31, alpha * 0.8);
+        text((scroll + 1) + "-" + (scroll + visibleItems) + " / " + itemList.length, dx + dw / 2, fy + fBtn / 2);
+
+        // Bouton ▼
+        fill(61, 43, 31, canDown ? alpha : 60);
+        rect(downX, fy, fBtn, fBtn, u(1));
+        fill(255, canDown ? alpha : 120);
+        textSize(fBtn * 0.5);
+        text("▼", downX + fBtn / 2, fy + fBtn / 2);
+        shopMode._itemAreas.push({ type: 'scroll_down', idx: -1, x: downX, y: fy, w: fBtn, h: fBtn });
     }
 
     textFont('sans-serif');
@@ -1918,7 +2162,7 @@ function inRect(mx, my, b) {
 
 /* ─── UI-2: Survol souris (non tactile) ─── */
 function mouseMoved() {
-    if (zoneTransition || (sleepSystem && sleepSystem.isSleeping()) || shopMode || portalChoice || npcDialogue) {
+    if (zoneTransition || (sleepSystem && sleepSystem.isSleeping()) || shopMode || portalChoice || seedChoice || giftChoice || npcDialogue) {
         hoveredTile = null;
         hoverType = 'none';
         return;
@@ -1960,6 +2204,18 @@ function touchStarted() {
     return false;
 }
 
+/* ─── Molette : défilement de la liste boutique ─── */
+function mouseWheel(event) {
+    if (!shopMode) return;
+    var itemList = _buildShopItemList();
+    var L = _shopLayout(itemList.length);
+    if (!L.needScroll) return false;
+    var maxSc = Math.max(0, itemList.length - L.visibleItems);
+    var cur = shopMode._scroll || 0;
+    shopMode._scroll = Math.max(0, Math.min(maxSc, cur + (event.delta > 0 ? 1 : -1)));
+    return false; // empêche le scroll de la page (iframe)
+}
+
 function mousePressed() {
     if (zoneTransition || (sleepSystem && sleepSystem.isSleeping())) return;
 
@@ -1974,6 +2230,36 @@ function mousePressed() {
             }
         }
         portalChoice = null;
+        return;
+    }
+
+    // Sélecteur de cadeau à offrir
+    if (giftChoice) {
+        for (var gi = 0; gi < giftChoice.buttons.length; gi++) {
+            var gb = giftChoice.buttons[gi];
+            if (inRect(mouseX, mouseY, gb)) {
+                var giftNpcId = giftChoice.npcId;
+                giftChoice = null;
+                _giveGiftTo(giftNpcId, gb.giftId);
+                return;
+            }
+        }
+        giftChoice = null; // tap ailleurs = annuler
+        return;
+    }
+
+    // Sélecteur de graine à planter
+    if (seedChoice) {
+        for (var si = 0; si < seedChoice.buttons.length; si++) {
+            var sb = seedChoice.buttons[si];
+            if (inRect(mouseX, mouseY, sb)) {
+                var chosenTile = seedChoice.tile;
+                seedChoice = null;
+                _plantCrop(chosenTile, sb.crop);
+                return;
+            }
+        }
+        seedChoice = null; // tap ailleurs = annuler
         return;
     }
 
@@ -2002,6 +2288,12 @@ function mousePressed() {
         npcDialogue._pressedBtn = 'buy';
         npcDialogue._pressedTime = millis();
         _openShop(false);
+        return;
+    }
+    if (npcDialogue && npcDialogue._btnGift && inRect(mouseX, mouseY, npcDialogue._btnGift)) {
+        npcDialogue._pressedBtn = 'gift';
+        npcDialogue._pressedTime = millis();
+        _showGiftChoice(npcDialogue.npcId);
         return;
     }
 
@@ -2091,18 +2383,20 @@ function mousePressed() {
 
 function keyPressed() {
     if (key === 'v' || key === 'V') {
-        if (npcDialogue) {
+        if (npcDialogue && npcDialogue.type === 'talk' && !giftChoice) {
             _openShop(true); // mode vente
             return false;
         }
     }
     if (key === 'a' || key === 'A') {
-        if (npcDialogue) {
+        if (npcDialogue && npcDialogue.type === 'talk' && !giftChoice) {
             _openShop(false); // mode achat
             return false;
         }
     }
     if (keyCode === ESCAPE) {
+        if (giftChoice) { giftChoice = null; return false; }
+        if (seedChoice) { seedChoice = null; return false; }
         if (shopMode) { shopMode = null; return false; }
         if (npcDialogue && npcDialogue.type !== 'talk') { npcDialogue = null; return false; }
     }
@@ -2112,33 +2406,17 @@ function keyPressed() {
 function _doFarmAction(tile) {
     var state = soilSystem.getState(tile.c, tile.r);
     if (state === 'empty') {
-        if (!sleepSystem || !sleepSystem.consume(C.energy.tillCost)) return;
+        if (!_consumeEnergy(C.energy.tillCost, tile)) return;
         soilSystem.till(tile.c, tile.r);
         actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
+        _guideAdvance(0);
     } else if (state === 'tilled') {
-        // B3b: vérifier si le joueur a une graine en inventaire avant de planter
-        var season = Engine.Clock.getSeason();
-        var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
-        var toPlant = null;
-        for (var ci = 0; ci < crops.length; ci++) {
-            if (crops[ci].season === season) { toPlant = crops[ci]; break; }
-        }
-        if (toPlant && harvestSystem) {
-            var seedId = toPlant.id + '_seed';
-            if (harvestSystem.getItemCount(seedId) > 0) {
-                // B3b: le joueur a une graine → planter et consommer la graine
-                if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
-                harvestSystem.removeFromInventory(seedId, 1);
-                soilSystem.plant(tile.c, tile.r, toPlant.id);
-                cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-                actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
-            }
-            // B3b: pas de graine → le clic sur sol labouré est sans effet
-        }
+        // B3b: on plante une graine réellement possédée (de la saison courante)
+        _plantAt(tile);
     } else if (state === 'planted') {
         if (cropGrowth && cropGrowth.isMature(tile.c, tile.r)) {
             // B3: priorité récolte — si mûre, on récolte même si non arrosée
-            if (!sleepSystem || !sleepSystem.consume(C.energy.harvestCost)) return;
+            if (!_consumeEnergy(C.energy.harvestCost, tile)) return;
             var cropId = cropGrowth.getCropId(tile.c, tile.r);
             var cropData = cropId ? cropGrowth.getCropData(cropId) : null;
             if (cropData && harvestSystem) {
@@ -2150,11 +2428,13 @@ function _doFarmAction(tile) {
             soilSystem.till(tile.c, tile.r);
             cropGrowth.resetTile(tile.c, tile.r);
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'harvest' };
+            if (_guideStep <= 3) _guideStep = 4; // première récolte → étape "vendre"
         } else if (!soilSystem.isWatered(tile.c, tile.r)) {
             // Pas mûre et pas arrosée → arroser
-            if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
+            if (!_consumeEnergy(C.energy.waterCost, tile)) return;
             soilSystem.water(tile.c, tile.r);
             actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
+            _guideAdvance(2);
         }
     }
     if (window.Engine && Engine.Save) Engine.Save.saveLocal();
@@ -2179,9 +2459,10 @@ function _doToolAction(toolId, tile) {
     switch (action) {
         case 'till': // Pelle — labourer un sol vide
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'empty') {
-                if (!sleepSystem || !sleepSystem.consume(C.energy.tillCost)) return;
+                if (!_consumeEnergy(C.energy.tillCost, tile)) return;
                 soilSystem.till(tile.c, tile.r);
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'till' };
+                _guideAdvance(0);
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
             }
@@ -2189,24 +2470,8 @@ function _doToolAction(toolId, tile) {
 
         case 'plant': // Graines — planter sur sol labouré
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'tilled') {
-                // B3b (même règle que _doFarmAction) : il faut une graine en inventaire,
-                // et l'énergie n'est débitée que si la plantation a vraiment lieu
-                var season = Engine.Clock.getSeason();
-                var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
-                var toPlant = null;
-                for (var ci = 0; ci < crops.length; ci++) {
-                    if (crops[ci].season === season) { toPlant = crops[ci]; break; }
-                }
-                if (toPlant && harvestSystem && harvestSystem.getItemCount(toPlant.id + '_seed') > 0) {
-                    if (!sleepSystem || !sleepSystem.consume(C.energy.plantCost)) return;
-                    harvestSystem.removeFromInventory(toPlant.id + '_seed', 1);
-                    soilSystem.plant(tile.c, tile.r, toPlant.id);
-                    cropGrowth.plant(tile.c, tile.r, toPlant.id, Engine.Clock.day);
-                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
-                } else {
-                    // Pas de graine pour la saison → action interdite, rien n'est consommé
-                    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
-                }
+                // B3b (même règle que _doFarmAction) : graine possédée obligatoire
+                _plantAt(tile);
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
             }
@@ -2214,9 +2479,10 @@ function _doToolAction(toolId, tile) {
 
         case 'water': // Arrosoir — arroser une culture plantée
             if (soilSystem && soilSystem.isCultivable(tile.c, tile.r) && state === 'planted' && !soilSystem.isWatered(tile.c, tile.r)) {
-                if (!sleepSystem || !sleepSystem.consume(C.energy.waterCost)) return;
+                if (!_consumeEnergy(C.energy.waterCost, tile)) return;
                 soilSystem.water(tile.c, tile.r);
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'water' };
+                _guideAdvance(2);
             } else {
                 actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
             }
@@ -2237,25 +2503,186 @@ function _doToolAction(toolId, tile) {
     if (window.Engine && Engine.Save) Engine.Save.saveLocal();
 }
 
-/* ─── Interaction PNJ ─── */
+/* ─── Plantation liée à l'inventaire ───
+   La graine plantée est celle que le joueur possède VRAIMENT (saison courante).
+   0 graine → action bloquée ; 1 type → plantation directe ; plusieurs → sélecteur. */
+function _getOwnedSeasonSeeds() {
+    var out = [];
+    if (!harvestSystem) return out;
+    var season = Engine.Clock.getSeason();
+    var crops = (culturesData && Array.isArray(culturesData)) ? culturesData : [];
+    for (var i = 0; i < crops.length; i++) {
+        if (crops[i].season !== season) continue;
+        if (harvestSystem.getItemCount(crops[i].id + '_seed') > 0) out.push(crops[i]);
+    }
+    return out;
+}
+
+function _plantAt(tile) {
+    var owned = _getOwnedSeasonSeeds();
+    if (owned.length === 0) {
+        actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
+        return;
+    }
+    if (owned.length === 1) {
+        _plantCrop(tile, owned[0]);
+        return;
+    }
+    _showSeedChoice(tile, owned);
+}
+
+function _plantCrop(tile, crop) {
+    // Garde : la graine doit toujours être en inventaire (sélecteur périmé, etc.)
+    if (!harvestSystem || harvestSystem.getItemCount(crop.id + '_seed') <= 0) {
+        actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'blocked' };
+        return;
+    }
+    if (!_consumeEnergy(C.energy.plantCost, tile)) return;
+    harvestSystem.removeFromInventory(crop.id + '_seed', 1);
+    soilSystem.plant(tile.c, tile.r, crop.id);
+    cropGrowth.plant(tile.c, tile.r, crop.id, Engine.Clock.day);
+    actionFlash = { c: tile.c, r: tile.r, t: millis(), type: 'plant' };
+    _guideAdvance(1);
+    if (window.Engine && Engine.Save) Engine.Save.saveLocal();
+}
+
+function _showSeedChoice(tile, options) {
+    var buttons = [];
+    var btnW = u(60);
+    var btnGap = u(2);
+    // Hauteur adaptée pour que toutes les options tiennent à l'écran (min tactile 44px)
+    var btnH = Math.max(u(9), 48);
+    var maxTotal = height - u(24);
+    if (options.length * (btnH + btnGap) > maxTotal) {
+        btnH = Math.max(44, maxTotal / options.length - btnGap);
+    }
+    var startY = height / 2 - (options.length * (btnH + btnGap)) / 2;
+    for (var i = 0; i < options.length; i++) {
+        var cr = options[i];
+        var count = harvestSystem.getItemCount(cr.id + '_seed');
+        buttons.push({
+            crop: cr,
+            label: (cr.emoji || '🌱') + " " + cr.label + "  (x" + count + ")",
+            x: width / 2 - btnW / 2,
+            y: startY + i * (btnH + btnGap),
+            w: btnW,
+            h: btnH
+        });
+    }
+    seedChoice = { tile: tile, buttons: buttons };
+}
+
+function drawSeedChoice() {
+    if (!seedChoice) return;
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
+
+    textFont('Pixelify Sans');
+    textSize(u(4));
+    fill(255);
+    textAlign(CENTER, CENTER);
+    text("Que veux-tu planter ?", width / 2, seedChoice.buttons[0].y - u(8));
+
+    for (var i = 0; i < seedChoice.buttons.length; i++) {
+        var b = seedChoice.buttons[i];
+        // Panneau crème + bordure bois, comme la boutique
+        fill(245, 231, 200, 240);
+        rect(b.x, b.y, b.w, b.h, u(1.5));
+        noFill();
+        stroke(139, 94, 60, 240);
+        strokeWeight(u(0.4));
+        rect(b.x, b.y, b.w, b.h, u(1.5));
+        noStroke();
+        fill(61, 43, 31);
+        textSize(Math.min(u(3), b.h * 0.45));
+        text(b.label, b.x + b.w / 2, b.y + b.h / 2);
+    }
+    textFont('sans-serif');
+}
+
+/* ─── Interaction PNJ ───
+   Le don passe par le bouton « Offrir » explicite (plus de cadeau automatique
+   au 2e clic : un enfant donnait sa récolte sans le vouloir). */
 function _interactNPC(npc) {
     if (npcDialogue && npcDialogue.npcId === npc.id && npcDialogue.type === 'talk') {
-        // Au 2e clic, offrir un cadeau = la culture sélectionnée dans l'inventaire
-        if (harvestSystem && npcSystem) {
-            var inv = harvestSystem.getInventory();
-            var invKeys = Object.keys(inv);
-            if (invKeys.length > 0) {
-                var giftId = invKeys[0]; // première récolte dispo
-                var reaction = npcSystem.giveGift(npc.id, giftId);
-                harvestSystem.removeFromInventory(giftId, 1);
-                npcDialogue = { npcId: npc.id, text: reaction, type: 'gift', t: millis() };
-                actionFlash = { c: npc.c, r: npc.r, t: millis(), type: 'gift' };
-            }
-        }
-    } else {
-        var dialogue = npcSystem.getDialogue(npc.id);
-        npcDialogue = { npcId: npc.id, text: dialogue, type: 'talk', t: millis() };
+        return; // dialogue déjà ouvert
     }
+    var dialogue = npcSystem.getDialogue(npc.id);
+    npcDialogue = { npcId: npc.id, text: dialogue, type: 'talk', t: millis() };
+}
+
+/* ─── Sélecteur de cadeau (bouton Offrir du dialogue PNJ) ─── */
+function _showGiftChoice(npcId) {
+    if (!harvestSystem || !npcSystem) return;
+    var inv = harvestSystem.getInventory();
+    var options = [];
+    for (var cropId in inv) {
+        if (!inv.hasOwnProperty(cropId) || inv[cropId] <= 0) continue;
+        var cd = cropGrowth.getCropData(cropId) || (culturesData && culturesData.find(function(cc) { return cc.id === cropId; }));
+        options.push({ id: cropId, label: (cd && cd.label) || cropId, emoji: (cd && cd.emoji) || '🎁', count: inv[cropId] });
+    }
+    if (options.length === 0) return;
+
+    var buttons = [];
+    var btnW = u(60);
+    var btnGap = u(2);
+    var btnH = Math.max(u(9), 48);
+    var maxTotal = height - u(24);
+    if (options.length * (btnH + btnGap) > maxTotal) {
+        btnH = Math.max(44, maxTotal / options.length - btnGap);
+    }
+    var startY = height / 2 - (options.length * (btnH + btnGap)) / 2;
+    for (var i = 0; i < options.length; i++) {
+        var o = options[i];
+        buttons.push({
+            giftId: o.id,
+            label: o.emoji + " " + o.label + "  (x" + o.count + ")",
+            x: width / 2 - btnW / 2,
+            y: startY + i * (btnH + btnGap),
+            w: btnW,
+            h: btnH
+        });
+    }
+    giftChoice = { npcId: npcId, buttons: buttons };
+}
+
+function drawGiftChoice() {
+    if (!giftChoice) return;
+    noStroke();
+    fill(0, 0, 0, 180);
+    rect(0, 0, width, height);
+
+    textFont('Pixelify Sans');
+    textSize(u(4));
+    fill(255);
+    textAlign(CENTER, CENTER);
+    text("🎁 Que veux-tu offrir ?", width / 2, giftChoice.buttons[0].y - u(8));
+
+    for (var i = 0; i < giftChoice.buttons.length; i++) {
+        var b = giftChoice.buttons[i];
+        fill(245, 231, 200, 240);
+        rect(b.x, b.y, b.w, b.h, u(1.5));
+        noFill();
+        stroke(139, 94, 60, 240);
+        strokeWeight(u(0.4));
+        rect(b.x, b.y, b.w, b.h, u(1.5));
+        noStroke();
+        fill(61, 43, 31);
+        textSize(Math.min(u(3), b.h * 0.45));
+        text(b.label, b.x + b.w / 2, b.y + b.h / 2);
+    }
+    textFont('sans-serif');
+}
+
+function _giveGiftTo(npcId, giftId) {
+    var npc = npcSystem.getNPC(npcId);
+    if (!npc || !harvestSystem || harvestSystem.getItemCount(giftId) <= 0) return;
+    var reaction = npcSystem.giveGift(npcId, giftId);
+    harvestSystem.removeFromInventory(giftId, 1);
+    npcDialogue = { npcId: npcId, text: reaction, type: 'gift', t: millis() };
+    actionFlash = { c: npc.c, r: npc.r, t: millis(), type: 'gift' };
+    if (window.Engine && Engine.Save) Engine.Save.saveLocal();
 }
 
 /* ─── Ouverture boutique ─── */
@@ -2264,7 +2691,7 @@ function _openShop(sellMode) {
     var npc = npcSystem.getNPC(npcDialogue.npcId);
     if (!npc) return;
     npcDialogue = null;
-    shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode, _quantities: {} };
+    shopMode = { npcId: npc.id, npcData: npc, sellMode: sellMode, _quantities: {}, _scroll: 0 };
 }
 
 function _handleShopClick(mx, my) {
@@ -2286,19 +2713,21 @@ function _handleShopClick(mx, my) {
         return;
     }
 
-    // 2. Tabs mode — switch entre VENDRE et ACHETER (compteurs remis à zéro)
+    // 2. Tabs mode — switch entre VENDRE et ACHETER (compteurs et scroll remis à zéro)
     if (shopMode._btnSellTab && inRect(mx, my, shopMode._btnSellTab)) {
         shopMode.sellMode = true;
         shopMode._quantities = {};
+        shopMode._scroll = 0;
         return;
     }
     if (shopMode._btnBuyTab && inRect(mx, my, shopMode._btnBuyTab)) {
         shopMode.sellMode = false;
         shopMode._quantities = {};
+        shopMode._scroll = 0;
         return;
     }
 
-    // 3. Zones items (boutons +/- et VENDRE/ACHETER)
+    // 3. Zones items (boutons +/-, VENDRE/ACHETER, défilement)
     var areas = shopMode._itemAreas;
     if (!areas) return;
     if (!shopMode._quantities) shopMode._quantities = {};
@@ -2306,6 +2735,18 @@ function _handleShopClick(mx, my) {
     for (var ai = 0; ai < areas.length; ai++) {
         var area = areas[ai];
         if (!inRect(mx, my, area)) continue;
+
+        // Boutons de défilement (pas liés à un article)
+        if (area.type === 'scroll_up') {
+            shopMode._scroll = Math.max(0, (shopMode._scroll || 0) - 1);
+            return;
+        }
+        if (area.type === 'scroll_down') {
+            var maxSc = Math.max(0, itemList.length - L.visibleItems);
+            shopMode._scroll = Math.min(maxSc, (shopMode._scroll || 0) + 1);
+            return;
+        }
+
         var item = itemList[area.idx];
         if (!item) continue;
 
@@ -2333,12 +2774,14 @@ function _handleShopClick(mx, my) {
                 if (earned > 0) {
                     playerGoldEarned += earned;
                     shopMode._quantities = {}; // reset compteurs
+                    if (_guideStep === 4) _guideStep = 99; // première vente → guide terminé
                 }
             } else {
                 // Vente rapide de 1
                 var earned2 = harvestSystem.sell(item.id, 1, item.price);
                 if (earned2 > 0) {
                     playerGoldEarned += earned2;
+                    if (_guideStep === 4) _guideStep = 99;
                 }
             }
             return;
@@ -2353,6 +2796,9 @@ function _handleShopClick(mx, my) {
             if (harvestSystem && harvestSystem.spendGold(totalCost)) {
                 harvestSystem.addToInventory(item.id + '_seed', buyQty);
                 shopMode._quantities[area.idx] = 0; // reset
+            } else if (harvestSystem) {
+                var missing = totalCost - Math.floor(harvestSystem.getGold());
+                showToast("Il te manque " + missing + " pièce" + (missing > 1 ? "s" : "") + " !");
             }
             return;
         }
